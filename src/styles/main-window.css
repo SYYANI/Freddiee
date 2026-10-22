@@ -12,6 +12,18 @@
   --reader-left: 0px;
 }
 
+/* The reader surface continues beneath the floating sidebar, so no seam shows at its edge. */
+.main-window::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--reader-left);
+  background: var(--reader-bg);
+  pointer-events: none;
+}
+
 .reader-column {
   position: absolute;
   top: 0;
@@ -61,14 +73,36 @@
   flex-direction: column;
   border-radius: 18px;
   background: var(--sidebar-bg);
-  backdrop-filter: blur(30px) saturate(1.6);
-  box-shadow: 0 0 0 0.5px var(--sidebar-border), 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    inset 0 1px 0 var(--sidebar-rim),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.45),
+    0 0 0 0.5px var(--sidebar-border),
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 12px 32px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+}
+
+/* Specular edge: brighter along the top-left, fading toward the bottom-right. */
+.sidebar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.15) 40%, rgba(255, 255, 255, 0.05) 70%, rgba(255, 255, 255, 0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 html[data-appearance="paper"] .sidebar {
   background-image: var(--paper-grain);
-  backdrop-filter: none;
+}
+
+html[data-appearance="paper"] .sidebar::after,
+html[data-platform="linux"] .sidebar::after {
+  display: none;
 }
 
 .sidebar-toolbar {

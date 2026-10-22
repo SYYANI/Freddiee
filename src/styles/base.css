@@ -25,12 +25,17 @@
   --selection-gray: rgba(0, 0, 0, 0.1);
   --control-bg: #ffffff;
 
-  /* Translucent surfaces over the window material. */
+  /*
+   * Translucent surfaces over the window material. Like the native app's glass
+   * columns, every column lets the desktop show through; the tints only lift
+   * the material enough to keep text legible.
+   */
   --window-bg: transparent;
-  --sidebar-bg: rgba(244, 248, 250, 0.66);
-  --sidebar-border: rgba(0, 0, 0, 0.06);
-  --reader-bg: rgba(255, 255, 255, 0.8);
-  --inspector-bg: rgba(248, 249, 250, 0.9);
+  --sidebar-bg: linear-gradient(160deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.14));
+  --sidebar-border: rgba(0, 0, 0, 0.08);
+  --sidebar-rim: rgba(255, 255, 255, 0.75);
+  --reader-bg: rgba(255, 255, 255, 0.4);
+  --inspector-bg: rgba(255, 255, 255, 0.24);
   --glass-bg: rgba(255, 255, 255, 0.78);
   --glass-border: rgba(0, 0, 0, 0.07);
   --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 6px 16px rgba(0, 0, 0, 0.05);
