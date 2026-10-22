@@ -26,7 +26,9 @@ export function Inspector({ paper, itemTypes, notes, mode, onMode, selection, fo
   const { t, snapshot } = useApp()
   return (
     <aside className={`inspector appearance-${snapshot.settings.readerAppearance}`} aria-label={t('Inspector')}>
-      <div className="inspector-toolbar-spacer drag-region" />
+      {/* The fixed reader toolbar spans this strip and owns its drag region; a
+          later drag region here would override the toolbar buttons' no-drag. */}
+      <div className="inspector-toolbar-spacer" />
       <div className="inspector-picker">
         <SegmentedPicker
           label={t('Inspector')}
