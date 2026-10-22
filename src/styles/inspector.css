@@ -1,0 +1,417 @@
+/* MARK: Inspector */
+
+.inspector {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--inspector-width);
+  display: flex;
+  flex-direction: column;
+  background: var(--inspector-bg);
+  border-left: 0.5px solid var(--separator);
+}
+
+.inspector.appearance-paper {
+  background-image: var(--paper-grain);
+}
+
+html[data-appearance="paper"] .inspector,
+html[data-appearance="paper"] .inspector-title {
+  font-family: var(--font-serif);
+}
+
+.inspector-toolbar-spacer {
+  flex: none;
+  height: var(--toolbar-height);
+}
+
+.inspector-picker {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 6px;
+}
+
+.inspector-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.inspector-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+
+.inspector-section.notes,
+.inspector-section.writings {
+  gap: 10px;
+}
+
+.inspector-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--text-secondary);
+}
+
+.inspector-section-header .icon-button {
+  color: var(--text-secondary);
+}
+
+.item-type-picker {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.inspector-title {
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.authors-button {
+  align-self: stretch;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.authors-field {
+  width: 100%;
+  resize: none;
+  padding: 6px 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.abstract {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.abstract-text {
+  font-size: 12px;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 8;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.abstract-text.expanded {
+  display: block;
+}
+
+.abstract-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.inspector-empty,
+.writing-empty,
+.writing-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.writing-placeholder-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* MARK: Notes */
+
+.note-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.note-meta {
+  display: flex;
+  align-items: center;
+}
+
+.note-anchor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.note-anchor .link-button {
+  margin-left: 2px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.note-quote {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 2px solid rgba(0, 0, 0, 0.18);
+  font-size: 12px;
+  line-height: 1.42;
+  color: var(--text-secondary);
+}
+
+.note-textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  padding: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.note-preview-card {
+  min-height: 40px;
+  max-height: 180px;
+  overflow: auto;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--card-bg);
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+
+.note-preview-card.interactive {
+  cursor: text;
+}
+
+.writing-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+}
+
+.writing-row-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* MARK: Writing */
+
+.writing-pane {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.writing-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 0.5px solid var(--separator);
+}
+
+.writing-header .icon-button {
+  color: var(--text-secondary);
+}
+
+.writing-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.writing-switcher span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.writing-loading {
+  flex: 1;
+}
+
+.writing-editor {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+}
+
+.writing-editor .cm-editor {
+  flex: 1;
+  height: 100%;
+  background: transparent;
+  outline: none;
+}
+
+.writing-editor .cm-scroller {
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 14px 16px 40px;
+}
+
+html[data-appearance="paper"] .writing-editor .cm-scroller {
+  font-family: var(--font-serif);
+}
+
+.writing-editor .cm-content {
+  max-width: var(--writing-max-width, none);
+  margin: 0 auto;
+  width: 100%;
+  caret-color: var(--accent);
+  padding: 0;
+}
+
+.writing-editor .cm-line {
+  padding: 0;
+}
+
+.writing-editor .cm-focused {
+  outline: none;
+}
+
+.writing-editor .cm-cursor {
+  border-left: 2px solid var(--accent);
+}
+
+.writing-editor .cm-selectionBackground,
+.writing-editor .cm-focused .cm-selectionBackground,
+.writing-editor .cm-content ::selection {
+  background: rgba(0, 122, 255, 0.22) !important;
+}
+
+.writing-editor .cm-placeholder {
+  color: var(--text-tertiary);
+}
+
+.cm-citation {
+  color: var(--accent);
+  background: rgba(0, 122, 255, 0.12);
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+.cm-link-label {
+  color: var(--link);
+}
+
+.cm-math {
+  color: var(--text);
+}
+
+.cm-math-display {
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+}
+
+.cm-math-source {
+  color: rgb(26, 112, 128);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+.cm-math-invalid {
+  color: rgba(255, 59, 48, 0.85);
+}
+
+.cm-inline-image {
+  display: block;
+  padding: 6px 0;
+}
+
+.cm-inline-image img {
+  max-width: 100%;
+  max-height: 360px;
+  border-radius: 6px;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+}
+
+.writing-footer {
+  flex: none;
+  display: flex;
+  gap: 6px;
+  padding: 7px 14px;
+  border-top: 0.5px solid var(--separator);
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+/* The separate writing window. */
+
+.writing-window {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--reader-bg);
+}
+
+.writing-window.appearance-paper {
+  background-image: var(--paper-grain);
+}
+
+.writing-window-toolbar {
+  flex: none;
+  height: var(--toolbar-height);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px 0 86px;
+  border-bottom: 0.5px solid var(--separator);
+}
+
+html[data-platform="win32"] .writing-window-toolbar,
+html[data-platform="linux"] .writing-window-toolbar {
+  padding: 0 150px 0 16px;
+}
+
+.writing-window-toolbar .writing-switcher {
+  font-size: 15px;
+}
+
+.presentation-window .writing-editor .cm-scroller {
+  padding: 28px 32px 60px;
+}
