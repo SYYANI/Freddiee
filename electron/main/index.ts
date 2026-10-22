@@ -69,6 +69,8 @@ let hasNativeLibrary = false
 const windows: { main?: Window; settings?: Window; writing?: Window; about?: Window } = {}
 
 app.whenReady().then(async () => {
+  // Packaged builds take the icon from the bundle; unpackaged runs would otherwise show Electron's.
+  if (isMac && !app.isPackaged) app.dock?.setIcon(join(app.getAppPath(), 'public/icon.png'))
   // FREDDIE_DATA_DIR keeps development and test runs away from the real library.
   const root = process.env.FREDDIE_DATA_DIR || join(app.getPath('appData'), 'Freddie')
   store = new FreddieStore(root)
@@ -158,14 +160,17 @@ function rendererURL(route: WindowRoute): { url?: string; file?: string; hash: s
   return { file: join(__dirname, '../renderer/index.html'), hash }
 }
 
-function baseWindowOptions(route: WindowRoute, sidebarVibrancy: boolean): BrowserWindowConstructorOptions {
+// Settings and About match the native app's untinted under-window material.
+type WindowMaterial = 'sidebar' | 'window' | 'under-window'
+
+function baseWindowOptions(route: WindowRoute, material: WindowMaterial): BrowserWindowConstructorOptions {
   return {
     show: false,
     backgroundColor: process.platform === 'linux' ? '#f3f3f3' : '#00000000',
     titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
     ...(isMac ? {
       transparent: true,
-      vibrancy: sidebarVibrancy ? 'sidebar' as const : 'window' as const,
+      vibrancy: material,
       visualEffectState: 'followWindow' as const,
       trafficLightPosition: { x: 18, y: 18 }
     } : {}),
@@ -203,7 +208,7 @@ function hardenWindow(window: Window): void {
 
 function createMainWindow(): void {
   const route: WindowRoute = { kind: 'main' }
-  const window = new BrowserWindow({ width: 1220, height: 780, minWidth: 1040, minHeight: 640, title: 'Freddie', ...baseWindowOptions(route, true) })
+  const window = new BrowserWindow({ width: 1220, height: 780, minWidth: 1040, minHeight: 640, title: 'Freddie', ...baseWindowOptions(route, 'sidebar') })
   windows.main = window
   hardenWindow(window)
   window.on('closed', () => {
@@ -220,7 +225,7 @@ function openSettingsWindow(tab?: string): void {
     return
   }
   const route: WindowRoute = { kind: 'settings', settingsTab: tab }
-  const window = new BrowserWindow({ width: 920, height: 720, minWidth: 840, minHeight: 520, title: translator('Settings'), fullscreenable: false, ...baseWindowOptions(route, false) })
+  const window = new BrowserWindow({ width: 920, height: 720, minWidth: 840, minHeight: 520, title: translator('Settings'), fullscreenable: false, ...baseWindowOptions(route, 'under-window') })
   windows.settings = window
   hardenWindow(window)
   window.on('closed', () => {
@@ -236,7 +241,7 @@ function openWritingWindow(): void {
     return
   }
   const route: WindowRoute = { kind: 'writing' }
-  const window = new BrowserWindow({ width: 760, height: 820, minWidth: 420, minHeight: 360, title: translator('Writing'), ...baseWindowOptions(route, false) })
+  const window = new BrowserWindow({ width: 760, height: 820, minWidth: 420, minHeight: 360, title: translator('Writing'), ...baseWindowOptions(route, 'window') })
   windows.writing = window
   hardenWindow(window)
   window.on('closed', () => {
@@ -253,7 +258,7 @@ function openAboutWindow(): void {
     return
   }
   const route: WindowRoute = { kind: 'about' }
-  const window = new BrowserWindow({ width: 520, height: 300, resizable: false, minimizable: false, maximizable: false, fullscreenable: false, title: translator('About Freddie'), ...baseWindowOptions(route, false) })
+  const window = new BrowserWindow({ width: 520, height: 300, resizable: false, minimizable: false, maximizable: false, fullscreenable: false, title: translator('About Freddie'), ...baseWindowOptions(route, 'under-window') })
   windows.about = window
   hardenWindow(window)
   window.on('closed', () => {

@@ -4,7 +4,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: rgba(250, 250, 250, 0.82);
+  background: transparent;
 }
 
 html[data-platform="linux"] .settings-window {
@@ -458,7 +458,7 @@ html[data-appearance="paper"] .settings-tab.selected {
   display: flex;
   gap: 16px;
   padding: 44px 20px 18px 18px;
-  background: rgba(250, 250, 250, 0.82);
+  background: transparent;
 }
 
 .about-identity {
