@@ -296,6 +296,11 @@ function ReaderTab(): JSX.Element {
           </div>
         </FormRow>
       </FormSection>
+      <FormSection title={t('Reader Controls')}>
+        <FormRow label={t('Show PDF zoom buttons')} help={t('Adds zoom-out and zoom-in buttons to the PDF reader toolbar.')}>
+          <Switch checked={settings.showPDFZoomControls} onChange={(value) => save({ showPDFZoomControls: value })} />
+        </FormRow>
+      </FormSection>
       <FormSection title={t('Translation Routes')}>
         <FormRow label={t('HTML Model')}>
           <MenuPicker value={settings.htmlModelId ?? ''} onChange={(value) => save({ htmlModelId: value || undefined })} options={[{ value: '', title: t('Not Selected') }, ...choices]} />

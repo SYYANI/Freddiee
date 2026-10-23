@@ -210,7 +210,12 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
       setSegmentUpdate((current) => ({ segmentId: event.segmentId!, translatedHTML: event.translatedHTML!, sequence: (current?.sequence ?? 0) + 1 }))
     }
     if (event.type === 'finished') {
-      const plain = [t('HTML translation completed.'), t('PDF translation completed.')].includes(event.message ?? '')
+      const plain = [
+        t('HTML translation completed.'),
+        t('PDF translation completed.'),
+        t('LaTeX translation completed.'),
+        t('Scanned PDF translation completed.')
+      ].includes(event.message ?? '')
       setStatusMessage(plain ? null : event.message ?? null)
       // Show the saved page, including segments that arrived while it was reloading.
       if (event.kind === 'html') setHtmlReload((value) => value + 1)
@@ -695,6 +700,12 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
               {readerMode === 'html' ? (
                 <ToolbarGroup>
                   <IconButton icon="textformat.size" text={language === 'zh-Hans' ? '大小' : 'Aa'} indicator label={t('HTML Font Size: %d', fontSize)} onClick={(event) => void showToolsMenu(event.currentTarget)} />
+                </ToolbarGroup>
+              ) : null}
+              {readerMode !== 'html' && settings.showPDFZoomControls ? (
+                <ToolbarGroup>
+                  <IconButton icon="minus" size={18} label={t('Zoom Out')} onClick={() => (readerMode === 'bilingualPDF' ? dualRef.current?.active() : pdfRef.current)?.zoomOut()} />
+                  <IconButton icon="plus" size={18} label={t('Zoom In')} onClick={() => (readerMode === 'bilingualPDF' ? dualRef.current?.active() : pdfRef.current)?.zoomIn()} />
                 </ToolbarGroup>
               ) : null}
               <ToolbarGroup>

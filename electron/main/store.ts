@@ -18,7 +18,7 @@ import type {
 import { defaultDigestTemplate } from '../../shared/digest'
 import { atomicWriteFile } from './files'
 
-export const schemaVersion = 3
+export const schemaVersion = 4
 
 type StoredProvider = Omit<ProviderProfile, 'apiKeyConfigured' | 'isBuiltIn'>
 
@@ -87,6 +87,7 @@ export const defaultSettings = (): AppSettings => ({
   translationGlossary: '',
   htmlFontSize: 17,
   readerAppearance: 'default',
+  showPDFZoomControls: false,
   assistantWebSearch: false,
   inspectorCollapsed: false,
   inspectorMode: 'paper',
@@ -563,7 +564,8 @@ interface MigrationResult {
 export function migrateDatabase(value: Record<string, unknown>): MigrationResult {
   const version = typeof value.schemaVersion === 'number' ? value.schemaVersion : 1
   if (version > schemaVersion) throw new Error(`library.json was written by a newer Freddie (schema ${version}).`)
-  if (version >= 3) return { database: normalizeV3(value as Partial<Database>), legacyWritings: [] }
+  if (version === 4) return { database: normalizeV4(value as Partial<Database>), legacyWritings: [] }
+  if (version === 3) return migrateV3(value as Partial<Database>)
   return migrateV2(value)
 }
 
@@ -571,7 +573,7 @@ export function migrateDatabase(value: Record<string, unknown>): MigrationResult
 // its defaults again.
 const removedSettingKeys = ['babelDocQPS', 'babelDocCommand', 'babelDocArguments', 'useArxivLatexStructure', 'latexTranslationEnabled']
 
-function normalizeV3(value: Partial<Database>): Database {
+function normalizeV4(value: Partial<Database>): Database {
   const base = emptyDatabase()
   const settings: Record<string, unknown> = { ...base.settings, ...value.settings }
   for (const key of removedSettingKeys) delete settings[key]
@@ -590,6 +592,18 @@ function normalizeV3(value: Partial<Database>): Database {
     models: value.models ?? [],
     deletedBuiltInIds: value.deletedBuiltInIds ?? [],
     settings: settings as unknown as AppSettings
+  }
+}
+
+/** Schema 4 adds an opt-in toolbar affordance; existing readers keep their previous layout. */
+function migrateV3(value: Partial<Database>): MigrationResult {
+  return {
+    database: normalizeV4({
+      ...value,
+      schemaVersion,
+      settings: { ...defaultSettings(), ...value.settings, showPDFZoomControls: false }
+    }),
+    legacyWritings: []
   }
 }
 

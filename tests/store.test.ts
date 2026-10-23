@@ -93,6 +93,12 @@ describe('FreddieStore', () => {
 })
 
 describe('migrateDatabase', () => {
+  it('adds disabled PDF zoom controls when migrating schema 3', () => {
+    const { database } = migrateDatabase({ schemaVersion: 3, settings: { showPDFZoomControls: true } })
+    expect(database.schemaVersion).toBe(schemaVersion)
+    expect(database.settings.showPDFZoomControls).toBe(false)
+  })
+
   it('converts schema 2 file names, folders, and the single provider', () => {
     const paperId = '44444444-4444-4444-8444-444444444444'
     const folderId = '55555555-5555-4555-8555-555555555555'

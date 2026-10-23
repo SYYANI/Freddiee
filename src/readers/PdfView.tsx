@@ -22,6 +22,8 @@ export interface ScrollAnchor {
 export interface PdfViewHandle {
   scrollAnchor(): ScrollAnchor | null
   scrollToAnchor(anchor: ScrollAnchor): void
+  zoomIn(): void
+  zoomOut(): void
   applyMarkup(type: 'highlight' | 'underline' | 'strikeOut'): boolean
   undo(): void
   redo(): void
@@ -521,6 +523,20 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
       if (anchor.pageIndex >= sizes.length) return
       scrollToPage(anchor.pageIndex, Math.min(Math.max(anchor.fraction, 0), 1))
       updateVisible()
+    },
+    zoomIn: () => {
+      const element = scroller.current
+      if (element) zoomFocus.current = { x: element.clientWidth / 2, y: element.clientHeight / 2 }
+      const next = clampScale(scaleRef.current * 1.2)
+      scaleRef.current = next
+      setScaling({ mode: 'manual', scale: next })
+    },
+    zoomOut: () => {
+      const element = scroller.current
+      if (element) zoomFocus.current = { x: element.clientWidth / 2, y: element.clientHeight / 2 }
+      const next = clampScale(scaleRef.current / 1.2)
+      scaleRef.current = next
+      setScaling({ mode: 'manual', scale: next })
     },
     applyMarkup: (type) => {
       const selection = window.getSelection()

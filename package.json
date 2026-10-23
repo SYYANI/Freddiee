@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "test": "vitest run",
     "test:watch": "vitest",
+    "bump_version": "node scripts/bump_version.mjs",
     "sync:rebuild": "node scripts/sync-rebuild-pdf.mjs",
     "sync:latex": "node scripts/sync-latex-trans.mjs",
     "package": "npm run build && electron-builder",

@@ -43,7 +43,12 @@ const extraZhHans: Record<string, string> = {
   'Connected. HTML and PDF translation now use %@.': '已连接。HTML 和 PDF 翻译现在使用 %1$@。',
   'Close Window': '关闭窗口',
   // The native string names Finder.
-  'Reveal Translated LaTeX Source': '显示 LaTeX 译稿源码'
+  'Reveal Translated LaTeX Source': '显示 LaTeX 译稿源码',
+  'Reader Controls': '阅读器控制',
+  'Show PDF zoom buttons': '显示 PDF 缩放按钮',
+  'Adds zoom-out and zoom-in buttons to the PDF reader toolbar.': '在 PDF 阅读器工具栏中添加缩小和放大按钮。',
+  'Zoom Out': '缩小',
+  'Zoom In': '放大'
 }
 
 const dictionaries: Record<'zh-Hans', Record<string, string>> = {
