@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { copyFile, open, readFile, rm } from 'node:fs/promises'
-import { basename, dirname, extname, join, sep } from 'node:path'
+import { basename, dirname, extname, join } from 'node:path'
 import * as cheerio from 'cheerio'
 import type { Attachment, ImportProgress, Paper } from '../../shared/types'
 import type { Translator } from '../../shared/i18n'
@@ -16,6 +16,7 @@ import {
 } from '../../shared/identifiers'
 import { atomicWriteFile } from './files'
 import { localizeHTML } from './localizer'
+import { pdfjsResourceBase } from './pdfjsResources'
 import type { FreddieStore } from './store'
 
 type ProgressSink = (progress: ImportProgress) => void
@@ -429,5 +430,5 @@ export function wasmDataURL(): string {
 
 function pdfjsDataDirectory(name: string): string {
   const directory = join(dirname(require.resolve('pdfjs-dist/package.json')), name).replace(/app\.asar([\\/])/, 'app.asar.unpacked$1')
-  return `${directory}${sep}`
+  return pdfjsResourceBase(directory)
 }

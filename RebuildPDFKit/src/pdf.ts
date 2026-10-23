@@ -1,7 +1,8 @@
 import { createRequire } from 'node:module'
-import { dirname, join, sep } from 'node:path'
+import { dirname, join } from 'node:path'
 import { createCanvas } from '@napi-rs/canvas'
 import { getDocument, type PDFDocumentProxy, type PDFPageProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { pdfjsResourceBase } from '../../electron/main/pdfjsResources'
 import { RGBImage } from './bitmap'
 import { roundHalfAway } from './pattern'
 
@@ -10,7 +11,7 @@ const moduleRequire = createRequire(import.meta.url)
 /** A directory of pdfjs-dist, outside the asar archive in a packaged app. */
 function pdfjsDirectory(name: string): string {
   const directory = join(dirname(moduleRequire.resolve('pdfjs-dist/package.json')), name).replace(/app\.asar([\\/])/, 'app.asar.unpacked$1')
-  return `${directory}${sep}`
+  return pdfjsResourceBase(directory)
 }
 
 export type PDFDocument = PDFDocumentProxy
