@@ -440,6 +440,9 @@ export function MainWindow(): JSX.Element {
         <ToolbarGroup>
           <IconButton icon="trash" label={t('Delete Paper')} size={18} disabled={!selectedPaper} onClick={() => selectedPaper && void deletePaper(selectedPaper)} />
           <IconButton icon="sidebar.left" label={sidebarOpen ? t('Hide Sidebar') : t('Show Sidebar')} size={19} onClick={() => setSidebarOpen((value) => !value)} />
+          {window.freddie.platform !== 'darwin' && (
+            <IconButton icon="gearshape" label={t('Settings')} size={18} onClick={() => void window.freddie.settings.openSettings()} />
+          )}
         </ToolbarGroup>
       </div>
       {dropActive && <div className="drop-highlight" />}

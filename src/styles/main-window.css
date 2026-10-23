@@ -18,6 +18,7 @@
 html[data-platform="win32"] .main-window,
 html[data-platform="linux"] .main-window {
   --leading-toolbar-left: 12px;
+  --leading-toolbar-width: 164px;
 }
 
 .reader-column {

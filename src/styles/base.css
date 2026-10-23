@@ -75,13 +75,6 @@ html[data-platform="win32"] {
   --inspector-bg: rgba(248, 249, 250, 0.92);
 }
 
-html[data-platform="win32"][data-window-material="acrylic"]:not([data-appearance="paper"]) {
-  --sidebar-bg: transparent;
-  --sidebar-tint: transparent;
-  --reader-bg: transparent;
-  --inspector-bg: transparent;
-}
-
 /* On macOS the native AppKit layer supplies the window material. */
 html[data-platform="darwin"]:not([data-appearance="paper"]) {
   --sidebar-bg: transparent;

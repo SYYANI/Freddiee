@@ -39,7 +39,6 @@ import { TranslationService, translationDisplayCSS } from './translation'
 import { WritingStore } from './writings'
 import { importNativeLibrary, nativeLibraryExists } from './nativeLibrary'
 import { applyLiquidGlass, applyUnifiedToolbar, supportsLiquidGlass } from './windowChrome'
-import { applyWindows10Acrylic } from './windowsBackdrop'
 import { applyHiddenRegions, readableProseColorCSS, readableProseLayoutCSS } from './localizer'
 import * as cheerio from 'cheerio'
 
@@ -56,9 +55,6 @@ nativeTheme.themeSource = 'light'
 
 const isMac = process.platform === 'darwin'
 const isWindows = process.platform === 'win32'
-const windowsBuild = isWindows ? Number(process.getSystemVersion().split('.')[2]) : 0
-const supportsWindowsSystemAcrylic = windowsBuild >= 22621
-const supportsWindows10Acrylic = windowsBuild >= 17763 && windowsBuild < 22621
 
 let store: FreddieStore
 let secrets: SecretStore
@@ -174,7 +170,6 @@ function baseWindowOptions(route: WindowRoute, material: WindowMaterial): Browse
     show: false,
     backgroundColor: process.platform === 'linux' ? '#f3f3f3' : '#00000000',
     titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
-    ...(supportsWindows10Acrylic ? { transparent: true } : {}),
     ...(isMac ? {
       transparent: true,
       ...(!useLiquidGlass ? {
@@ -185,7 +180,6 @@ function baseWindowOptions(route: WindowRoute, material: WindowMaterial): Browse
       trafficLightPosition: { x: 18, y: 18 }
     } : {}),
     ...(!isMac ? { titleBarOverlay: { color: '#00000000', symbolColor: '#1d1d1f', height: 52 } } : {}),
-    ...(supportsWindowsSystemAcrylic ? { backgroundMaterial: 'acrylic' as const } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.cjs'),
       contextIsolation: true,
@@ -205,8 +199,7 @@ function loadRoute(window: Window, route: WindowRoute): void {
 }
 
 function hardenWindow(window: Window): void {
-  if (supportsWindowsSystemAcrylic) window.setBackgroundMaterial('acrylic')
-  else if (supportsWindows10Acrylic && !applyWindows10Acrylic(window)) window.setBackgroundColor('#f3f3f3')
+  if (isWindows) window.setBackgroundMaterial('acrylic')
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//i.test(url)) void shell.openExternal(url)
     return { action: 'deny' }

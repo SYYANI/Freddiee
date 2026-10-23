@@ -29,7 +29,6 @@ function Root(): JSX.Element {
 }
 
 document.documentElement.dataset.window = route.kind
-document.documentElement.dataset.windowMaterial = window.freddie.windowMaterial
 // Like a native control, the selected segment turns gray while the window is inactive.
 window.addEventListener('blur', () => document.body.classList.add('window-inactive'))
 window.addEventListener('focus', () => document.body.classList.remove('window-inactive'))
