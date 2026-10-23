@@ -165,7 +165,7 @@ function rendererURL(route: WindowRoute): { url?: string; file?: string; hash: s
 type WindowMaterial = 'sidebar' | 'window' | 'under-window'
 
 function baseWindowOptions(route: WindowRoute, material: WindowMaterial): BrowserWindowConstructorOptions {
-  const useLiquidGlass = supportsLiquidGlass() && (route.kind === 'settings' || route.kind === 'about')
+  const useLiquidGlass = supportsLiquidGlass() && (route.kind === 'main' || route.kind === 'settings' || route.kind === 'about')
   return {
     show: false,
     backgroundColor: process.platform === 'linux' ? '#f3f3f3' : '#00000000',
@@ -215,6 +215,7 @@ function createMainWindow(): void {
   const route: WindowRoute = { kind: 'main' }
   const window = new BrowserWindow({ width: 1220, height: 780, minWidth: 1040, minHeight: 640, title: 'Freddie', ...baseWindowOptions(route, 'sidebar') })
   windows.main = window
+  if (supportsLiquidGlass() && !applyLiquidGlass(window)) window.setVibrancy('sidebar')
   applyUnifiedToolbar(window)
   hardenWindow(window)
   window.on('closed', () => {

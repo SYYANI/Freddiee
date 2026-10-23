@@ -75,6 +75,14 @@ html[data-platform="win32"] {
   --inspector-bg: rgba(248, 249, 250, 0.92);
 }
 
+/* On macOS the native AppKit layer supplies the window material. */
+html[data-platform="darwin"]:not([data-appearance="paper"]) {
+  --sidebar-bg: transparent;
+  --sidebar-tint: transparent;
+  --reader-bg: transparent;
+  --inspector-bg: transparent;
+}
+
 /* Paper Tone: warm, opaque surfaces with a faint paper grain. */
 html[data-appearance="paper"] {
   --window-bg: #f6f2e7;
