@@ -154,7 +154,7 @@ function GeneralTab({ onSelectTab }: { onSelectTab: (tab: Tab) => void }): JSX.E
       {/* macOS reaches About from the app menu; elsewhere the menu bar is hidden. */}
       {window.freddie.platform !== 'darwin' && (
         <FormSection>
-          <FormRow label={<span className="secondary">{t('Version %@ (Build %@)', __APP_VERSION__, __APP_BUILD__)}</span>}>
+          <FormRow label={<span className="secondary">{t('Version %@', __APP_VERSION__)}</span>}>
             <Button onClick={() => void window.freddie.settings.openAbout()}>{`${t('About Freddie')}…`}</Button>
           </FormRow>
         </FormSection>
@@ -330,6 +330,9 @@ function ReaderTab(): JSX.Element {
 function LatexTab(): JSX.Element {
   const { snapshot, t } = useApp()
   const settings = snapshot.settings
+  const texDistribution = window.freddie.platform === 'darwin'
+    ? { downloadLabel: 'Download MacTeX', url: 'https://tug.org/mactex/mactex-download.html' }
+    : { downloadLabel: 'Download TeX Live', url: 'https://tug.org/texlive/' }
   const [status, setStatus] = useState<LatexToolchainStatus | null>(null)
   const refresh = async (): Promise<void> => setStatus(await window.freddie.settings.latexStatus())
   useEffect(() => {
@@ -338,16 +341,16 @@ function LatexTab(): JSX.Element {
 
   return (
     <div className="settings-form">
-      <FormSection title={t('TeX Live / MacTeX')}>
-        <FormRow stacked><span>{t('If you do not have a TeX distribution installed, MacTeX is recommended. The distribution is installed and maintained separately from Freddie.')}</span></FormRow>
+      <FormSection title={t('TeX Distribution')}>
+        <FormRow stacked><span>{t('Install a TeX distribution for your platform: MacTeX on macOS and TeX Live on Windows or Linux. It is installed and maintained separately from Freddie.')}</span></FormRow>
         <FormRow>
-          <button type="button" className="link-button" onClick={() => void window.freddie.shell.openExternal(window.freddie.platform === 'darwin' ? 'https://tug.org/mactex/mactex-download.html' : 'https://tug.org/texlive/')}>
-            {window.freddie.platform === 'darwin' ? t('Download MacTeX') : t('Download TeX Live')}
+          <button type="button" className="link-button" onClick={() => void window.freddie.shell.openExternal(texDistribution.url)}>
+            {t(texDistribution.downloadLabel)}
           </button>
         </FormRow>
       </FormSection>
       <FormSection title={t('LaTeX Installation')}>
-        <FormRow label={t('Toolchain directory')} help={t("Automatic detection checks the app's PATH and common MacTeX, Homebrew, and /usr/local locations. A manually selected directory takes precedence and must contain an executable latexmk.")}>
+        <FormRow label={t('Toolchain directory')} help={t("Automatic detection checks the app's PATH and common TeX Live, MacTeX, MiKTeX, Homebrew, and system locations. A manually selected directory takes precedence and must contain an executable latexmk.")}>
           <MenuPicker
             value={settings.latexToolchainDirectory ?? ''}
             onChange={(value) => save({ latexToolchainDirectory: value || undefined })}
@@ -381,7 +384,7 @@ function LatexTab(): JSX.Element {
             </FormRow>
           </>
         ) : (
-          <FormRow stacked><span className="secondary">{t('No usable LaTeX installation was found. Install MacTeX, refresh detection, or choose the TeX binary directory manually.')}</span></FormRow>
+          <FormRow stacked><span className="secondary">{t('No usable LaTeX installation was found. Install a TeX distribution for your platform, refresh detection, or choose the TeX binary directory manually.')}</span></FormRow>
         )}
       </FormSection>
     </div>

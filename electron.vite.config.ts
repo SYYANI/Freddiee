@@ -23,8 +23,7 @@ export default defineConfig({
   renderer: {
     root: '.',
     define: {
-      __APP_VERSION__: JSON.stringify(packageJSON.version),
-      __APP_BUILD__: JSON.stringify(process.env.FREDDIE_BUILD ?? '1')
+      __APP_VERSION__: JSON.stringify(packageJSON.version)
     },
     build: { rollupOptions: { input: resolve('index.html') } },
     plugins: [react()]

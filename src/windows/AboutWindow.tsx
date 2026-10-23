@@ -21,7 +21,7 @@ export function AboutWindow(): JSX.Element {
       <div className="about-identity">
         <img src="./icon.png" alt="" width={85} height={85} />
         <div className="about-name">Freddie</div>
-        <div className="about-version secondary selectable no-drag">{t('Version %@ (Build %@)', __APP_VERSION__, __APP_BUILD__)}</div>
+        <div className="about-version secondary selectable no-drag">{t('Version %@', __APP_VERSION__)}</div>
         <div className="about-copyright secondary">Copyright © 2026 SYYANI.</div>
         <div className="no-drag"><ExternalLink title="github.com/SYYANI/Freddie" url="https://github.com/SYYANI/Freddie" /></div>
       </div>
