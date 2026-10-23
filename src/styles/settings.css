@@ -11,6 +11,10 @@ html[data-appearance="paper"] .settings-window {
   background-image: var(--paper-grain);
 }
 
+html[data-platform="darwin"]:not([data-appearance="paper"]) .settings-window {
+  background: transparent;
+}
+
 .settings-titlebar {
   flex: none;
   display: flex;
@@ -459,6 +463,10 @@ html[data-appearance="paper"] .settings-tab.selected {
 
 html[data-appearance="paper"] .about-window {
   background-image: var(--paper-grain);
+}
+
+html[data-platform="darwin"]:not([data-appearance="paper"]) .about-window {
+  background: transparent;
 }
 
 .about-identity {

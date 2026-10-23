@@ -38,7 +38,7 @@ import { builtInProviders, FreddieStore } from './store'
 import { TranslationService, translationDisplayCSS } from './translation'
 import { WritingStore } from './writings'
 import { importNativeLibrary, nativeLibraryExists } from './nativeLibrary'
-import { applyUnifiedToolbar } from './windowChrome'
+import { applyLiquidGlass, applyUnifiedToolbar, supportsLiquidGlass } from './windowChrome'
 import { applyHiddenRegions, readableProseColorCSS, readableProseLayoutCSS } from './localizer'
 import * as cheerio from 'cheerio'
 
@@ -165,15 +165,18 @@ function rendererURL(route: WindowRoute): { url?: string; file?: string; hash: s
 type WindowMaterial = 'sidebar' | 'window' | 'under-window'
 
 function baseWindowOptions(route: WindowRoute, material: WindowMaterial): BrowserWindowConstructorOptions {
+  const useLiquidGlass = supportsLiquidGlass() && (route.kind === 'settings' || route.kind === 'about')
   return {
     show: false,
     backgroundColor: process.platform === 'linux' ? '#f3f3f3' : '#00000000',
     titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
     ...(isMac ? {
       transparent: true,
-      vibrancy: material,
-      // Keep sampling the desktop while inactive instead of falling back to flat gray.
-      visualEffectState: 'active' as const,
+      ...(!useLiquidGlass ? {
+        vibrancy: material,
+        // Keep sampling the desktop while inactive instead of falling back to flat gray.
+        visualEffectState: 'active' as const
+      } : {}),
       trafficLightPosition: { x: 18, y: 18 }
     } : {}),
     ...(!isMac ? { titleBarOverlay: { color: '#00000000', symbolColor: '#1d1d1f', height: 52 } } : {}),
@@ -228,8 +231,9 @@ function openSettingsWindow(tab?: string): void {
     return
   }
   const route: WindowRoute = { kind: 'settings', settingsTab: tab }
-  const window = new BrowserWindow({ width: 920, height: 720, minWidth: 840, minHeight: 520, title: translator('Settings'), fullscreenable: false, ...baseWindowOptions(route, 'sidebar') })
+  const window = new BrowserWindow({ width: 920, height: 720, minWidth: 840, minHeight: 520, title: translator('Settings'), fullscreenable: false, ...baseWindowOptions(route, 'under-window') })
   windows.settings = window
+  if (supportsLiquidGlass() && !applyLiquidGlass(window)) window.setVibrancy('under-window')
   hardenWindow(window)
   window.on('closed', () => {
     windows.settings = undefined
@@ -261,8 +265,9 @@ function openAboutWindow(): void {
     return
   }
   const route: WindowRoute = { kind: 'about' }
-  const window = new BrowserWindow({ width: 520, height: 300, resizable: false, minimizable: false, maximizable: false, fullscreenable: false, title: translator('About Freddie'), ...baseWindowOptions(route, 'sidebar') })
+  const window = new BrowserWindow({ width: 520, height: 300, resizable: false, minimizable: false, maximizable: false, fullscreenable: false, title: translator('About Freddie'), ...baseWindowOptions(route, 'under-window') })
   windows.about = window
+  if (supportsLiquidGlass() && !applyLiquidGlass(window)) window.setVibrancy('under-window')
   hardenWindow(window)
   window.on('closed', () => {
     windows.about = undefined
