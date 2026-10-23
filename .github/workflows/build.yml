@@ -1,16 +1,24 @@
 name: build
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -21,9 +29,10 @@ jobs:
 
   latex-windows:
     runs-on: windows-2025
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -31,7 +40,7 @@ jobs:
       - run: npx vitest run tests/latex-trans-parity.test.ts tests/latex-trans-kit.test.ts
 
   package:
-    if: github.event_name == 'workflow_dispatch'
+    needs: [validate, latex-windows]
     strategy:
       fail-fast: false
       matrix:
@@ -43,15 +52,25 @@ jobs:
           - os: ubuntu-24.04
             command: package:linux
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run ${{ matrix.command }}
-      - uses: actions/upload-artifact@v4
+      - run: npm run ${{ matrix.command }} -- --publish never
+
+      - name: Resolve artifact name
+        id: artifact_meta
+        shell: bash
+        run: |
+          app_version="$(node -p "require('./package.json').version")"
+          echo "artifact_name=Freddie-${app_version}-${RUNNER_OS}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v6
         with:
-          name: Freddie-${{ runner.os }}
+          name: ${{ steps.artifact_meta.outputs.artifact_name }}
+          if-no-files-found: error
           path: release/*
