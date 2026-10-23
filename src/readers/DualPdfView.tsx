@@ -29,12 +29,15 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
   onRequestTextNote?: (side: DualSide, pageIndex: number, point: { x: number; y: number }) => void
   onLinkActivated?: (url: string) => void
   handToolEnabled?: boolean
+  /** Briefly outlines the pane that the shared zoom controls will affect. */
+  highlightActivePane?: boolean
 }>(function DualPdfView(props, ref) {
   const originalRef = useRef<PdfViewHandle>(null)
   const translatedRef = useRef<PdfViewHandle>(null)
   const leader = useRef<DualSide | null>(null)
   const following = useRef(false)
   const lastActive = useRef<DualSide>('original')
+  const [activeSide, setActiveSide] = useState<DualSide>('original')
   const [split, setSplit] = useState(0.5)
   const [scalingRestoreToken, setScalingRestoreToken] = useState(0)
   const container = useRef<HTMLDivElement>(null)
@@ -60,6 +63,7 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
     if (following.current) return
     leader.current = side
     lastActive.current = side
+    setActiveSide(side)
     const source = side === 'original' ? originalRef.current : translatedRef.current
     const target = side === 'original' ? translatedRef.current : originalRef.current
     const anchor = source?.scrollAnchor()
@@ -100,7 +104,7 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
 
   return (
     <div ref={container} className="dual-pdf" style={{ gridTemplateColumns: `${fraction}fr 1px ${1 - fraction}fr` }}>
-      <div className="dual-pane" onPointerDown={() => { lastActive.current = 'original' }}>
+      <div className={`dual-pane ${props.highlightActivePane && activeSide === 'original' ? 'zoom-preview' : ''}`} onPointerDown={() => { lastActive.current = 'original'; setActiveSide('original') }}>
         <PdfView
           ref={originalRef}
           paperId={props.paperId}
@@ -128,7 +132,7 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
         />
       </div>
       <div className="dual-divider" onPointerDown={beginResize} role="separator" aria-orientation="vertical" />
-      <div className="dual-pane" onPointerDown={() => { lastActive.current = 'translated' }}>
+      <div className={`dual-pane ${props.highlightActivePane && activeSide === 'translated' ? 'zoom-preview' : ''}`} onPointerDown={() => { lastActive.current = 'translated'; setActiveSide('translated') }}>
         <PdfView
           ref={translatedRef}
           paperId={props.paperId}

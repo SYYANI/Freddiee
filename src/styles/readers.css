@@ -332,6 +332,24 @@
   min-width: 0;
 }
 
+.dual-pane.zoom-preview::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  z-index: 30;
+  pointer-events: none;
+  border: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, #fff 65%, transparent), 0 0 14px color-mix(in srgb, var(--accent) 18%, transparent);
+  animation: zoom-preview-in 0.14s ease-out;
+}
+
+@keyframes zoom-preview-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .dual-divider {
   background: var(--separator-strong);
   cursor: col-resize;

@@ -93,6 +93,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   const [findStatus, setFindStatus] = useState<FindStatus | null>(null)
   const [findFocus, setFindFocus] = useState(0)
   const [findTarget, setFindTarget] = useState<DualSide>('original')
+  const [zoomPreview, setZoomPreview] = useState(false)
   const [tool, setTool] = useState<AnnotationTool>({ mode: 'browse', color: '#ffd60a', lineWidth: 2 })
   const [annotationState, setAnnotationState] = useState<AnnotationState>({ canUndo: false, canRedo: false, hasTextSelection: false })
   const [pendingTextNote, setPendingTextNote] = useState<{ side?: DualSide; pageIndex: number; point: { x: number; y: number } } | null>(null)
@@ -636,6 +637,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
           onRequestTextNote={(side, page, point) => setPendingTextNote({ side, pageIndex: page, point })}
           onLinkActivated={props.onArxivLink}
           handToolEnabled={settings.pdfHandToolEnabled}
+          highlightActivePane={zoomPreview}
         />
       )
     }
@@ -706,8 +708,8 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
               ) : null}
               {readerMode !== 'html' && settings.showPDFZoomControls ? (
                 <ToolbarGroup>
-                  <IconButton icon="minus" size={18} label={t('Zoom Out')} onClick={() => (readerMode === 'bilingualPDF' ? dualRef.current?.active() : pdfRef.current)?.zoomOut()} />
-                  <IconButton icon="plus" size={18} label={t('Zoom In')} onClick={() => (readerMode === 'bilingualPDF' ? dualRef.current?.active() : pdfRef.current)?.zoomIn()} />
+                  <IconButton icon="minus" size={18} label={t('Zoom Out')} onMouseEnter={() => setZoomPreview(true)} onMouseLeave={() => setZoomPreview(false)} onClick={() => (readerMode === 'bilingualPDF' ? dualRef.current?.active() : pdfRef.current)?.zoomOut()} />
+                  <IconButton icon="plus" size={18} label={t('Zoom In')} onMouseEnter={() => setZoomPreview(true)} onMouseLeave={() => setZoomPreview(false)} onClick={() => (readerMode === 'bilingualPDF' ? dualRef.current?.active() : pdfRef.current)?.zoomIn()} />
                 </ToolbarGroup>
               ) : null}
               <ToolbarGroup>
