@@ -360,6 +360,7 @@ export interface WindowRoute {
 
 export interface FreddieAPI {
   platform: string
+  windowMaterial: 'acrylic' | 'none'
   route: WindowRoute
   library: {
     snapshot(): Promise<LibrarySnapshot>

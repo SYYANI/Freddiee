@@ -24,9 +24,11 @@ function readRoute(): WindowRoute {
 }
 
 const invoke = <T>(channel: string, ...args: unknown[]): Promise<T> => ipcRenderer.invoke(channel, ...args) as Promise<T>
+const windowsBuild = process.platform === 'win32' ? Number(process.getSystemVersion().split('.')[2]) : 0
 
 const api: FreddieAPI = {
   platform: process.platform,
+  windowMaterial: windowsBuild >= 22621 ? 'acrylic' : 'none',
   route: readRoute(),
   library: {
     snapshot: () => invoke('library:snapshot'),

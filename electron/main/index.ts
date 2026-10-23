@@ -55,6 +55,8 @@ nativeTheme.themeSource = 'light'
 
 const isMac = process.platform === 'darwin'
 const isWindows = process.platform === 'win32'
+const windowsBuild = isWindows ? Number(process.getSystemVersion().split('.')[2]) : 0
+const supportsWindowsAcrylic = windowsBuild >= 22621
 
 let store: FreddieStore
 let secrets: SecretStore
@@ -180,6 +182,7 @@ function baseWindowOptions(route: WindowRoute, material: WindowMaterial): Browse
       trafficLightPosition: { x: 18, y: 18 }
     } : {}),
     ...(!isMac ? { titleBarOverlay: { color: '#00000000', symbolColor: '#1d1d1f', height: 52 } } : {}),
+    ...(supportsWindowsAcrylic ? { backgroundMaterial: 'acrylic' as const } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.cjs'),
       contextIsolation: true,
@@ -199,7 +202,7 @@ function loadRoute(window: Window, route: WindowRoute): void {
 }
 
 function hardenWindow(window: Window): void {
-  if (isWindows) window.setBackgroundMaterial('acrylic')
+  if (supportsWindowsAcrylic) window.setBackgroundMaterial('acrylic')
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//i.test(url)) void shell.openExternal(url)
     return { action: 'deny' }
