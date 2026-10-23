@@ -81,8 +81,7 @@
       "icon": "public/icon.png",
       "category": "public.app-category.books",
       "target": [
-        "dmg",
-        "zip"
+        "dmg"
       ],
       "hardenedRuntime": true,
       "entitlements": "build/entitlements.mac.plist",
@@ -91,8 +90,7 @@
     "win": {
       "icon": "public/icon.png",
       "target": [
-        "nsis",
-        "portable"
+        "nsis"
       ]
     },
     "linux": {
