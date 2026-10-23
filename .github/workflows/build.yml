@@ -55,7 +55,10 @@ jobs:
             command: package:win
             artifact_platform: Windows-x64
           - os: ubuntu-24.04
-            command: package:linux
+            command: package:linux:arm64
+            artifact_platform: Linux-arm64
+          - os: ubuntu-24.04
+            command: package:linux:x64
             artifact_platform: Linux-x64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90

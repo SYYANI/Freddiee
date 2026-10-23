@@ -1,8 +1,6 @@
-// npm only installs the optional native binaries that match the host, so a
-// cross-platform package built on macOS would ship the darwin binaries for
-// @napi-rs/canvas and koffi. Fetch the binaries for the target platform/arch
-// into node_modules, without touching package.json or the lockfile, so
-// electron-builder bundles them.
+// npm only installs optional native binaries matching the host. Fetch the
+// binaries for a cross-built target platform/arch into node_modules, without
+// touching package.json or the lockfile, so electron-builder bundles them.
 //
 // Usage: node scripts/install-native-targets.mjs <platform> <arch>
 import { execFileSync } from 'node:child_process'

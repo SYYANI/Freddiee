@@ -22,6 +22,8 @@
     "package:mac:x64": "node scripts/install-native-targets.mjs darwin x64 && npm run build && electron-builder --mac --x64",
     "package:win": "node scripts/install-native-targets.mjs win32 x64 && npm run build && electron-builder --win --x64",
     "package:linux": "npm run build && electron-builder --linux",
+    "package:linux:arm64": "node scripts/install-native-targets.mjs linux arm64 && npm run build && electron-builder --linux --arm64",
+    "package:linux:x64": "node scripts/install-native-targets.mjs linux x64 && npm run build && electron-builder --linux --x64",
     "postinstall": "node scripts/patch-dev-electron-name.mjs"
   },
   "dependencies": {

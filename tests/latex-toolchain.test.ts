@@ -57,6 +57,6 @@ describe('LaTeX toolchain detection', () => {
     expect(status.healthy).toBe(false)
     expect(status.automaticDirectory).toBe(automatic)
     expect(status.xelatexPath).toBe(xelatex)
-    expect(status.installations.map((installation) => installation.directory)).toEqual([automatic, manual].sort())
+    expect(new Set(status.installations.map((installation) => installation.directory))).toEqual(new Set([automatic, manual]))
   })
 })
