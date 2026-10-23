@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { execFileSync, spawnSync } from 'node:child_process'
 import { readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -24,6 +25,12 @@ const fail = (message) => {
   console.error(`bump_version: ${message}`)
   process.exit(1)
 }
+
+const git = (args, options = {}) => execFileSync('git', args, {
+  cwd: rootDir,
+  encoding: 'utf8',
+  ...options
+})
 
 const readJson = (path) => {
   try {
@@ -91,6 +98,26 @@ if (lockfile.version !== currentVersion || lockfile.packages?.['']?.version !== 
 const nextVersion = resolveVersion(currentVersion, args[0])
 if (nextVersion === currentVersion) fail(`version is already ${currentVersion}`)
 
+let versionFileStatus
+try {
+  versionFileStatus = git([
+    'status', '--porcelain', '--untracked-files=no', '--', 'package.json', 'package-lock.json'
+  ]).trim()
+} catch (error) {
+  fail(`cannot inspect the Git worktree: ${error instanceof Error ? error.message : String(error)}`)
+}
+if (versionFileStatus) {
+  fail('package.json or package-lock.json already has uncommitted changes')
+}
+
+const tag = `v${nextVersion}`
+const tagCheck = spawnSync('git', ['show-ref', '--verify', '--quiet', `refs/tags/${tag}`], {
+  cwd: rootDir
+})
+if (tagCheck.error) fail(`cannot inspect Git tags: ${tagCheck.error.message}`)
+if (tagCheck.status === 0) fail(`tag ${tag} already exists locally`)
+if (tagCheck.status !== 1) fail(`cannot inspect whether tag ${tag} exists`)
+
 manifest.version = nextVersion
 lockfile.version = nextVersion
 lockfile.packages[''].version = nextVersion
@@ -99,4 +126,18 @@ writeJsonAtomically(packagePath, manifest)
 writeJsonAtomically(lockPath, lockfile)
 
 console.log(`Version bumped: ${currentVersion} -> ${nextVersion}`)
-console.log(`To release after committing, create and push tag v${nextVersion}.`)
+try {
+  git([
+    'commit', '--only', '-m', `[chore]: bump version to ${nextVersion}`,
+    '--', 'package.json', 'package-lock.json'
+  ], { stdio: 'inherit' })
+} catch {
+  fail('version files were updated, but the Git commit failed')
+}
+
+const commit = git(['rev-parse', '--short', 'HEAD']).trim()
+console.log(`Committed version bump as ${commit}.`)
+console.log('\nCreate and push the release tag with:')
+console.log(`  git tag ${tag}`)
+console.log('  git push origin HEAD')
+console.log(`  git push origin ${tag}`)
