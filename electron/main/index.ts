@@ -161,7 +161,7 @@ function rendererURL(route: WindowRoute): { url?: string; file?: string; hash: s
   return { file: join(__dirname, '../renderer/index.html'), hash }
 }
 
-// Settings and About match the native app's untinted under-window material.
+// Keep the available macOS materials explicit at each window call site.
 type WindowMaterial = 'sidebar' | 'window' | 'under-window'
 
 function baseWindowOptions(route: WindowRoute, material: WindowMaterial): BrowserWindowConstructorOptions {
@@ -228,7 +228,7 @@ function openSettingsWindow(tab?: string): void {
     return
   }
   const route: WindowRoute = { kind: 'settings', settingsTab: tab }
-  const window = new BrowserWindow({ width: 920, height: 720, minWidth: 840, minHeight: 520, title: translator('Settings'), fullscreenable: false, ...baseWindowOptions(route, 'under-window') })
+  const window = new BrowserWindow({ width: 920, height: 720, minWidth: 840, minHeight: 520, title: translator('Settings'), fullscreenable: false, ...baseWindowOptions(route, 'sidebar') })
   windows.settings = window
   hardenWindow(window)
   window.on('closed', () => {
@@ -261,7 +261,7 @@ function openAboutWindow(): void {
     return
   }
   const route: WindowRoute = { kind: 'about' }
-  const window = new BrowserWindow({ width: 520, height: 300, resizable: false, minimizable: false, maximizable: false, fullscreenable: false, title: translator('About Freddie'), ...baseWindowOptions(route, 'under-window') })
+  const window = new BrowserWindow({ width: 520, height: 300, resizable: false, minimizable: false, maximizable: false, fullscreenable: false, title: translator('About Freddie'), ...baseWindowOptions(route, 'sidebar') })
   windows.about = window
   hardenWindow(window)
   window.on('closed', () => {
