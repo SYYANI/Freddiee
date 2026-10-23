@@ -17,16 +17,16 @@
   overscroll-behavior: contain;
 }
 
-.pdf-view.mode-browse .pdf-scroller {
+.pdf-view.hand-tool-enabled.mode-browse .pdf-scroller {
   cursor: grab;
 }
 
-.pdf-view.mode-browse .sidenote-rail {
+.pdf-view.hand-tool-enabled.mode-browse .sidenote-rail {
   cursor: default;
 }
 
-.pdf-view.mode-browse.panning .pdf-scroller,
-.pdf-view.mode-browse.panning .pdf-scroller * {
+.pdf-view.hand-tool-enabled.mode-browse.panning .pdf-scroller,
+.pdf-view.hand-tool-enabled.mode-browse.panning .pdf-scroller * {
   cursor: grabbing !important;
   user-select: none !important;
   -webkit-user-select: none !important;

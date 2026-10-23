@@ -93,6 +93,13 @@ describe('FreddieStore', () => {
 })
 
 describe('migrateDatabase', () => {
+  it('keeps the PDF hand tool disabled when migrating schema 4', () => {
+    const { database } = migrateDatabase({ schemaVersion: 4, settings: { showPDFZoomControls: true, pdfHandToolEnabled: true } })
+    expect(database.schemaVersion).toBe(schemaVersion)
+    expect(database.settings.showPDFZoomControls).toBe(true)
+    expect(database.settings.pdfHandToolEnabled).toBe(false)
+  })
+
   it('adds disabled PDF zoom controls when migrating schema 3', () => {
     const { database } = migrateDatabase({ schemaVersion: 3, settings: { showPDFZoomControls: true } })
     expect(database.schemaVersion).toBe(schemaVersion)

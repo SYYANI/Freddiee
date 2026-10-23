@@ -73,6 +73,8 @@ export interface PdfViewProps {
   automaticScaling?: boolean
   /** Each change returns a zoomed pane to fitting when its scale is close to the fitted one. */
   scalingRestoreToken?: number
+  /** Turns non-text PDF areas into a contextual drag-to-pan hand tool. */
+  handToolEnabled?: boolean
 }
 
 function pageIndexAt(tops: number[], count: number, offset: number): number {
@@ -281,7 +283,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
   }
 
   const beginPan = (event: ReactPointerEvent<HTMLDivElement>): void => {
-    if ((props.tool?.mode ?? 'browse') !== 'browse' || event.button !== 0) return
+    if (!props.handToolEnabled || (props.tool?.mode ?? 'browse') !== 'browse' || event.button !== 0) return
     const target = event.target
     if (target instanceof Element && target.closest('.textLayer span, .textLayer br, .pdf-link, .annotation-note, .sidenote-rail, button, input, textarea, a')) return
     const box = event.currentTarget.getBoundingClientRect()
@@ -643,7 +645,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
   const totalHeight = tops[pageCount] ?? 0
 
   return (
-    <div className={`pdf-view appearance-${appearance} mode-${props.tool?.mode ?? 'browse'} ${panning ? 'panning' : ''}`}>
+    <div className={`pdf-view appearance-${appearance} mode-${props.tool?.mode ?? 'browse'} ${props.handToolEnabled ? 'hand-tool-enabled' : ''} ${panning ? 'panning' : ''}`}>
       <div
         ref={scroller}
         className="pdf-scroller"

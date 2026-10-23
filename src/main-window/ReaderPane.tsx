@@ -635,6 +635,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
           onAnnotationState={setAnnotationState}
           onRequestTextNote={(side, page, point) => setPendingTextNote({ side, pageIndex: page, point })}
           onLinkActivated={props.onArxivLink}
+          handToolEnabled={settings.pdfHandToolEnabled}
         />
       )
     }
@@ -668,6 +669,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
         onLinkActivated={props.onArxivLink}
         label={readerMode === 'translatedPDF' ? readerLabel(t('Translation')) : sourceReaderLabel()}
         maxPage={readerMode === 'translatedPDF' && partial ? translated?.translatedLastPage : undefined}
+        handToolEnabled={settings.pdfHandToolEnabled}
       />
     )
   }

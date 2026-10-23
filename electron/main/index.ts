@@ -798,6 +798,7 @@ function sanitizeSettings(patch: Partial<AppSettings>): Partial<AppSettings> {
   assign('htmlFontSize', integerIn(13, 28))
   assign('readerAppearance', (value) => value === 'default' || value === 'paper')
   assign('showPDFZoomControls', isBoolean)
+  assign('pdfHandToolEnabled', isBoolean)
   for (const key of ['htmlModelId', 'pdfModelId', 'scannedPageModelId', 'assistantModelId', 'lastOpenedPaperId', 'currentWritingId'] as const) assign(key, optionalUUID)
   assign('assistantWebSearch', isBoolean)
   assign('inspectorCollapsed', isBoolean)

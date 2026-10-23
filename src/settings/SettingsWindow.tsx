@@ -297,6 +297,9 @@ function ReaderTab(): JSX.Element {
         </FormRow>
       </FormSection>
       <FormSection title={t('Reader Controls')}>
+        <FormRow label={t('Enable PDF hand tool')} help={t('Drag to pan over images and blank areas; selectable text keeps the text-selection cursor. When disabled, non-text areas use the standard arrow cursor.')}>
+          <Switch checked={settings.pdfHandToolEnabled} onChange={(value) => save({ pdfHandToolEnabled: value })} />
+        </FormRow>
         <FormRow label={t('Show PDF zoom buttons')} help={t('Adds zoom-out and zoom-in buttons to the PDF reader toolbar.')}>
           <Switch checked={settings.showPDFZoomControls} onChange={(value) => save({ showPDFZoomControls: value })} />
         </FormRow>

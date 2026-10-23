@@ -137,6 +137,8 @@ export interface AppSettings {
   readerAppearance: ReaderAppearance
   /** Shows explicit PDF zoom controls for devices without convenient pinch gestures. */
   showPDFZoomControls: boolean
+  /** Uses drag-to-pan on PDF areas that do not contain selectable text. */
+  pdfHandToolEnabled: boolean
   /** The system dark-mode state the appearance was last synchronized with. */
   lastSynchronizedSystemDarkMode?: boolean
   htmlModelId?: string

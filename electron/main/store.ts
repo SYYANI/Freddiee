@@ -18,7 +18,7 @@ import type {
 import { defaultDigestTemplate } from '../../shared/digest'
 import { atomicWriteFile } from './files'
 
-export const schemaVersion = 4
+export const schemaVersion = 5
 
 type StoredProvider = Omit<ProviderProfile, 'apiKeyConfigured' | 'isBuiltIn'>
 
@@ -88,6 +88,7 @@ export const defaultSettings = (): AppSettings => ({
   htmlFontSize: 17,
   readerAppearance: 'default',
   showPDFZoomControls: false,
+  pdfHandToolEnabled: false,
   assistantWebSearch: false,
   inspectorCollapsed: false,
   inspectorMode: 'paper',
@@ -564,7 +565,8 @@ interface MigrationResult {
 export function migrateDatabase(value: Record<string, unknown>): MigrationResult {
   const version = typeof value.schemaVersion === 'number' ? value.schemaVersion : 1
   if (version > schemaVersion) throw new Error(`library.json was written by a newer Freddie (schema ${version}).`)
-  if (version === 4) return { database: normalizeV4(value as Partial<Database>), legacyWritings: [] }
+  if (version === 5) return { database: normalizeV5(value as Partial<Database>), legacyWritings: [] }
+  if (version === 4) return migrateV4(value as Partial<Database>)
   if (version === 3) return migrateV3(value as Partial<Database>)
   return migrateV2(value)
 }
@@ -573,7 +575,7 @@ export function migrateDatabase(value: Record<string, unknown>): MigrationResult
 // its defaults again.
 const removedSettingKeys = ['babelDocQPS', 'babelDocCommand', 'babelDocArguments', 'useArxivLatexStructure', 'latexTranslationEnabled']
 
-function normalizeV4(value: Partial<Database>): Database {
+function normalizeV5(value: Partial<Database>): Database {
   const base = emptyDatabase()
   const settings: Record<string, unknown> = { ...base.settings, ...value.settings }
   for (const key of removedSettingKeys) delete settings[key]
@@ -595,16 +597,25 @@ function normalizeV4(value: Partial<Database>): Database {
   }
 }
 
-/** Schema 4 adds an opt-in toolbar affordance; existing readers keep their previous layout. */
-function migrateV3(value: Partial<Database>): MigrationResult {
+/** Schema 5 makes the contextual PDF hand tool opt-in, preserving the former arrow behavior. */
+function migrateV4(value: Partial<Database>): MigrationResult {
   return {
-    database: normalizeV4({
+    database: normalizeV5({
       ...value,
       schemaVersion,
-      settings: { ...defaultSettings(), ...value.settings, showPDFZoomControls: false }
+      settings: { ...defaultSettings(), ...value.settings, pdfHandToolEnabled: false }
     }),
     legacyWritings: []
   }
+}
+
+/** Schema 4 adds an opt-in toolbar affordance; existing readers keep their previous layout. */
+function migrateV3(value: Partial<Database>): MigrationResult {
+  return migrateV4({
+    ...value,
+    schemaVersion: 4,
+    settings: { ...defaultSettings(), ...value.settings, showPDFZoomControls: false }
+  })
 }
 
 /** Schema 1 and 2 kept file names on the paper and one provider in settings. */

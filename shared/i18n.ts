@@ -47,6 +47,9 @@ const extraZhHans: Record<string, string> = {
   'Reader Controls': '阅读器控制',
   'Show PDF zoom buttons': '显示 PDF 缩放按钮',
   'Adds zoom-out and zoom-in buttons to the PDF reader toolbar.': '在 PDF 阅读器工具栏中添加缩小和放大按钮。',
+  'Enable PDF hand tool': '启用 PDF 手形工具',
+  'Drag to pan over images and blank areas; selectable text keeps the text-selection cursor. When disabled, non-text areas use the standard arrow cursor.':
+    '在图片和空白区域拖动以平移；可选文字仍使用划词光标。关闭后，非文字区域使用原来的箭头光标。',
   'Zoom Out': '缩小',
   'Zoom In': '放大'
 }

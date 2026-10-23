@@ -28,6 +28,7 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
   onAnnotationState?: (state: AnnotationState) => void
   onRequestTextNote?: (side: DualSide, pageIndex: number, point: { x: number; y: number }) => void
   onLinkActivated?: (url: string) => void
+  handToolEnabled?: boolean
 }>(function DualPdfView(props, ref) {
   const originalRef = useRef<PdfViewHandle>(null)
   const translatedRef = useRef<PdfViewHandle>(null)
@@ -123,6 +124,7 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
           label={props.original.label}
           automaticScaling
           scalingRestoreToken={scalingRestoreToken}
+          handToolEnabled={props.handToolEnabled}
         />
       </div>
       <div className="dual-divider" onPointerDown={beginResize} role="separator" aria-orientation="vertical" />
@@ -151,6 +153,7 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
           maxPage={props.translated.maxPage}
           automaticScaling
           scalingRestoreToken={scalingRestoreToken}
+          handToolEnabled={props.handToolEnabled}
         />
       </div>
     </div>
