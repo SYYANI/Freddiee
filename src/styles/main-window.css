@@ -1,11 +1,10 @@
 /* MARK: Columns */
 
 .main-window {
-  --sidebar-inset: 8px;
   --sidebar-transition: 0.28s cubic-bezier(0.32, 0.72, 0, 1);
   --leading-toolbar-left: 102px;
   --leading-toolbar-width: 130px;
-  --reader-left: calc(var(--sidebar-width) + var(--sidebar-inset));
+  --reader-left: var(--sidebar-width);
   position: relative;
   width: 100%;
   height: 100%;
@@ -15,27 +14,10 @@
   --reader-left: 0px;
 }
 
-/* The reader surface fills the gutter around the floating sidebar, so no seam shows at the
-   reader's edge, while the sidebar itself stays clear down to the window material. The
-   spread shadow's inner edge follows the sidebar's corners; the clip squares off its outside
-   and stops it at the reader, which already paints the same surface. */
-.main-window::before {
-  content: '';
-  position: absolute;
-  top: var(--sidebar-inset);
-  bottom: var(--sidebar-inset);
-  left: var(--sidebar-inset);
-  width: var(--sidebar-width);
-  border-radius: max(calc(var(--window-radius) - var(--sidebar-inset)), 4px);
-  box-shadow: 0 0 0 calc(2 * var(--window-radius)) var(--reader-bg);
-  /* The reader begins at the sidebar's right edge, so only the other three sides have a gutter. */
-  clip-path: inset(calc(-1 * var(--sidebar-inset)) 0 calc(-1 * var(--sidebar-inset)) calc(-1 * var(--sidebar-inset)));
-  pointer-events: none;
-  transition: opacity var(--sidebar-transition);
-}
-
-.main-window.sidebar-hidden::before {
-  opacity: 0;
+/* Without traffic lights the leading buttons start at the window edge; the caption buttons sit on the right. */
+html[data-platform="win32"] .main-window,
+html[data-platform="linux"] .main-window {
+  --leading-toolbar-left: 12px;
 }
 
 .reader-column {
@@ -79,27 +61,22 @@
 
 .sidebar {
   position: absolute;
-  top: var(--sidebar-inset);
-  bottom: var(--sidebar-inset);
-  left: var(--sidebar-inset);
+  top: 0;
+  bottom: 0;
+  left: 0;
   width: var(--sidebar-width);
   z-index: 20;
   display: flex;
   flex-direction: column;
-  border-radius: max(calc(var(--window-radius) - var(--sidebar-inset)), 4px);
-  background: var(--sidebar-bg);
-  box-shadow:
-    inset 0 1px 0 var(--sidebar-rim),
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.45),
-    0 0 0 0.5px var(--sidebar-border),
-    0 1px 2px rgba(0, 0, 0, 0.05),
-    0 12px 32px rgba(0, 0, 0, 0.1);
+  /* A flat column flush with the window edge, faintly cooler toward the top, divided from the reader by a hairline. */
+  background: linear-gradient(180deg, var(--sidebar-tint), transparent 22%), var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
   overflow: hidden;
   transition: transform var(--sidebar-transition), visibility 0s;
 }
 
 .sidebar-hidden .sidebar {
-  transform: translateX(calc(-100% - 2 * var(--sidebar-inset)));
+  transform: translateX(-100%);
   visibility: hidden;
   transition: transform var(--sidebar-transition), visibility 0s 0.28s;
 }
@@ -133,43 +110,24 @@ body.resizing-columns .reader-toolbar {
   -webkit-backdrop-filter: none;
 }
 
-/* Specular edge: brighter along the top-left, fading toward the bottom-right. */
-.sidebar::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.15) 40%, rgba(255, 255, 255, 0.05) 70%, rgba(255, 255, 255, 0.4));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
 html[data-appearance="paper"] .sidebar {
   background-image: var(--paper-grain);
 }
 
-html[data-appearance="paper"] .sidebar::after,
-html[data-platform="linux"] .sidebar::after {
-  display: none;
-}
-
 .sidebar-toolbar {
   flex: none;
-  height: calc(var(--toolbar-height) - var(--sidebar-inset));
+  height: var(--toolbar-height);
 }
 
 .sidebar-list {
   flex: 1 1 auto;
   overflow-y: auto;
-  padding: 2px 10px 10px;
+  padding: 0 14px 12px;
   outline: none;
 }
 
 .sidebar-section + .sidebar-section {
-  margin-top: 8px;
+  margin-top: 14px;
 }
 
 .section-header {
@@ -177,12 +135,12 @@ html[data-platform="linux"] .sidebar::after {
   display: flex;
   align-items: center;
   gap: 6px;
-  height: 28px;
-  padding: 0 6px 0 5px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(0, 0, 0, 0.42);
+  height: 32px;
+  padding: 0 8px 0 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .section-title {
@@ -223,13 +181,18 @@ html[data-platform="linux"] .sidebar::after {
 }
 
 .paper-row {
-  padding: 7px 8px 7px 6px;
-  border-radius: 9px;
+  padding: 9px 10px;
+  border-radius: 10px;
   outline: none;
+  transition: background-color 0.12s;
 }
 
 .paper-row + .paper-row {
   margin-top: 2px;
+}
+
+.paper-row:hover {
+  background: var(--fill);
 }
 
 .paper-row.selected {
@@ -237,7 +200,7 @@ html[data-platform="linux"] .sidebar::after {
 }
 
 .sidebar-list:focus-within .paper-row.selected {
-  background: rgba(0, 0, 0, 0.12);
+  background: var(--fill-strong);
 }
 
 .paper-title {
@@ -245,9 +208,9 @@ html[data-platform="linux"] .sidebar::after {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-size: 13px;
-  line-height: 16px;
-  font-weight: 650;
+  font-size: 13.5px;
+  line-height: 18px;
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
 
@@ -316,9 +279,8 @@ html[data-appearance="paper"] .paper-title {
   display: flex;
   align-items: center;
   gap: 6px;
-  height: 32px;
-  padding: 0 10px;
-  border-top: 0.5px solid var(--separator);
+  height: 48px;
+  padding: 0 16px;
 }
 
 .filter-button,

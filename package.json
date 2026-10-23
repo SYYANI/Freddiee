@@ -15,7 +15,7 @@
     "test:watch": "vitest",
     "package": "npm run build && electron-builder",
     "package:mac": "npm run build && electron-builder --mac",
-    "package:win": "npm run build && electron-builder --win",
+    "package:win": "node scripts/install-native-targets.mjs win32 x64 && npm run build && electron-builder --win --x64",
     "package:linux": "npm run build && electron-builder --linux",
     "postinstall": "node scripts/patch-dev-electron-name.mjs"
   },

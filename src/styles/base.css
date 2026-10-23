@@ -31,9 +31,9 @@
    * the material enough to keep text legible.
    */
   --window-bg: transparent;
-  --sidebar-bg: rgba(255, 255, 255, 0.08);
-  --sidebar-border: rgba(0, 0, 0, 0.08);
-  --sidebar-rim: rgba(255, 255, 255, 0.75);
+  --sidebar-bg: rgba(228, 229, 233, 0.55);
+  --sidebar-tint: rgba(214, 220, 238, 0.5);
+  --sidebar-border: rgba(0, 0, 0, 0.07);
   --reader-bg: rgba(255, 255, 255, 0.4);
   --inspector-bg: rgba(255, 255, 255, 0.24);
   --glass-bg: rgba(255, 255, 255, 0.78);
@@ -60,7 +60,8 @@
 /* Without a native window material the surfaces are opaque. */
 html[data-platform="linux"] {
   --window-bg: #e9ecef;
-  --sidebar-bg: #eef1f4;
+  --sidebar-bg: #e8e9ec;
+  --sidebar-tint: #e1e4ee;
   --reader-bg: #fbfbfc;
   --inspector-bg: #f6f7f8;
   --glass-bg: rgba(255, 255, 255, 0.92);
@@ -68,7 +69,8 @@ html[data-platform="linux"] {
 
 html[data-platform="win32"] {
   --window-radius: 8px;
-  --sidebar-bg: rgba(243, 245, 247, 0.78);
+  --sidebar-bg: rgba(232, 233, 236, 0.82);
+  --sidebar-tint: rgba(220, 225, 240, 0.6);
   --reader-bg: rgba(255, 255, 255, 0.86);
   --inspector-bg: rgba(248, 249, 250, 0.92);
 }
@@ -77,6 +79,7 @@ html[data-platform="win32"] {
 html[data-appearance="paper"] {
   --window-bg: #f6f2e7;
   --sidebar-bg: #eae8e1;
+  --sidebar-tint: transparent;
   --sidebar-border: rgba(85, 75, 59, 0.12);
   --reader-bg: #f6f2e7;
   --inspector-bg: #f1ede4;
