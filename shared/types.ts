@@ -334,10 +334,23 @@ export interface ProviderTestResult {
   elapsedMs?: number
 }
 
+export interface LatexExecutableStatus {
+  name: string
+  isAvailable: boolean
+}
+
+export interface LatexInstallationStatus {
+  directory: string
+  executables: LatexExecutableStatus[]
+  healthy: boolean
+}
+
 export interface LatexToolchainStatus {
   latexmkPath?: string
   xelatexPath?: string
   automaticDirectory?: string
+  active?: LatexInstallationStatus
+  installations: LatexInstallationStatus[]
   healthy: boolean
   detail?: string
 }

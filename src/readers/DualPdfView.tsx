@@ -1,14 +1,15 @@
-import { forwardRef, useCallback, useImperativeHandle, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
+import { forwardRef, useCallback, useImperativeHandle, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import type { NoteSelectionContext } from '../../shared/types'
 import { PdfView, type AnnotationState, type AnnotationTool, type PdfViewHandle } from './PdfView'
 import type { FindRequest, FindStatus } from './find'
+import { clampedSplitFraction } from './pdfScaling'
 
 export type DualSide = 'original' | 'translated'
 
 /**
  * The original and translated PDFs side by side. Only the pane the reader scrolls leads; the
  * other follows to the same place within the page, so differently scaled panes never pull
- * each other back and forth.
+ * each other back and forth. Both panes fit their width until the reader zooms one.
  */
 export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
   paperId: string
@@ -34,7 +35,21 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
   const following = useRef(false)
   const lastActive = useRef<DualSide>('original')
   const [split, setSplit] = useState(0.5)
+  const [scalingRestoreToken, setScalingRestoreToken] = useState(0)
   const container = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(0)
+
+  useLayoutEffect(() => {
+    const element = container.current
+    if (!element) return
+    const observer = new ResizeObserver(() => setWidth(element.clientWidth))
+    observer.observe(element)
+    setWidth(element.clientWidth)
+    return () => observer.disconnect()
+  }, [])
+
+  // The divider column is one pixel wide; both panes keep at least the native minimum width.
+  const fraction = clampedSplitFraction(split, width - 1)
 
   useImperativeHandle(ref, () => ({
     active: () => (lastActive.current === 'translated' ? translatedRef.current : originalRef.current)
@@ -55,11 +70,17 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
     })
   }, [])
 
+  // The divider follows the drag from where it was grabbed. Starting a drag lets a pane zoomed
+  // close to its fitted scale fit its width again, so it keeps fitting while the panes resize.
   const beginResize = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (event.button !== 0) return
     event.preventDefault()
-    const box = container.current?.getBoundingClientRect()
-    if (!box) return
-    const move = (pointer: PointerEvent): void => setSplit(Math.min(0.8, Math.max(0.2, (pointer.clientX - box.left) / box.width)))
+    const available = (container.current?.clientWidth ?? 0) - 1
+    if (available <= 0) return
+    const startX = event.clientX
+    const startWidth = available * clampedSplitFraction(split, available)
+    setScalingRestoreToken((token) => token + 1)
+    const move = (pointer: PointerEvent): void => setSplit(clampedSplitFraction((startWidth + pointer.clientX - startX) / available, available))
     const stop = (): void => {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', stop)
@@ -77,7 +98,7 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
   }
 
   return (
-    <div ref={container} className="dual-pdf" style={{ gridTemplateColumns: `${split}fr 1px ${1 - split}fr` }}>
+    <div ref={container} className="dual-pdf" style={{ gridTemplateColumns: `${fraction}fr 1px ${1 - fraction}fr` }}>
       <div className="dual-pane" onPointerDown={() => { lastActive.current = 'original' }}>
         <PdfView
           ref={originalRef}
@@ -100,6 +121,8 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
           onUserScroll={() => follow('original')}
           onLinkActivated={props.onLinkActivated}
           label={props.original.label}
+          automaticScaling
+          scalingRestoreToken={scalingRestoreToken}
         />
       </div>
       <div className="dual-divider" onPointerDown={beginResize} role="separator" aria-orientation="vertical" />
@@ -126,6 +149,8 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
           onLinkActivated={props.onLinkActivated}
           label={props.translated.label}
           maxPage={props.translated.maxPage}
+          automaticScaling
+          scalingRestoreToken={scalingRestoreToken}
         />
       </div>
     </div>

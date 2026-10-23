@@ -4,6 +4,7 @@ import type { Note, NoteSelectionContext, PdfAnnotation } from '../../shared/typ
 import { openDocument, pageTexts, pdfjs } from './pdfjs'
 import { buildMatcher, type FindRequest, type FindStatus } from './find'
 import { SidenoteRail } from './SidenoteRail'
+import { clampScale, fittedScale, pageSideMargin, resolvedScale, shouldRestoreAutomaticScaling, wheelZoomFactor, type PdfScaling } from './pdfScaling'
 
 export type AnnotationMode = 'browse' | 'ink' | 'textNote' | 'erase'
 
@@ -39,7 +40,6 @@ interface PageSize {
 }
 
 const pageGap = 10
-const sideMargin = 8
 const railWidth = 280
 const minimumReaderWidth = 480
 
@@ -67,6 +67,25 @@ export interface PdfViewProps {
   label?: ReactNode
   /** The last page a partial translation covers; later pages are shown as missing. */
   maxPage?: number
+  /** Fit pages to the pane's width until the reader zooms, like the native dual-pane reader. */
+  automaticScaling?: boolean
+  /** Each change returns a zoomed pane to fitting when its scale is close to the fitted one. */
+  scalingRestoreToken?: number
+}
+
+function pageIndexAt(tops: number[], count: number, offset: number): number {
+  let low = 0
+  let high = count - 1
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2)
+    if (tops[mid] <= offset) low = mid
+    else high = mid - 1
+  }
+  return Math.max(0, low)
+}
+
+function pageLeft(pageWidth: number, readerWidth: number): number {
+  return Math.max(pageSideMargin, (readerWidth - pageWidth) / 2)
 }
 
 export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(props, ref) {
@@ -75,7 +94,8 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
   const [document, setDocument] = useState<PDFDocumentProxy>()
   const [sizes, setSizes] = useState<PageSize[]>([])
   const [containerWidth, setContainerWidth] = useState(0)
-  const [zoom, setZoom] = useState(1)
+  const initialScaling = (): PdfScaling => (props.automaticScaling ? { mode: 'fit' } : { mode: 'manual', scale: 1 })
+  const [scaling, setScaling] = useState<PdfScaling>(initialScaling)
   const [visible, setVisible] = useState<[number, number]>([0, 2])
   const [error, setError] = useState<string>()
   const currentPage = useRef(props.pageIndex)
@@ -91,7 +111,6 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     setDocument(undefined)
     setSizes([])
     setError(undefined)
-    setZoom(1)
     texts.current = undefined
     const handle = openDocument(url)
     let cancelled = false
@@ -134,11 +153,30 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     return () => observer.disconnect()
   }, [])
 
+  // Another document starts over; reloading the same one, such as a translation update, keeps the zoom.
+  const scaledAttachment = useRef(attachmentId)
+  useEffect(() => {
+    if (scaledAttachment.current === attachmentId) return
+    scaledAttachment.current = attachmentId
+    setScaling(initialScaling())
+  }, [attachmentId])
+
   const showsRail = Boolean(props.sidenotes?.length) && containerWidth >= railWidth + minimumReaderWidth
   const readerWidth = containerWidth - (showsRail ? railWidth : 0)
-  // Match the native reader's “Actual Size”: one PDF point maps to one CSS pixel.
-  // Opening or switching documents resets `zoom` to 1 instead of fitting the page to the pane.
-  const scale = Math.max(0.2, zoom)
+  const widestPage = useMemo(() => sizes.reduce((widest, size) => Math.max(widest, size.width), 0), [sizes])
+  const fitted = fittedScale(readerWidth, widestPage)
+  // A single reader opens at the native “Actual Size”, one PDF point per CSS pixel; a dual pane fits its width.
+  const scale = resolvedScale(scaling, fitted)
+  const scaleRef = useRef(scale)
+  scaleRef.current = scale
+
+  const restoreToken = useRef(props.scalingRestoreToken)
+  useEffect(() => {
+    if (restoreToken.current === props.scalingRestoreToken) return
+    restoreToken.current = props.scalingRestoreToken
+    if (!props.automaticScaling) return
+    setScaling((current) => (current.mode === 'manual' && shouldRestoreAutomaticScaling(current.scale, fitted) ? { mode: 'fit' } : current))
+  }, [props.scalingRestoreToken])
 
   const tops = useMemo(() => {
     const result: number[] = []
@@ -151,16 +189,13 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     return result
   }, [sizes, scale])
 
-  const pageAt = useCallback((offset: number): number => {
-    let low = 0
-    let high = sizes.length - 1
-    while (low < high) {
-      const mid = Math.ceil((low + high) / 2)
-      if (tops[mid] <= offset) low = mid
-      else high = mid - 1
-    }
-    return Math.max(0, low)
-  }, [sizes.length, tops])
+  const pageAt = useCallback((offset: number): number => pageIndexAt(tops, sizes.length, offset), [sizes.length, tops])
+
+  // The last scroll position the reader saw; layout changes may clamp `scrollTop` before effects run.
+  const scrollPosition = useRef({ top: 0, left: 0 })
+  const rememberScrollPosition = (element: HTMLElement): void => {
+    scrollPosition.current = { top: element.scrollTop, left: element.scrollLeft }
+  }
 
   const scrollToPage = useCallback((pageIndex: number, fraction = 0) => {
     const element = scroller.current
@@ -168,6 +203,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     const index = Math.min(Math.max(pageIndex, 0), sizes.length - 1)
     programmatic.current += 1
     element.scrollTop = tops[index] + sizes[index].height * scale * fraction - (fraction === 0 ? pageGap : element.clientHeight / 2)
+    rememberScrollPosition(element)
     requestAnimationFrame(() => {
       programmatic.current = Math.max(0, programmatic.current - 1)
     })
@@ -202,41 +238,57 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     }
   }, [props.pageIndex, sizes.length, containerWidth, url])
 
-  // Keep the same place on the page when the scale changes.
-  const lastScale = useRef(scale)
+  // Keep the same place on the page when the scale changes: the point under the pointer while
+  // zooming, otherwise the top of the view.
+  const committedLayout = useRef({ scale, sizes, tops, readerWidth })
+  const zoomFocus = useRef<{ x: number; y: number } | null>(null)
   useLayoutEffect(() => {
     const element = scroller.current
-    if (!element || lastScale.current === scale || !sizes.length) {
-      lastScale.current = scale
-      return
-    }
-    const ratio = scale / lastScale.current
-    lastScale.current = scale
+    const previous = committedLayout.current
+    committedLayout.current = { scale, sizes, tops, readerWidth }
+    const focus = zoomFocus.current
+    zoomFocus.current = null
+    if (!element || !sizes.length || previous.sizes !== sizes || previous.scale === scale) return
+    const viewX = focus?.x ?? element.clientWidth / 2
+    const viewY = focus?.y ?? 0
+    const { top, left } = scrollPosition.current
+    const index = pageIndexAt(previous.tops, sizes.length, top + viewY)
+    const size = sizes[index]
+    const fractionY = (top + viewY - previous.tops[index]) / (size.height * previous.scale)
+    const fractionX = (left + viewX - pageLeft(size.width * previous.scale, previous.readerWidth)) / (size.width * previous.scale)
     programmatic.current += 1
-    element.scrollTop = element.scrollTop * ratio
+    element.scrollTop = tops[index] + fractionY * size.height * scale - viewY
+    element.scrollLeft = pageLeft(size.width * scale, readerWidth) + fractionX * size.width * scale - viewX
+    rememberScrollPosition(element)
     requestAnimationFrame(() => {
       programmatic.current = Math.max(0, programmatic.current - 1)
     })
     updateVisible()
-  }, [scale])
+  }, [scale, sizes, tops, readerWidth])
 
   useEffect(() => {
     updateVisible()
   }, [tops])
 
   const onScroll = (): void => {
+    if (scroller.current) rememberScrollPosition(scroller.current)
     updateVisible()
     if (programmatic.current === 0) props.onUserScroll?.()
   }
 
-  // Zoom with pinch or Command/Control and the wheel.
+  // Zoom around the pointer with pinch or Command/Control and the wheel; zooming stops fitting the width.
   useEffect(() => {
     const element = scroller.current
     if (!element) return
     const wheel = (event: WheelEvent): void => {
       if (!event.ctrlKey && !event.metaKey) return
       event.preventDefault()
-      setZoom((value) => Math.min(4, Math.max(0.5, value * Math.exp(-event.deltaY / 300))))
+      const next = clampScale(scaleRef.current * wheelZoomFactor(event))
+      if (next === scaleRef.current) return
+      const box = element.getBoundingClientRect()
+      zoomFocus.current = { x: event.clientX - box.left, y: event.clientY - box.top }
+      scaleRef.current = next
+      setScaling({ mode: 'manual', scale: next })
     }
     element.addEventListener('wheel', wheel, { passive: false })
     return () => element.removeEventListener('wheel', wheel)
@@ -542,7 +594,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     <div className={`pdf-view appearance-${appearance}`}>
       <div ref={scroller} className="pdf-scroller" onScroll={onScroll}>
         {error && <div className="pdf-error">{error}</div>}
-        <div className="pdf-canvas-area" style={{ height: totalHeight, width: showsRail ? readerWidth : '100%' }}>
+        <div className="pdf-canvas-area" style={{ height: totalHeight, width: showsRail ? readerWidth : Math.max(readerWidth, Math.round(widestPage * scale + 2 * pageSideMargin)) }}>
           {document && sizes.map((size, index) => {
             const isVisible = index >= visible[0] && index <= visible[1]
             return (
@@ -553,7 +605,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
                 size={size}
                 scale={scale}
                 top={tops[index]}
-                left={Math.max(sideMargin, (readerWidth - size.width * scale) / 2)}
+                left={pageLeft(size.width * scale, readerWidth)}
                 visible={isVisible}
                 missing={props.maxPage !== undefined && index >= props.maxPage}
                 annotations={annotations.filter((annotation) => annotation.pageIndex === index)}
@@ -620,16 +672,21 @@ const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left,
       if (cancelled || !canvasRef.current || !textLayerRef.current) return
       const viewport = page.getViewport({ scale })
       const ratio = Math.min(window.devicePixelRatio || 1, 3)
-      const canvas = canvasRef.current
-      canvas.width = Math.floor(viewport.width * ratio)
-      canvas.height = Math.floor(viewport.height * ratio)
-      renderTask = page.render({ canvas, viewport, transform: ratio !== 1 ? [ratio, 0, 0, ratio, 0, 0] : undefined })
+      // Render off screen so a rescaled page keeps showing its stretched image instead of going blank.
+      const offscreen = window.document.createElement('canvas')
+      offscreen.width = Math.floor(viewport.width * ratio)
+      offscreen.height = Math.floor(viewport.height * ratio)
+      renderTask = page.render({ canvas: offscreen, viewport, transform: ratio !== 1 ? [ratio, 0, 0, ratio, 0, 0] : undefined })
       try {
         await renderTask.promise
       } catch {
         return
       }
-      if (cancelled) return
+      const canvas = canvasRef.current
+      if (cancelled || !canvas || !textLayerRef.current) return
+      canvas.width = offscreen.width
+      canvas.height = offscreen.height
+      canvas.getContext('2d')?.drawImage(offscreen, 0, 0)
       const container = textLayerRef.current
       container.replaceChildren()
       container.style.setProperty('--total-scale-factor', String(scale))

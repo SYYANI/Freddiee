@@ -1,7 +1,6 @@
 import electron from 'electron'
 import type { BrowserWindowConstructorOptions, IpcMainInvokeEvent, MenuItemConstructorOptions, WebContents } from 'electron'
 import { access, readFile, rm, writeFile } from 'node:fs/promises'
-import { constants } from 'node:fs'
 import { delimiter, join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type {
@@ -41,6 +40,7 @@ import { WritingStore } from './writings'
 import { importNativeLibrary, nativeLibraryExists } from './nativeLibrary'
 import { applyLiquidGlass, applyUnifiedToolbar, supportsLiquidGlass } from './windowChrome'
 import { applyHiddenRegions, readableProseColorCSS, readableProseLayoutCSS } from './localizer'
+import { detectLatexToolchainStatus } from './latexToolchain'
 import * as cheerio from 'cheerio'
 
 const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, net, protocol, shell, systemPreferences } = electron
@@ -863,23 +863,6 @@ async function exportHTMLAsPDF(sender: WebContents, paperId: string, displayMode
   }
 }
 
-async function findExecutable(name: string, directories: string[]): Promise<string | undefined> {
-  // TeX tools are started without a shell, which cannot run .bat or .cmd scripts on Windows.
-  const extensions = isWindows ? ['.exe'] : ['']
-  for (const directory of directories) {
-    for (const extension of extensions) {
-      const candidate = join(directory, name + extension)
-      try {
-        await access(candidate, constants.X_OK)
-        return candidate
-      } catch {
-        // Keep looking.
-      }
-    }
-  }
-  return undefined
-}
-
 async function latexStatus() {
   const manual = store.database.settings.latexToolchainDirectory
   const texLiveYears = [2026, 2025, 2024]
@@ -893,19 +876,13 @@ async function latexStatus() {
         ]
       : ['/usr/bin', '/usr/local/bin', ...texLiveYears.map((year) => `/usr/local/texlive/${year}/bin/x86_64-linux`)]
   const pathDirectories = (process.env.PATH ?? process.env.Path ?? '').split(delimiter).filter(Boolean)
-  const automaticLatexmk = await findExecutable('latexmk', [...pathDirectories, ...common])
-  const latexmkPath = manual ? await findExecutable('latexmk', [manual]) : automaticLatexmk
-  const directory = latexmkPath ? join(latexmkPath, '..') : undefined
-  // Scanned PDF translation needs only XeLaTeX, which a distribution without latexmk may still have.
-  const xelatexPath = manual
-    ? await findExecutable('xelatex', [manual])
-    : (directory ? await findExecutable('xelatex', [directory]) : undefined) ?? await findExecutable('xelatex', [...pathDirectories, ...common])
+  const status = await detectLatexToolchainStatus({
+    manualDirectory: manual,
+    searchDirectories: [...pathDirectories, ...common]
+  })
   return {
-    latexmkPath,
-    xelatexPath,
-    automaticDirectory: automaticLatexmk ? join(automaticLatexmk, '..') : undefined,
-    healthy: Boolean(latexmkPath && xelatexPath),
-    detail: latexmkPath ? undefined : manual ? translator('The selected folder does not contain latexmk.') : undefined
+    ...status,
+    detail: status.latexmkPath ? undefined : manual ? translator('The selected folder does not contain latexmk.') : undefined
   }
 }
 

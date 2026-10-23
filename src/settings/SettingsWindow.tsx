@@ -331,7 +331,14 @@ function LatexTab(): JSX.Element {
       </FormSection>
       <FormSection title={t('LaTeX Installation')}>
         <FormRow label={t('Toolchain directory')} help={t("Automatic detection checks the app's PATH and common MacTeX, Homebrew, and /usr/local locations. A manually selected directory takes precedence and must contain an executable latexmk.")}>
-          <span className="secondary truncate">{settings.latexToolchainDirectory ?? (status?.automaticDirectory ? t('Automatic (%@)', status.automaticDirectory) : t('Automatic (not found)'))}</span>
+          <MenuPicker
+            value={settings.latexToolchainDirectory ?? ''}
+            onChange={(value) => save({ latexToolchainDirectory: value || undefined })}
+            options={[
+              { value: '', title: status?.automaticDirectory ? t('Automatic (%@)', status.automaticDirectory) : t('Automatic (not found)') },
+              ...(status?.installations ?? []).map((installation) => ({ value: installation.directory, title: installation.directory }))
+            ]}
+          />
         </FormRow>
         <FormRow>
           <div className="button-row">
@@ -343,15 +350,15 @@ function LatexTab(): JSX.Element {
       </FormSection>
       <FormSection title={t('Current LaTeX Toolchain')}>
         <FormRow label={t('Location on Disk')}>
-          <span className={status?.latexmkPath ? 'selectable truncate' : 'secondary'}>{status?.latexmkPath ? status.latexmkPath.replace(/[\\/][^\\/]+$/, '') : t('Not found')}</span>
+          <span className={status?.active ? 'selectable truncate' : 'secondary'}>{status?.active?.directory ?? t('Not found')}</span>
         </FormRow>
-        {status?.latexmkPath ? (
+        {status?.active ? (
           <>
-            <FormRow><span className={`inline-icon ${status.healthy ? 'green' : 'red'}`}><Icon name={status.healthy ? 'checkmark.circle.fill' : 'xmark.circle.fill'} size={14} />{status.healthy ? t('Basic health check passed') : t('Basic health check failed')}</span></FormRow>
-            <FormRow>
+            <FormRow stacked><span className={`inline-icon ${status.healthy ? 'green' : 'red'}`}><Icon name={status.healthy ? 'checkmark.circle.fill' : 'xmark.circle.fill'} size={14} />{status.healthy ? t('Basic health check passed') : t('Basic health check failed')}</span></FormRow>
+            <FormRow stacked>
               <div className="executables">
-                {[['latexmk', status.latexmkPath], ['xelatex', status.xelatexPath]].map(([name, path]) => (
-                  <span key={name} className={`inline-icon ${path ? 'green' : 'secondary'}`}><Icon name={path ? 'checkmark.circle.fill' : 'xmark.circle.fill'} size={13} />{name}</span>
+                {status.active.executables.map(({ name, isAvailable }) => (
+                  <span key={name} className={`inline-icon ${isAvailable ? 'green' : 'secondary'}`}><Icon name={isAvailable ? 'checkmark.circle.fill' : 'xmark.circle'} size={13} />{name}</span>
                 ))}
               </div>
             </FormRow>

@@ -334,9 +334,10 @@ html[data-appearance="paper"] .settings-tab.selected {
 }
 
 .executables {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  width: 100%;
 }
 
 /* MARK: Providers and models */
