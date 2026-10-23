@@ -31,7 +31,7 @@
    * the material enough to keep text legible.
    */
   --window-bg: transparent;
-  --sidebar-bg: linear-gradient(160deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.14));
+  --sidebar-bg: rgba(255, 255, 255, 0.08);
   --sidebar-border: rgba(0, 0, 0, 0.08);
   --sidebar-rim: rgba(255, 255, 255, 0.75);
   --reader-bg: rgba(255, 255, 255, 0.4);

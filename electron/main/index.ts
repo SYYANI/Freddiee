@@ -172,7 +172,8 @@ function baseWindowOptions(route: WindowRoute, material: WindowMaterial): Browse
     ...(isMac ? {
       transparent: true,
       vibrancy: material,
-      visualEffectState: 'followWindow' as const,
+      // Keep sampling the desktop while inactive instead of falling back to flat gray.
+      visualEffectState: 'active' as const,
       trafficLightPosition: { x: 18, y: 18 }
     } : {}),
     ...(!isMac ? { titleBarOverlay: { color: '#00000000', symbolColor: '#1d1d1f', height: 52 } } : {}),

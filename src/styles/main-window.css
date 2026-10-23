@@ -15,17 +15,27 @@
   --reader-left: 0px;
 }
 
-/* The reader surface continues beneath the floating sidebar, so no seam shows at its edge. */
+/* The reader surface fills the gutter around the floating sidebar, so no seam shows at the
+   reader's edge, while the sidebar itself stays clear down to the window material. The
+   spread shadow's inner edge follows the sidebar's corners; the clip squares off its outside
+   and stops it at the reader, which already paints the same surface. */
 .main-window::before {
   content: '';
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: var(--reader-left);
-  background: var(--reader-bg);
+  top: var(--sidebar-inset);
+  bottom: var(--sidebar-inset);
+  left: var(--sidebar-inset);
+  width: var(--sidebar-width);
+  border-radius: max(calc(var(--window-radius) - var(--sidebar-inset)), 4px);
+  box-shadow: 0 0 0 calc(2 * var(--window-radius)) var(--reader-bg);
+  /* The reader begins at the sidebar's right edge, so only the other three sides have a gutter. */
+  clip-path: inset(calc(-1 * var(--sidebar-inset)) 0 calc(-1 * var(--sidebar-inset)) calc(-1 * var(--sidebar-inset)));
   pointer-events: none;
-  transition: width var(--sidebar-transition);
+  transition: opacity var(--sidebar-transition);
+}
+
+.main-window.sidebar-hidden::before {
+  opacity: 0;
 }
 
 .reader-column {
@@ -94,7 +104,6 @@
   transition: transform var(--sidebar-transition), visibility 0s 0.28s;
 }
 
-body.resizing-columns .main-window::before,
 body.resizing-columns .reader-column,
 body.resizing-columns .reader-toolbar {
   transition: none;
