@@ -45,9 +45,8 @@ const extraZhHans: Record<string, string> = {
   // The native string names Finder.
   'Reveal Translated LaTeX Source': '显示 LaTeX 译稿源码',
   'Reader Controls': '阅读器控制',
-  'Show PDF hand and zoom controls': '显示 PDF 手形与缩放控件',
-  'Adds a hand tool and zoom buttons to the PDF reader toolbar.': '在 PDF 阅读器工具栏中添加手形工具和缩放按钮。',
-  'Hand Tool': '手形工具',
+  'Show PDF zoom buttons': '显示 PDF 缩放按钮',
+  'Adds zoom-out and zoom-in buttons to the PDF reader toolbar.': '在 PDF 阅读器工具栏中添加缩小和放大按钮。',
   'Zoom Out': '缩小',
   'Zoom In': '放大'
 }

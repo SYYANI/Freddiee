@@ -111,12 +111,6 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   const run = paper ? runs[paper.id] : undefined
   const isWorking = Boolean(run?.working)
 
-  useEffect(() => {
-    if (!settings.showPDFZoomControls) {
-      setTool((current) => current.mode === 'pan' ? { ...current, mode: 'browse' } : current)
-    }
-  }, [settings.showPDFZoomControls])
-
   // MARK: Reading state
 
   useEffect(() => {
@@ -346,17 +340,6 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   const setFontSize = (value: number): void => void window.freddie.settings.save({ htmlFontSize: Math.min(28, Math.max(13, Math.round(value))) })
 
   const activePdf = (): PdfViewHandle | null => readerMode === 'bilingualPDF' ? dualRef.current?.active() ?? null : pdfRef.current
-
-  const togglePan = (): void => {
-    const activating = tool.mode !== 'pan'
-    setTool({ ...tool, mode: activating ? 'pan' : 'browse' })
-    if (activating) {
-      window.getSelection()?.removeAllRanges()
-      props.onSelection(null)
-      assistantPinned.current = false
-      setAssistantSelection(null)
-    }
-  }
 
   const showToolsMenu = async (anchor: HTMLElement): Promise<void> => {
     if (readerMode === 'html') {
@@ -721,7 +704,6 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
               ) : null}
               {readerMode !== 'html' && settings.showPDFZoomControls ? (
                 <ToolbarGroup>
-                  <IconButton icon="hand.raised" size={18} active={tool.mode === 'pan'} label={t('Hand Tool')} onClick={togglePan} />
                   <IconButton icon="minus" size={18} label={t('Zoom Out')} onClick={() => (readerMode === 'bilingualPDF' ? dualRef.current?.active() : pdfRef.current)?.zoomOut()} />
                   <IconButton icon="plus" size={18} label={t('Zoom In')} onClick={() => (readerMode === 'bilingualPDF' ? dualRef.current?.active() : pdfRef.current)?.zoomIn()} />
                 </ToolbarGroup>
@@ -737,7 +719,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
                     onClick={() => setRegionEditing((value) => !value)}
                   />
                 ) : (
-                  <IconButton icon={tool.mode === 'browse' || tool.mode === 'pan' ? 'pencil.tip.crop.circle' : tool.mode === 'ink' ? 'pencil.tip' : tool.mode === 'textNote' ? 'note.text.badge.plus' : 'eraser'} size={19} label={t('PDF Annotations')} active={tool.mode !== 'browse' && tool.mode !== 'pan'} onClick={(event) => void showToolsMenu(event.currentTarget)} />
+                  <IconButton icon={tool.mode === 'browse' ? 'pencil.tip.crop.circle' : tool.mode === 'ink' ? 'pencil.tip' : tool.mode === 'textNote' ? 'note.text.badge.plus' : 'eraser'} size={19} label={t('PDF Annotations')} active={tool.mode !== 'browse'} onClick={(event) => void showToolsMenu(event.currentTarget)} />
                 )}
                 <IconButton icon="magnifyingglass" size={18} label={t('Find in Document')} disabled={!findAvailable} onClick={() => { setFindVisible(true); setFindFocus((value) => value + 1) }} />
                 <IconButton icon="plus.circle" size={18} label={props.selection ? t('Add Note to Current Selection') : t('Select text in PDF or HTML to attach a note.')} disabled={!props.selection} onClick={createNote} />

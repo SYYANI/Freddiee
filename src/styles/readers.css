@@ -17,16 +17,19 @@
   overscroll-behavior: contain;
 }
 
-.pdf-view.mode-pan .pdf-scroller,
-.pdf-view.mode-pan .pdf-scroller * {
-  cursor: grab !important;
-  user-select: none !important;
-  -webkit-user-select: none !important;
+.pdf-view.mode-browse .pdf-scroller {
+  cursor: grab;
 }
 
-.pdf-view.mode-pan.panning .pdf-scroller,
-.pdf-view.mode-pan.panning .pdf-scroller * {
+.pdf-view.mode-browse .sidenote-rail {
+  cursor: default;
+}
+
+.pdf-view.mode-browse.panning .pdf-scroller,
+.pdf-view.mode-browse.panning .pdf-scroller * {
   cursor: grabbing !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
 
 .pdf-canvas-area {

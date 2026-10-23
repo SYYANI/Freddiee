@@ -6,7 +6,7 @@ import { buildMatcher, type FindRequest, type FindStatus } from './find'
 import { SidenoteRail } from './SidenoteRail'
 import { clampScale, fittedScale, pageSideMargin, resolvedScale, shouldRestoreAutomaticScaling, wheelZoomFactor, type PdfScaling } from './pdfScaling'
 
-export type AnnotationMode = 'browse' | 'pan' | 'ink' | 'textNote' | 'erase'
+export type AnnotationMode = 'browse' | 'ink' | 'textNote' | 'erase'
 
 export interface AnnotationTool {
   mode: AnnotationMode
@@ -281,7 +281,12 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
   }
 
   const beginPan = (event: ReactPointerEvent<HTMLDivElement>): void => {
-    if (props.tool?.mode !== 'pan' || event.button !== 0) return
+    if ((props.tool?.mode ?? 'browse') !== 'browse' || event.button !== 0) return
+    const target = event.target
+    if (target instanceof Element && target.closest('.textLayer span, .textLayer br, .pdf-link, .annotation-note, .sidenote-rail, button, input, textarea, a')) return
+    const box = event.currentTarget.getBoundingClientRect()
+    // Keep native scrollbars draggable, especially on Windows where they are usually always visible.
+    if (event.clientX - box.left >= event.currentTarget.clientWidth || event.clientY - box.top >= event.currentTarget.clientHeight) return
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
     panDrag.current = {
@@ -647,12 +652,6 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
         onPointerMove={movePan}
         onPointerUp={endPan}
         onPointerCancel={endPan}
-        onClickCapture={(event) => {
-          if (props.tool?.mode === 'pan') {
-            event.preventDefault()
-            event.stopPropagation()
-          }
-        }}
       >
         {error && <div className="pdf-error">{error}</div>}
         <div className="pdf-canvas-area" style={{ height: totalHeight, width: showsRail ? readerWidth : Math.max(readerWidth, Math.round(widestPage * scale + 2 * pageSideMargin)) }}>

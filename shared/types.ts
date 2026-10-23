@@ -135,7 +135,7 @@ export interface AppSettings {
   translationGlossary: string
   htmlFontSize: number
   readerAppearance: ReaderAppearance
-  /** Shows explicit PDF navigation controls for devices without convenient touch gestures. */
+  /** Shows explicit PDF zoom controls for devices without convenient pinch gestures. */
   showPDFZoomControls: boolean
   /** The system dark-mode state the appearance was last synchronized with. */
   lastSynchronizedSystemDarkMode?: boolean

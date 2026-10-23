@@ -93,7 +93,7 @@ describe('FreddieStore', () => {
 })
 
 describe('migrateDatabase', () => {
-  it('adds disabled PDF navigation controls when migrating schema 3', () => {
+  it('adds disabled PDF zoom controls when migrating schema 3', () => {
     const { database } = migrateDatabase({ schemaVersion: 3, settings: { showPDFZoomControls: true } })
     expect(database.schemaVersion).toBe(schemaVersion)
     expect(database.settings.showPDFZoomControls).toBe(false)
