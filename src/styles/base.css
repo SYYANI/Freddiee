@@ -67,12 +67,14 @@ html[data-platform="linux"] {
   --glass-bg: rgba(255, 255, 255, 0.92);
 }
 
+/* Acrylic is much less refined than the macOS material; keep only a hint of it in the sidebar. */
 html[data-platform="win32"] {
   --window-radius: 8px;
-  --sidebar-bg: rgba(232, 233, 236, 0.82);
-  --sidebar-tint: rgba(220, 225, 240, 0.6);
-  --reader-bg: rgba(255, 255, 255, 0.86);
-  --inspector-bg: rgba(248, 249, 250, 0.92);
+  --sidebar-bg: rgba(232, 233, 236, 0.95);
+  --sidebar-tint: rgba(220, 225, 240, 0.5);
+  --reader-bg: #fbfbfc;
+  --inspector-bg: #f6f7f8;
+  --glass-bg: rgba(255, 255, 255, 0.92);
 }
 
 /* On macOS the native AppKit layer supplies the window material. */

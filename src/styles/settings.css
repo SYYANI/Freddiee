@@ -15,6 +15,11 @@ html[data-platform="darwin"]:not([data-appearance="paper"]) .settings-window {
   background: transparent;
 }
 
+/* Acrylic shows through poorly on Windows; give the window an opaque base. */
+html[data-platform="win32"]:not([data-appearance="paper"]) .settings-window {
+  background: #f6f7f8;
+}
+
 .settings-titlebar {
   flex: none;
   display: flex;
@@ -468,6 +473,11 @@ html[data-appearance="paper"] .about-window {
 
 html[data-platform="darwin"]:not([data-appearance="paper"]) .about-window {
   background: transparent;
+}
+
+/* Acrylic shows through poorly on Windows; give the window an opaque base. */
+html[data-platform="win32"]:not([data-appearance="paper"]) .about-window {
+  background: #f6f7f8;
 }
 
 .about-identity {
