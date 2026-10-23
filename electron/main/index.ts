@@ -613,7 +613,11 @@ function registerIpc(): void {
     const id = requireUUID(paperId)
     if (translations.isRunning(id)) throw new Error(translator('Translation in Progress'))
     const status = await latexStatus()
-    if (!status.xelatexPath) throw new Error(translator('Scanned PDF translation needs XeLaTeX. Install MacTeX, or choose its folder in Settings > LaTeX.'))
+    if (!status.xelatexPath) {
+      throw new Error(isMac
+        ? translator('Scanned PDF translation needs XeLaTeX. Install MacTeX, or choose its folder in Settings > LaTeX.')
+        : translator('Scanned PDF translation needs XeLaTeX. Install TeX Live or MiKTeX, or choose its folder in Settings > LaTeX.'))
+    }
     const last = Number.isInteger(lastPage) && lastPage! > 0 ? lastPage : undefined
     void translations.translateScannedPDF(id, status.xelatexPath, last)
   })
@@ -877,16 +881,24 @@ async function findExecutable(name: string, directories: string[]): Promise<stri
 
 async function latexStatus() {
   const manual = store.database.settings.latexToolchainDirectory
+  const texLiveYears = [2026, 2025, 2024]
   const common = isMac
     ? ['/Library/TeX/texbin', '/opt/homebrew/bin', '/usr/local/bin', '/usr/texbin']
     : isWindows
-      ? ['C:\\texlive\\2025\\bin\\windows', 'C:\\texlive\\2024\\bin\\windows', 'C:\\Program Files\\MiKTeX\\miktex\\bin\\x64']
-      : ['/usr/bin', '/usr/local/bin', '/usr/local/texlive/2025/bin/x86_64-linux', '/usr/local/texlive/2024/bin/x86_64-linux']
-  const pathDirectories = (process.env.PATH ?? '').split(delimiter).filter(Boolean)
+      ? [
+          ...texLiveYears.map((year) => `C:\\texlive\\${year}\\bin\\windows`),
+          'C:\\Program Files\\MiKTeX\\miktex\\bin\\x64',
+          ...(process.env.LOCALAPPDATA ? [join(process.env.LOCALAPPDATA, 'Programs', 'MiKTeX', 'miktex', 'bin', 'x64')] : [])
+        ]
+      : ['/usr/bin', '/usr/local/bin', ...texLiveYears.map((year) => `/usr/local/texlive/${year}/bin/x86_64-linux`)]
+  const pathDirectories = (process.env.PATH ?? process.env.Path ?? '').split(delimiter).filter(Boolean)
   const automaticLatexmk = await findExecutable('latexmk', [...pathDirectories, ...common])
   const latexmkPath = manual ? await findExecutable('latexmk', [manual]) : automaticLatexmk
   const directory = latexmkPath ? join(latexmkPath, '..') : undefined
-  const xelatexPath = directory ? await findExecutable('xelatex', [directory]) : undefined
+  // Scanned PDF translation needs only XeLaTeX, which a distribution without latexmk may still have.
+  const xelatexPath = manual
+    ? await findExecutable('xelatex', [manual])
+    : (directory ? await findExecutable('xelatex', [directory]) : undefined) ?? await findExecutable('xelatex', [...pathDirectories, ...common])
   return {
     latexmkPath,
     xelatexPath,

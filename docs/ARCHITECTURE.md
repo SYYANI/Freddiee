@@ -13,7 +13,7 @@ Electron main process
   ├─ localizer           Readability extraction, sanitizing, resource localization
   ├─ TranslationService  HTML segment pipeline, BabelDOC process, abstract translation
   ├─ LaTeX pipeline      secure arXiv source extraction, semantic hints, protected translation, XeLaTeX
-  ├─ Scan rebuild        PDF.js page rendering, vision transcription, checked LaTeX, XeLaTeX assembly
+  ├─ RebuildPDFKit       scanned PDFs: Tesseract measurement, vision transcription, review, translation, XeLaTeX
   ├─ AssistantService    retrieval, prompts, streaming answers, saved conversations
   ├─ AnnotationStore     PDF annotation overlays and annotated-PDF export
   ├─ WritingStore        Markdown writings in Writings/{id}
@@ -37,7 +37,7 @@ The windows match native Freddie's scenes. Each is the same renderer bundle open
 8. API keys remain in the main process and are encrypted by the operating system.
 9. The native-library import runs the system `sqlite3` with a read-only URI and copies files; it never writes to the native store.
 10. arXiv source extraction rejects traversal, links, special files, oversized archives, and excessive file counts. TeX subprocesses run without shell escape and with paranoid TeX input/output restrictions.
-11. Scanned-page model output is size-limited, structurally checked, and rejected if it contains file access, macro-definition, shell, or dynamic-control-sequence commands.
+11. Scanned-page model output is parsed as constrained `<page>` markup: environments are allow-listed and checked, and file access, macro definition, `^^` character codes, `\csname` and similar commands are rejected before XeLaTeX runs (without shell escape, with paranoid file access). Tesseract runs offline from the packaged English model.
 
 ## Persistence
 

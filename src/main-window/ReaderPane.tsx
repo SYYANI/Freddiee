@@ -451,7 +451,9 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
     const response = await messageBox({
       type: 'question',
       message: t('Translate Scanned PDF'),
-      detail: t('Page images go to the model chosen for scanned pages in Settings > Reader, which must accept images. Expect about a minute and 50,000 tokens per page (%d pages). Finished pages are saved, so running it again only pays for new pages. XeLaTeX (MacTeX) is required.', originalPageCount),
+      detail: window.freddie.platform === 'darwin'
+        ? t('Page images go to the model chosen for scanned pages in Settings > Reader, which must accept images. Expect about a minute and 50,000 tokens per page (%d pages). Finished pages are saved, so running it again only pays for new pages. XeLaTeX (MacTeX) is required.', originalPageCount)
+        : t('Page images go to the model chosen for scanned pages in Settings > Reader, which must accept images. Expect about a minute and 50,000 tokens per page (%d pages). Finished pages are saved, so running it again only pays for new pages. XeLaTeX (TeX Live or MiKTeX) is required.', originalPageCount),
       buttons: originalPageCount > batch ? [t('First %d Pages', batch), t('All Pages'), t('Cancel')] : [t('Translate'), t('Cancel')],
       defaultId: 0,
       cancelId: originalPageCount > batch ? 2 : 1

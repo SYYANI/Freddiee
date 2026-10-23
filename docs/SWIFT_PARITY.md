@@ -28,7 +28,7 @@
 ## Additional cross-platform pipelines
 
 - arXiv LaTeX translation lives in the top-level `LaTeXTransKit/` package, with secure archive extraction, protected-token translation, checkpoint-friendly source storage, XeLaTeX compilation, and translated-source export.
-- Scanned-PDF translation lives in the top-level `RebuildPDFKit/` package; it renders pages locally with PDF.js, uses the configured vision and PDF routes, validates constrained LaTeX, checkpoints each page, and assembles XeLaTeX output with original-page fallback.
+- Scanned-PDF translation lives in the top-level `RebuildPDFKit/` package, a TypeScript port of the Swift `RebuildPDFKit` checked against its Python-computed parity fixtures. Tesseract (tesseract.js) stands in for Apple Vision and PDF.js for CoreGraphics, so it runs on every platform; see `RebuildPDFKit/README.md`.
 - BabelDOC semantic hints are generated from cached arXiv source. Commands can consume the path through `{semanticHints}`; when omitted from a custom argument template, Freddie appends `--semantic-hints <path>`.
 
 ## Not yet ported

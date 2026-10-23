@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "test": "vitest run",
     "test:watch": "vitest",
+    "sync:rebuild": "node scripts/sync-rebuild-pdf.mjs",
     "package": "npm run build && electron-builder",
     "package:mac": "npm run build && electron-builder --mac",
     "package:win": "node scripts/install-native-targets.mjs win32 x64 && npm run build && electron-builder --win --x64",
@@ -28,6 +29,7 @@
     "@lezer/highlight": "^1.2.5",
     "@mozilla/readability": "^0.6.0",
     "@napi-rs/canvas": "^1.0.13",
+    "@tesseract.js-data/eng": "1.0.0",
     "cheerio": "^1.1.2",
     "fflate": "^0.8.3",
     "jsdom": "^25.0.1",
@@ -41,7 +43,8 @@
     "react-markdown": "^9.1.0",
     "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",
-    "remark-math": "^6.0.0"
+    "remark-math": "^6.0.0",
+    "tesseract.js": "7.0.0"
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",
@@ -68,7 +71,9 @@
     },
     "files": [
       "out/**/*",
-      "package.json"
+      "package.json",
+      "!node_modules/@tesseract.js-data/eng/4.0.0/**",
+      "!node_modules/tesseract.js-core/*-lstm.{js,wasm,wasm.js}"
     ],
     "mac": {
       "identity": "-",
@@ -105,7 +110,21 @@
       "node_modules/pdfjs-dist/standard_fonts/**",
       "node_modules/pdfjs-dist/cmaps/**",
       "node_modules/pdfjs-dist/wasm/**",
-      "node_modules/@napi-rs/canvas*/**"
+      "node_modules/@napi-rs/canvas*/**",
+      "node_modules/tesseract.js/**",
+      "node_modules/tesseract.js-core/**",
+      "node_modules/@tesseract.js-data/**",
+      "node_modules/bmp-js/**",
+      "node_modules/idb-keyval/**",
+      "node_modules/is-url/**",
+      "node_modules/node-fetch/**",
+      "node_modules/whatwg-url/**",
+      "node_modules/tr46/**",
+      "node_modules/punycode/**",
+      "node_modules/webidl-conversions/**",
+      "node_modules/regenerator-runtime/**",
+      "node_modules/wasm-feature-detect/**",
+      "node_modules/zlibjs/**"
     ]
   }
 }

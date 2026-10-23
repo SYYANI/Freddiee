@@ -21,6 +21,12 @@ const extraZhHans: Record<string, string> = {
   'LaTeX translation uses latexmk and XeLaTeX. Scanned PDF translation uses XeLaTeX and sends page images to the selected scanned-page model.':
     'LaTeX 翻译使用 latexmk 和 XeLaTeX。扫描版 PDF 翻译使用 XeLaTeX，并会把页面图像发送给所选的扫描页模型。',
   'TeX Live / MacTeX': 'TeX Live / MacTeX',
+  'Page images go to the model chosen for scanned pages in Settings > Reader, which must accept images. Expect about a minute and 50,000 tokens per page (%d pages). Finished pages are saved, so running it again only pays for new pages. XeLaTeX (TeX Live or MiKTeX) is required.':
+    '页面图像会发送给“设置 > 阅读器”中为扫描页选择的模型，该模型必须支持图像输入。每页大约需要 1 分钟、5 万 token（共 %1$d 页）。已完成的页面会保存，再次运行只为新页面计费。需要安装 XeLaTeX（TeX Live 或 MiKTeX）。',
+  'Scanned PDF translation needs XeLaTeX. Install TeX Live or MiKTeX, or choose its folder in Settings > LaTeX.':
+    '翻译扫描版 PDF 需要 XeLaTeX。请安装 TeX Live 或 MiKTeX，或在“设置 > LaTeX”中选择它所在的目录。',
+  'XeLaTeX is missing a package or font that scanned PDF translation needs. Install the full TeX Live, or add the package with tlmgr or the MiKTeX Console. %@':
+    'XeLaTeX 缺少翻译扫描版 PDF 所需的宏包或字体。请安装完整的 TeX Live，或用 tlmgr 或 MiKTeX Console 补装宏包。%1$@',
   'Download TeX Live': '下载 TeX Live',
   'Writing Window': '写作窗口',
   File: '文件',

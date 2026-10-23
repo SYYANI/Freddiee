@@ -6,7 +6,7 @@ import { parseArxivAtom } from '../electron/main/importer'
 import { parseResponse } from '../electron/main/llm'
 import { assistantMessages } from '../electron/main/assistant'
 import { extractSemanticDocument, protectLatex, restoreLatex } from '../LaTeXTransKit'
-import { validatePageMarkup } from '../RebuildPDFKit'
+import { FreddieRebuildModelClient, lastRebuiltPage } from '../RebuildPDFKit'
 
 describe('HTML translation pipeline', () => {
   const page = `<html><head></head><body class="rp-readability-body"><main><h2>Method</h2>
@@ -84,12 +84,20 @@ We prove $x^2$ using \cite{knuth} in this paragraph.
   })
 })
 
-describe('RebuildPDFKit port', () => {
-  it('accepts balanced page markup and rejects file access and definitions', () => {
-    expect(validatePageMarkup(String.raw`<page>\textbf{Title}\n\begin{align*}x&=1\end{align*}</page>`)).toContain('Title')
-    expect(validatePageMarkup(String.raw`\input{/etc/passwd}`)).toBeUndefined()
-    expect(validatePageMarkup(String.raw`\newcommand{\x}{unsafe}`)).toBeUndefined()
-    expect(validatePageMarkup(String.raw`\begin{itemize}\item Missing end`)).toBeUndefined()
+describe('RebuildPDFKit integration', () => {
+  it('ends a translation before failed pages at its end and keeps failed pages within it', () => {
+    expect(lastRebuiltPage([1, 2, 3, 4, 5], 6, new Set([2, 5]))).toBe(4)
+    expect(lastRebuiltPage(undefined, 6, new Set([6]))).toBe(5)
+    expect(lastRebuiltPage(undefined, 3, new Set())).toBe(3)
+    expect(lastRebuiltPage([1, 2], 3, new Set([1, 2]))).toBeUndefined()
+  })
+
+  it('sends text-only messages as strings and images as JPEG parts', () => {
+    const jpeg = new Uint8Array([0xff, 0xd8])
+    expect(FreddieRebuildModelClient.message({ role: 'user', parts: [{ type: 'text', text: 'a' }, { type: 'text', text: 'b' }] })).toEqual({ role: 'user', content: 'ab' })
+    expect(FreddieRebuildModelClient.message({ role: 'user', parts: [{ type: 'text', text: 'Page 1.' }, { type: 'jpeg', data: jpeg }] })).toEqual({
+      role: 'user', content: [{ type: 'text', text: 'Page 1.' }, { type: 'image', data: jpeg, mediaType: 'image/jpeg' }]
+    })
   })
 })
 
