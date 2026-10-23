@@ -22,6 +22,7 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
   onFindStatus?: (status: FindStatus) => void
   navigation?: { id: string; pageIndex?: number; quote?: string; attachmentId?: string } | null
   onSelection?: (selection: NoteSelectionContext | null) => void
+  heldSelection?: NoteSelectionContext | null
   tool?: AnnotationTool
   onAnnotationState?: (state: AnnotationState) => void
   onRequestTextNote?: (side: DualSide, pageIndex: number, point: { x: number; y: number }) => void
@@ -92,6 +93,7 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
           onFindStatus={props.findTarget === 'original' ? props.onFindStatus : undefined}
           navigation={navigationFor('original')}
           onSelection={props.onSelection}
+          heldSelection={props.heldSelection}
           tool={props.tool}
           onAnnotationState={props.onAnnotationState}
           onRequestTextNote={(page, point) => props.onRequestTextNote?.('original', page, point)}
@@ -116,6 +118,7 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
           onFindStatus={props.findTarget === 'translated' ? props.onFindStatus : undefined}
           navigation={navigationFor('translated')}
           onSelection={props.onSelection}
+          heldSelection={props.heldSelection}
           tool={props.tool}
           onAnnotationState={props.onAnnotationState}
           onRequestTextNote={(page, point) => props.onRequestTextNote?.('translated', page, point)}

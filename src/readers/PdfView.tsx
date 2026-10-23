@@ -54,6 +54,8 @@ export interface PdfViewProps {
   onFindStatus?: (status: FindStatus) => void
   navigation?: { id: string; pageIndex?: number; quote?: string } | null
   onSelection?: (selection: NoteSelectionContext | null) => void
+  /** A selection the reader still acts on, such as the assistant's; it stays painted after focus moves away. */
+  heldSelection?: NoteSelectionContext | null
   tool?: AnnotationTool
   onAnnotationState?: (state: AnnotationState) => void
   onRequestTextNote?: (pageIndex: number, point: { x: number; y: number }) => void
@@ -359,6 +361,9 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
 
   // MARK: Selection
 
+  const lastSelection = useRef<{ range: Range; quote: string } | null>(null)
+  const [hasNativeSelection, setHasNativeSelection] = useState(false)
+
   useEffect(() => {
     const element = scroller.current
     if (!element || !props.onSelection) return
@@ -379,6 +384,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
       const pageText = texts.current?.[pageIndex] ?? pageElement.querySelector('.textLayer')?.textContent ?? ''
       const at = pageText.indexOf(quote.slice(0, 40))
       const context = at >= 0 ? pageText.slice(Math.max(0, at - 600), at + quote.length + 600) : pageText.slice(0, 1600)
+      lastSelection.current = { range: range.cloneRange(), quote }
       const rect = range.getBoundingClientRect()
       props.onSelection?.({ attachmentId, quote, pageIndex, context, rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } })
       props.onAnnotationState?.({ ...annotationState(), hasTextSelection: true })
@@ -388,17 +394,49 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     }
     const selectionChange = (): void => {
       const selection = window.getSelection()
+      setHasNativeSelection(Boolean(selection && !selection.isCollapsed && element.contains(selection.anchorNode)))
       if (!selection || selection.isCollapsed) report()
+    }
+    // The app is `user-select: none`, and Chromium keeps a selection when a click lands on
+    // unselectable content, so clicks on blank page areas or elsewhere must clear it here.
+    // Controls and the selection assistant keep it, since they act on the selection.
+    const pointerDown = (event: PointerEvent): void => {
+      if (event.button !== 0) return
+      const selection = window.getSelection()
+      if (!selection || selection.isCollapsed || !element.contains(selection.anchorNode)) return
+      const target = event.target instanceof Element ? event.target : null
+      if (target?.closest('.textLayer :is(span, br)')) return
+      if (target === element && (event.offsetX >= element.clientWidth || event.offsetY >= element.clientHeight)) return
+      if (target && !element.contains(target) && target.closest('button, a, input, textarea, select, [role="button"], [role="menuitem"], [contenteditable], .selection-assistant')) return
+      selection.removeAllRanges()
     }
     element.addEventListener('mouseup', mouseUp)
     element.addEventListener('keyup', mouseUp)
     window.document.addEventListener('selectionchange', selectionChange)
+    window.document.addEventListener('pointerdown', pointerDown, true)
     return () => {
       element.removeEventListener('mouseup', mouseUp)
       element.removeEventListener('keyup', mouseUp)
       window.document.removeEventListener('selectionchange', selectionChange)
+      window.document.removeEventListener('pointerdown', pointerDown, true)
     }
   }, [attachmentId, props.onSelection])
+
+  // Focusing a field, like the assistant's question box, moves the one native selection there,
+  // so paint the held selection's range until the reader lets go of it.
+  useEffect(() => {
+    const registry = (CSS as unknown as { highlights?: Map<string, unknown> }).highlights
+    const last = lastSelection.current
+    const held = props.heldSelection
+    // Compare the quotes taken from the selection; a range's own text drops the text layer's line breaks.
+    if (!registry || !last || hasNativeSelection || !held || held.attachmentId !== attachmentId || held.quote !== last.quote) return
+    const HighlightConstructor = (window as unknown as { Highlight: new (...ranges: Range[]) => unknown }).Highlight
+    registry.set(`rp-held-selection-${attachmentId}`, new HighlightConstructor(last.range))
+    ensureHighlightStyle(attachmentId)
+    return () => {
+      registry.delete(`rp-held-selection-${attachmentId}`)
+    }
+  }, [props.heldSelection, hasNativeSelection, attachmentId])
 
   // MARK: Annotations
 
@@ -739,6 +777,7 @@ function ensureHighlightStyle(attachmentId: string): void {
   injectedHighlightStyles.add(attachmentId)
   const style = window.document.createElement('style')
   style.textContent = `::highlight(rp-find-${attachmentId}) { background-color: rgba(255, 214, 10, 0.45); color: inherit; }
-::highlight(rp-find-current-${attachmentId}) { background-color: rgba(255, 149, 0, 0.75); color: inherit; }`
+::highlight(rp-find-current-${attachmentId}) { background-color: rgba(255, 149, 0, 0.75); color: inherit; }
+::highlight(rp-held-selection-${attachmentId}) { background-color: rgba(0, 122, 255, 0.28); color: transparent; }`
   window.document.head.appendChild(style)
 }

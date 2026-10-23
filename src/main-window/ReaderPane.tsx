@@ -591,6 +591,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
           onFindStatus={setFindStatus}
           navigation={readerNavigation}
           onSelection={handleSelection}
+          heldSelection={assistantSelection}
           tool={tool}
           onAnnotationState={setAnnotationState}
           onRequestTextNote={(side, page, point) => setPendingTextNote({ side, pageIndex: page, point })}
@@ -618,6 +619,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
         onFindStatus={setFindStatus}
         navigation={readerNavigation}
         onSelection={handleSelection}
+        heldSelection={assistantSelection}
         tool={tool}
         onAnnotationState={setAnnotationState}
         onRequestTextNote={(page, point) => setPendingTextNote({ pageIndex: page, point })}
