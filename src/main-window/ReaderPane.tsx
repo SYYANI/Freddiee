@@ -67,6 +67,9 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   const pdf = firstAttachment(attachments, 'pdf')
   const html = firstAttachment(attachments, 'html')
   const translated = latestAttachment(attachments, 'translatedPDF')
+  const scanTranscription = latestAttachment(attachments.filter((item) => item.source === 'scanRebuild'), 'resource')
+  const showsScanTranscription = Boolean(paper && scanTranscription && settings.scannedTranscriptionPaperIds.includes(paper.id))
+  const sourcePDF = showsScanTranscription ? scanTranscription : pdf
   const hasLatexSource = attachments.some((item) => item.kind === 'resource' && item.source === 'latexTrans')
   const readingState = snapshot.readingStates.find((state) => state.paperId === paper?.id)
 
@@ -134,7 +137,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
     }
   }, [Boolean(html), Boolean(pdf), Boolean(translated)])
 
-  const attachmentFor = (mode: ReaderMode): string | undefined => mode === 'html' ? html?.id : mode === 'translatedPDF' ? translated?.id : pdf?.id
+  const attachmentFor = (mode: ReaderMode): string | undefined => mode === 'html' ? html?.id : mode === 'translatedPDF' ? translated?.id : sourcePDF?.id
 
   const persistState = useCallback((mode: ReaderMode, page: number, scrollRatio: number) => {
     if (!paper || restoredFor !== paper.id) return
@@ -142,7 +145,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
     scrollSaveTimer.current = setTimeout(() => {
       void window.freddie.library.saveReadingState({ paperId: paper.id, attachmentId: attachmentFor(mode), readerMode: mode, pageIndex: page, scrollRatio: mode === 'html' ? scrollRatio : 0, zoomScale: 1 })
     }, 600)
-  }, [paper?.id, restoredFor, html?.id, pdf?.id, translated?.id])
+  }, [paper?.id, restoredFor, html?.id, sourcePDF?.id, translated?.id])
 
   useEffect(() => {
     if (paper && restoredFor === paper.id) persistState(readerMode, pageIndex, readingState?.scrollRatio ?? 0)
@@ -471,10 +474,25 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
     if (choice === 'more') continuePDF()
   }
 
+  const showScanSourceMenu = async (anchor: HTMLElement): Promise<void> => {
+    if (!paper || !scanTranscription) return
+    const choice = await popupMenu([
+      { id: 'scan', label: t('Scanned Original'), type: 'checkbox', checked: !showsScanTranscription },
+      { id: 'transcription', label: t('Corrected Transcription'), type: 'checkbox', checked: showsScanTranscription }
+    ], anchor)
+    if (!choice || (choice === 'transcription') === showsScanTranscription) return
+    const selected = settings.scannedTranscriptionPaperIds
+    await window.freddie.settings.save({
+      scannedTranscriptionPaperIds: choice === 'transcription'
+        ? [...new Set([...selected, paper.id])]
+        : selected.filter((id) => id !== paper.id)
+    })
+  }
+
   const showShareMenu = async (anchor: HTMLElement): Promise<void> => {
     if (!paper) return
     const sourceURL = sourceMetadata(paper).url
-    const exportAttachment = readerMode === 'translatedPDF' ? translated : pdf
+    const exportAttachment = readerMode === 'translatedPDF' ? translated : sourcePDF
     const choice = await popupMenu([
       { id: 'link', label: t('Copy Link'), enabled: Boolean(sourceURL) },
       { id: 'digest', label: t('Copy Digest') },
@@ -513,7 +531,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
 
   const hasTranslatableContent = Boolean(html || pdf)
   const translateHelp = isWorking ? t('Translation in Progress') : html && pdf ? t('Translate HTML or PDF') : html ? t('Translate HTML') : pdf ? t('Translate PDF') : t('Translation Unavailable')
-  const findAvailable = readerMode === 'html' ? Boolean(html) : readerMode === 'pdf' ? Boolean(pdf) : Boolean(translated)
+  const findAvailable = readerMode === 'html' ? Boolean(html) : readerMode === 'pdf' ? Boolean(sourcePDF) : Boolean(translated)
 
   // MARK: Setup notice
 
@@ -525,6 +543,20 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   // MARK: Rendering
 
   const readerLabel = (text: string): JSX.Element => <span className="reader-label glass">{text}</span>
+  const sourceReaderLabel = (): JSX.Element => scanTranscription
+    ? (
+        <button
+          type="button"
+          className="pdf-source-picker glass"
+          title={t('Read the scanned pages or the corrected transcription typeset from them')}
+          aria-label={t('Read the scanned pages or the corrected transcription typeset from them')}
+          onClick={(event) => void showScanSourceMenu(event.currentTarget)}
+        >
+          <span>{t(showsScanTranscription ? 'Corrected Transcription' : 'Scanned Original')}</span>
+          <Icon name="chevron.down" size={8} weight={2.4} />
+        </button>
+      )
+    : readerLabel(t('Original'))
   const sidenotesFor = (attachmentId: string | undefined, includeUnattributed: boolean): Note[] =>
     props.notes.filter((note) => note.pageIndex !== undefined && (note.attachmentId === attachmentId || (includeUnattributed && !note.attachmentId)))
 
@@ -569,12 +601,16 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
       )
     }
     if (readerMode === 'bilingualPDF') {
-      if (!translated || !pdf) return <UnavailableView icon="character.book.closed" title={t('No translated PDF')} description={t('Run PDF translation first to compare the original and translated versions side by side.')} />
+      if (!translated || !sourcePDF) return <UnavailableView icon="character.book.closed" title={t('No translated PDF')} description={t('Run PDF translation first to compare the original and translated versions side by side.')} />
       return (
         <DualPdfView
           ref={dualRef}
           paperId={paper.id}
-          original={{ url: `${window.freddie.shell.assetURL(paper.id, pdf.id)}?v=${pdfReload}`, attachmentId: pdf.id, label: readerLabel(t('Original')) }}
+          original={{
+            url: `${window.freddie.shell.assetURL(paper.id, sourcePDF.id)}?v=${encodeURIComponent(sourcePDF.createdAt)}-${pdfReload}`,
+            attachmentId: sourcePDF.id,
+            label: sourceReaderLabel()
+          }}
           translated={{
             url: `${window.freddie.shell.assetURL(paper.id, translated.id)}?v=${encodeURIComponent(translated.createdAt)}-${pdfReload}`,
             attachmentId: translated.id,
@@ -597,7 +633,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
         />
       )
     }
-    const attachment = readerMode === 'translatedPDF' ? translated : pdf
+    const attachment = readerMode === 'translatedPDF' ? translated : sourcePDF
     if (!attachment) {
       return readerMode === 'translatedPDF'
         ? <UnavailableView icon="doc.richtext" title={t('No translated PDF')} description={t('Run PDF translation first to read the translated PDF on its own.')} />
@@ -625,7 +661,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
         focusNoteId={props.sidenoteFocusId}
         onSidenoteFocusHandled={props.onSidenoteFocusHandled}
         onLinkActivated={props.onArxivLink}
-        label={readerLabel(readerMode === 'translatedPDF' ? t('Translation') : t('Original'))}
+        label={readerMode === 'translatedPDF' ? readerLabel(t('Translation')) : sourceReaderLabel()}
         maxPage={readerMode === 'translatedPDF' && partial ? translated?.translatedLastPage : undefined}
       />
     )

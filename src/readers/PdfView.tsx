@@ -91,6 +91,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     setDocument(undefined)
     setSizes([])
     setError(undefined)
+    setZoom(1)
     texts.current = undefined
     const handle = openDocument(url)
     let cancelled = false
@@ -135,8 +136,9 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
 
   const showsRail = Boolean(props.sidenotes?.length) && containerWidth >= railWidth + minimumReaderWidth
   const readerWidth = containerWidth - (showsRail ? railWidth : 0)
-  const maxPageWidth = Math.max(1, ...sizes.map((size) => size.width))
-  const scale = Math.max(0.2, ((readerWidth - sideMargin * 2) / maxPageWidth) * zoom)
+  // Match the native reader's “Actual Size”: one PDF point maps to one CSS pixel.
+  // Opening or switching documents resets `zoom` to 1 instead of fitting the page to the pane.
+  const scale = Math.max(0.2, zoom)
 
   const tops = useMemo(() => {
     const result: number[] = []
