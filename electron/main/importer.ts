@@ -267,7 +267,7 @@ export class PaperImporter {
         this.emit(operationId, 4, 4, 0.92, t('Finalizing import'), t('Saving the paper and localized HTML to your library.'))
         const timestamp = now()
         const paper: Paper = {
-          id, title, abstract: page.excerpt ?? '', authors: page.byline ? [page.byline] : [], categories: [], tags: [], isFavorite: false,
+          id, title, abstract: page.excerpt ?? '', authors: [], categories: [], tags: [], isFavorite: false,
           htmlUrl: url.toString(), createdAt: timestamp, modifiedAt: timestamp
         }
         await this.store.addPaper(paper, [{ id: randomUUID(), paperId: id, kind: 'html', source: 'webPage', filename: 'paper.html', createdAt: timestamp }])

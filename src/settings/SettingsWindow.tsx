@@ -291,11 +291,11 @@ function ReaderTab(): JSX.Element {
         <FormRow label={t('HTML Model')}>
           <MenuPicker value={settings.htmlModelId ?? ''} onChange={(value) => save({ htmlModelId: value || undefined })} options={[{ value: '', title: t('Not Selected') }, ...choices]} />
         </FormRow>
-        <FormRow label={t('PDF Model')}>
+        <FormRow label={t('Document Translation Model')}>
           <MenuPicker value={settings.pdfModelId ?? ''} onChange={(value) => save({ pdfModelId: value || undefined })} options={[{ value: '', title: t('Not Selected') }, ...choices]} />
         </FormRow>
-        <FormRow label={t('Scanned Page Model')} help={t('Translating a scanned PDF sends each page image to the scanned page model, which must accept image input; the PDF model then translates the transcribed text.')}>
-          <MenuPicker value={settings.scannedPageModelId ?? ''} onChange={(value) => save({ scannedPageModelId: value || undefined })} options={[{ value: '', title: t('Use PDF Model') }, ...choices]} />
+        <FormRow label={t('Page Transcription and Review Model')} help={t('Translating a scanned PDF sends each page image to this model, which must accept image input; the document translation model then translates the transcribed text.')}>
+          <MenuPicker value={settings.scannedPageModelId ?? ''} onChange={(value) => save({ scannedPageModelId: value || undefined })} options={[{ value: '', title: t('Use Document Translation Model') }, ...choices]} />
         </FormRow>
         <FormRow label={t('Reading Assistant Model')}>
           <MenuPicker value={settings.assistantModelId ?? ''} onChange={(value) => save({ assistantModelId: value || undefined })} options={[{ value: '', title: t('Use HTML Model') }, ...choices]} />

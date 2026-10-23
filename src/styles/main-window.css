@@ -48,14 +48,100 @@ html[data-platform="linux"] .main-window {
   right: calc(var(--inspector-width) - 4px);
 }
 
-.drop-highlight {
+.pdf-drop-overlay {
   position: absolute;
-  inset: 6px;
-  z-index: 90;
-  border-radius: max(calc(var(--window-radius) - 6px), 4px);
-  border: 2.5px solid var(--accent);
-  background: rgba(0, 122, 255, 0.06);
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  visibility: hidden;
   pointer-events: none;
+  transition: visibility 0s linear 180ms;
+}
+
+.pdf-drop-overlay.visible {
+  visibility: visible;
+  transition: none;
+}
+
+.pdf-drop-veil {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--window-radius);
+  background: rgba(245, 247, 252, 0.28);
+  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  opacity: 0;
+  transition: opacity 140ms ease-out;
+  will-change: opacity, backdrop-filter;
+}
+
+.pdf-drop-overlay.visible .pdf-drop-veil {
+  opacity: 1;
+}
+
+.pdf-drop-card {
+  position: relative;
+  min-width: 240px;
+  padding: 26px 36px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  border: 0.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: 22px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(1.7);
+  -webkit-backdrop-filter: blur(24px) saturate(1.7);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 1px 6px rgba(0, 0, 0, 0.08), inset 0 0.5px rgba(255, 255, 255, 0.8);
+  opacity: 0;
+  transform: scale(0.94);
+  transition: opacity 110ms ease-in, transform 110ms ease-in;
+  will-change: opacity, transform;
+}
+
+.pdf-drop-overlay.visible .pdf-drop-card {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 140ms ease-out 55ms, transform 180ms ease-out 55ms;
+}
+
+.pdf-drop-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.pdf-drop-title {
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  text-align: center;
+}
+
+html[data-appearance="paper"] .pdf-drop-veil {
+  background: rgba(246, 242, 231, 0.42);
+}
+
+html[data-appearance="paper"] .pdf-drop-card {
+  border-color: rgba(85, 75, 59, 0.16);
+}
+
+html[data-appearance="paper"] .pdf-drop-title {
+  font-family: var(--font-serif);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pdf-drop-overlay,
+  .pdf-drop-veil,
+  .pdf-drop-card {
+    transition: none;
+  }
 }
 
 /* MARK: Sidebar */

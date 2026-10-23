@@ -41,6 +41,7 @@ import { importNativeLibrary, nativeLibraryExists } from './nativeLibrary'
 import { applyLiquidGlass, applyUnifiedToolbar, supportsLiquidGlass } from './windowChrome'
 import { applyHiddenRegions, readableProseColorCSS, readableProseLayoutCSS } from './localizer'
 import { detectLatexToolchainStatus } from './latexToolchain'
+import { AuthorExtractionService } from './authorExtraction'
 import * as cheerio from 'cheerio'
 
 const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, net, protocol, shell, systemPreferences } = electron
@@ -61,6 +62,7 @@ let store: FreddieStore
 let secrets: SecretStore
 let writings: WritingStore
 let importer: PaperImporter
+let authorExtraction: AuthorExtractionService
 let translations: TranslationService
 let assistant: AssistantService
 let annotations: AnnotationStore
@@ -85,6 +87,7 @@ app.whenReady().then(async () => {
   synchronizeAppearance()
 
   importer = new PaperImporter(store, (progress) => broadcast('import:progress', progress), () => translator)
+  authorExtraction = new AuthorExtractionService(store, secrets, () => translator)
   translations = new TranslationService(store, secrets, (event) => {
     broadcast('translation:event', event)
     if (event.type === 'finished' || event.type === 'failed' || event.type === 'cancelled') void refreshTranslatedIds()
@@ -408,8 +411,16 @@ function registerIpc(): void {
   handle('library:snapshot', () => snapshot())
   handle('library:import', async (event, request: ImportRequest) => {
     try {
-      if (request.type === 'arxiv') return await importer.importArxiv(String(request.value), Boolean(request.includeHTML), String(request.operationId))
-      if (request.type === 'web') return await importer.importWebPage(String(request.url), String(request.operationId))
+      if (request.type === 'arxiv') {
+        const paper = await importer.importArxiv(String(request.value), Boolean(request.includeHTML), String(request.operationId))
+        void authorExtraction.extractAuthorsIfNeeded(paper)
+        return paper
+      }
+      if (request.type === 'web') {
+        const paper = await importer.importWebPage(String(request.url), String(request.operationId))
+        void authorExtraction.extractAuthorsIfNeeded(paper)
+        return paper
+      }
       let paths = request.paths
       if (!paths?.length) {
         const owner = windowFor(event.sender)!
@@ -425,6 +436,7 @@ function registerIpc(): void {
       for (const path of paths ?? []) {
         try {
           last = await importer.importLocalPDF(path)
+          void authorExtraction.extractAuthorsIfNeeded(last)
         } catch (error) {
           failures.push(`${path.split(/[\\/]/).pop()}: ${errorMessage(error)}`)
         }

@@ -7,10 +7,11 @@ const extraZhHans: Record<string, string> = {
   'Hide Sidebar': '隐藏侧栏',
   'Show Sidebar': '显示侧栏',
   'Show in File Manager': '在文件管理器中显示',
-  'PDF Model': 'PDF 模型',
-  'Use PDF Model': '使用 PDF 模型',
-  'Translating a scanned PDF sends each page image to the scanned page model, which must accept image input; the PDF model then translates the transcribed text.':
-    '翻译扫描版 PDF 时，每页图像会发送给扫描页模型（必须支持图像输入）识别，识别出的文字再由 PDF 模型翻译。',
+  'Document Translation Model': '文档翻译模型',
+  'Page Transcription and Review Model': '页面转写与校对模型',
+  'Use Document Translation Model': '使用文档翻译模型',
+  'Translating a scanned PDF sends each page image to this model, which must accept image input; the document translation model then translates the transcribed text.':
+    '翻译扫描版 PDF 时，每页图像会发送给该模型（必须支持图像输入）转写与校对，再由文档翻译模型翻译转写后的文本。',
   'Lower concurrency if your provider reports rate limits.': '如果 Provider 提示触发速率限制，可调低并发数。',
   'API keys are encrypted with the operating system’s credential storage. Leaving the API key field blank while editing keeps the saved key.':
     'API 密钥由操作系统的凭据存储加密保存。编辑时将 API 密钥留空会保留已保存的密钥。',

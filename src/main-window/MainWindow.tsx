@@ -6,6 +6,7 @@ import { normalizeArxivIdentifier, arxivQueryId } from '../../shared/identifiers
 import { useApp } from '../app/context'
 import { alertError, confirmDestructive, errorText, messageBox } from '../app/native'
 import { Button, IconButton, PromptSheet, Sheet, ToolbarGroup } from '../ui/controls'
+import { Icon } from '../ui/Icon'
 import { LibrarySidebar } from './LibrarySidebar'
 import { ReaderPane } from './ReaderPane'
 import { Inspector } from './Inspector'
@@ -56,6 +57,7 @@ export function MainWindow(): JSX.Element {
   const [findToken, setFindToken] = useState(0)
   const [toast, setToast] = useState<string | null>(null)
   const [dropActive, setDropActive] = useState(false)
+  const [dropImporting, setDropImporting] = useState(false)
   const [arxivImport, setArxivImport] = useState<ArxivLinkImport | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout>>()
 
@@ -306,8 +308,17 @@ export function MainWindow(): JSX.Element {
 
   // MARK: Dropping PDFs
 
+  const dragContainsPDF = (event: DragEvent): boolean => {
+    if (!event.dataTransfer.types.includes('Files')) return false
+    const visibleFiles = [
+      ...Array.from(event.dataTransfer.files),
+      ...Array.from(event.dataTransfer.items).filter((item) => item.kind === 'file').map((item) => item.getAsFile()).filter((file): file is File => Boolean(file))
+    ]
+    return visibleFiles.length === 0 || visibleFiles.some((file) => file.name.toLowerCase().endsWith('.pdf'))
+  }
+
   const dragOver = (event: DragEvent): void => {
-    if (!event.dataTransfer.types.includes('Files')) return
+    if (dropImporting || !dragContainsPDF(event)) return
     event.preventDefault()
     event.dataTransfer.dropEffect = 'copy'
     setDropActive(true)
@@ -319,11 +330,14 @@ export function MainWindow(): JSX.Element {
     event.preventDefault()
     const paths = Array.from(event.dataTransfer.files).filter((file) => file.name.toLowerCase().endsWith('.pdf')).map((file) => window.freddie.shell.pathForFile(file)).filter(Boolean)
     if (!paths.length) return
+    setDropImporting(true)
     try {
       const paper = await window.freddie.library.importPaper({ type: 'pdf', paths, operationId: crypto.randomUUID() })
       if (paper) select(paper.id)
     } catch (error) {
       await alertError(t('Unable to Import Paper'), errorText(error), t('OK'))
+    } finally {
+      setDropImporting(false)
     }
   }
 
@@ -365,9 +379,11 @@ export function MainWindow(): JSX.Element {
     <div
       className={`main-window appearance-${settings.readerAppearance} ${sidebarOpen ? '' : 'sidebar-hidden'} ${inspectorOpen ? '' : 'inspector-hidden'}`}
       style={style}
+      onDragEnter={dragOver}
       onDragOver={dragOver}
       onDragLeave={(event) => {
-        if (event.currentTarget === event.target) setDropActive(false)
+        const nextTarget = event.relatedTarget
+        if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) setDropActive(false)
       }}
       onDrop={(event) => void drop(event)}
     >
@@ -445,7 +461,20 @@ export function MainWindow(): JSX.Element {
           )}
         </ToolbarGroup>
       </div>
-      {dropActive && <div className="drop-highlight" />}
+      <div
+        className={`pdf-drop-overlay ${dropActive || dropImporting ? 'visible' : ''} ${dropImporting ? 'importing' : ''}`}
+        role="status"
+        aria-live="polite"
+        aria-hidden={!(dropActive || dropImporting)}
+      >
+        <div className="pdf-drop-veil" />
+        <div className="pdf-drop-card">
+          <div className="pdf-drop-icon">
+            <Icon name={dropImporting ? 'doc.badge.ellipsis' : 'arrow.down.doc.fill'} size={30} weight={1.8} />
+          </div>
+          <div className="pdf-drop-title">{dropImporting ? t('Importing PDFs…') : t('Drop PDFs to Import')}</div>
+        </div>
+      </div>
       {adding && <AddPaperSheet onClose={() => setAdding(false)} onImported={(paper) => { setAdding(false); select(paper.id) }} />}
       {folderPrompt && (
         <PromptSheet

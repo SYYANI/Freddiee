@@ -187,6 +187,24 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
     document.addEventListener('selectionchange', () => {
       if (document.getSelection()?.isCollapsed) props.onSelection?.(null)
     })
+    // Drag events do not bubble out of an iframe. Forward file drags to the iframe element so
+    // the window-wide PDF drop target can show its hover treatment and handle the drop.
+    const forwardFileDrag = (event: globalThis.DragEvent): void => {
+      if (!event.dataTransfer?.types.includes('Files')) return
+      if (event.type === 'dragleave' && event.relatedTarget != null) return
+      const host = frame.current
+      if (!host) return
+      const forwarded = new DragEvent(event.type, {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: event.dataTransfer,
+        relatedTarget: event.relatedTarget
+      })
+      if (!host.dispatchEvent(forwarded)) event.preventDefault()
+    }
+    for (const type of ['dragenter', 'dragover', 'dragleave', 'drop'] as const) {
+      document.addEventListener(type, forwardFileDrag)
+    }
     document.addEventListener('mouseover', (event) => {
       if (!document.documentElement.hasAttribute('data-rp-region-editing')) return
       document.querySelectorAll('.rp-region-hover').forEach((element) => element.classList.remove('rp-region-hover'))

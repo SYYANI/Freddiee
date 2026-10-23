@@ -1,6 +1,6 @@
 import {
   AlignLeft, AppWindowMac, Book, BookOpen, Bookmark, Check, ChevronDown, ChevronUp, CircleArrowUp, CircleCheck, CircleEllipsis,
-  CirclePlus, CircleStop, CircleX, Copy, Earth, Eraser, File, FilePlus, FileText, FileUp, Folder, FolderMinus, Highlighter,
+  CirclePlus, CircleStop, CircleX, Copy, Earth, Eraser, File, FileClock, FileDown, FilePlus, FileText, FileUp, Folder, FolderMinus, Highlighter,
   Languages, Link, Minus, MessageCircle, MousePointer2, NotebookPen, PanelLeft, PanelRight, PencilLine, Plus, Redo2, RefreshCw,
   RotateCcw, ScanText, ScrollText, Search, Settings, Share, Sparkles, SquarePen, SquareStack, Star, StarOff, StickyNote,
   Strikethrough, TextQuote, Trash2, TriangleAlert, Underline, Undo2, X, type LucideIcon
@@ -30,6 +30,8 @@ const symbols: Record<string, LucideIcon> = {
   'doc.richtext': FileText,
   'doc.viewfinder': ScanText,
   'doc.badge.arrow.up': FileUp,
+  'arrow.down.doc.fill': FileDown,
+  'doc.badge.ellipsis': FileClock,
   'doc.on.doc': Copy,
   'star': Star,
   'star.fill': Star,

@@ -77,7 +77,7 @@ export async function resolveRoute(kind: RouteKind, store: FreddieStore, secrets
       ? t('Choose an HTML translation model in Settings first.')
       : kind === 'assistant'
         ? t('Choose a reading assistant model in Settings first.')
-        : t('Choose a PDF translation model in Settings first.'))
+        : t('Choose a document translation model in Settings first.'))
   }
   const model = store.database.models.find((item) => item.id === selected)
   if (!model) throw new RouteError(t('The selected translation model could not be found.'))
