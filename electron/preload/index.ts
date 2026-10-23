@@ -28,7 +28,7 @@ const windowsBuild = process.platform === 'win32' ? Number(process.getSystemVers
 
 const api: FreddieAPI = {
   platform: process.platform,
-  windowMaterial: windowsBuild >= 22621 ? 'acrylic' : 'none',
+  windowMaterial: windowsBuild >= 17763 ? 'acrylic' : 'none',
   route: readRoute(),
   library: {
     snapshot: () => invoke('library:snapshot'),
