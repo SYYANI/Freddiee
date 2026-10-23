@@ -1,0 +1,16 @@
+\documentclass{article}
+\def\foo{Foo text}
+\newcommand*{\bar}[2][default]{#1 and #2}
+\renewcommand\baz{Baz}
+\newenvironment{boxed}[1]{\begin{center}#1}{\end{center}}
+\renewenvironment{boxed2}{start}{end}
+\newcommand{\broken}
+\newcommand{\notamacro x}{body}
+\newcommand\withspace   {spaced body}
+\providecommand{\prov}{Provided}
+\begin{document}
+\section{Macros}
+The preamble defines \foo, \bar{x}{y} and \baz. A command defined in the body follows.
+\newcommand{\inbody}{Body macro}
+Text continues after it, using \inbody{} twice: \inbody.
+\end{document}

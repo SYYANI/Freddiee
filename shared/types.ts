@@ -410,6 +410,8 @@ export interface FreddieAPI {
     translateAbstract(paperId: string): Promise<string>
     onEvent(listener: (event: TranslationEvent) => void): () => void
     revealLog(path: string): Promise<void>
+    /** Shows the newest translated LaTeX project of the paper in the file manager. */
+    revealLatexSource(paperId: string): Promise<void>
   }
   assistant: {
     run(request: AssistantRequest): Promise<void>

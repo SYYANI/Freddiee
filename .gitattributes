@@ -1,0 +1,2 @@
+# LaTeXTransKit parity fixtures are compared byte for byte, including their line endings.
+tests/fixtures/latex-trans/** -text

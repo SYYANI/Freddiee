@@ -76,7 +76,8 @@ const api: FreddieAPI = {
     cancel: (paperId) => invoke('translation:cancel', paperId),
     translateAbstract: (paperId) => invoke('translation:abstract', paperId),
     onEvent: (listener) => subscribe('translation:event', listener),
-    revealLog: (path) => invoke('translation:reveal-log', path)
+    revealLog: (path) => invoke('translation:reveal-log', path),
+    revealLatexSource: (paperId) => invoke('translation:reveal-latex-source', paperId)
   },
   assistant: {
     run: (request) => invoke('assistant:run', request),

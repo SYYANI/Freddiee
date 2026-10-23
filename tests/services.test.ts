@@ -5,7 +5,6 @@ import { applyHiddenRegions, sanitize } from '../electron/main/localizer'
 import { parseArxivAtom } from '../electron/main/importer'
 import { parseResponse } from '../electron/main/llm'
 import { assistantMessages } from '../electron/main/assistant'
-import { protectLatex, restoreLatex } from '../LaTeXTransKit'
 import { FreddieRebuildModelClient, lastRebuiltPage } from '../RebuildPDFKit'
 
 describe('HTML translation pipeline', () => {
@@ -50,15 +49,6 @@ describe('HTML translation pipeline', () => {
     expect(outputIssue('译文 [PROTECTED_1]', 'Text [PROTECTED_0]', {})).toBe('placeholderMismatch')
     expect(outputIssue('译文 [PROTECTED_0]', 'Text [PROTECTED_0]', {})).toBeUndefined()
     expect(userPrompt('Hello', { documentTitle: 'Doc' })).toBe('<<<DOCUMENT_TITLE>>>\nDoc\n<<<END_DOCUMENT_TITLE>>>\n\n<<<SOURCE_SEGMENT_TO_TRANSLATE>>>\nHello\n<<<END_SOURCE_SEGMENT_TO_TRANSLATE>>>')
-  })
-})
-
-describe('LaTeXTransKit port', () => {
-  it('restores protected LaTeX only when every token keeps its order', () => {
-    const value = protectLatex(String.raw`\textbf{Proof} uses $x+y$ and \cite{a}.`)
-    expect(restoreLatex(value.template.replace('Proof', '证明').replace('uses', '使用'), value)).toBe(String.raw`\textbf{证明} 使用 $x+y$ and \cite{a}.`)
-    expect(restoreLatex(value.template.replace('[PROTECTED_LATEX_0]', ''), value)).toBeUndefined()
-    expect(restoreLatex(value.template.replace('[PROTECTED_LATEX_0]', '[PROTECTED_LATEX_1]'), value)).toBeUndefined()
   })
 })
 

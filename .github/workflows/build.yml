@@ -19,6 +19,17 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  latex-windows:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run tests/latex-trans-parity.test.ts tests/latex-trans-kit.test.ts
+
   package:
     if: github.event_name == 'workflow_dispatch'
     strategy:

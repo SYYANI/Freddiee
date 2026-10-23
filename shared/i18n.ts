@@ -42,7 +42,9 @@ const extraZhHans: Record<string, string> = {
   'Import Complete': '导入完成',
   'Imported %lld papers, %lld notes and %lld writings.': '已导入 %1$lld 篇论文、%2$lld 条笔记和 %3$lld 篇写作稿。',
   'Connected. HTML and PDF translation now use %@.': '已连接。HTML 和 PDF 翻译现在使用 %1$@。',
-  'Close Window': '关闭窗口'
+  'Close Window': '关闭窗口',
+  // The native string names Finder.
+  'Reveal Translated LaTeX Source': '显示 LaTeX 译稿源码'
 }
 
 const dictionaries: Record<'zh-Hans', Record<string, string>> = {

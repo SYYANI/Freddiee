@@ -1,0 +1,17 @@
+\documentclass{article}
+\pdfoutput=1 % arXiv hint
+  \pdfminorversion = -5
+\pdfmapline{=foo.map}
+\DisableLigatures{encoding = *, family = *}  % no ligatures
+\usepackage[T1]{fontenc}
+\usepackage[latin1]{inputenc}
+\RequirePackage{inputenc}
+\usepackage[frozencache,cachedir=minted-cache]{minted}
+\newcommand\chinese{Chinese wrapper}
+\begin{document}
+\section{Engine-specific Source}
+This project uses pdfTeX primitives that XeLaTeX does not define, and a frozen minted cache.
+\begin{minted}{python}
+x = 1  # 10% of the time
+\end{minted}
+\end{document}

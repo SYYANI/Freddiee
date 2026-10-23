@@ -1,0 +1,1 @@
+{"sources": [{"filename": "paper.tex", "usage": "toplevel"}, {"filename": "aaa.tex", "usage": "include"}], "process": {"compiler": "pdflatex"}}

@@ -14,6 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "sync:rebuild": "node scripts/sync-rebuild-pdf.mjs",
+    "sync:latex": "node scripts/sync-latex-trans.mjs",
     "package": "npm run build && electron-builder",
     "package:mac": "npm run build && electron-builder --mac",
     "package:win": "node scripts/install-native-targets.mjs win32 x64 && npm run build && electron-builder --win --x64",

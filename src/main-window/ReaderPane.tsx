@@ -67,6 +67,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   const pdf = firstAttachment(attachments, 'pdf')
   const html = firstAttachment(attachments, 'html')
   const translated = latestAttachment(attachments, 'translatedPDF')
+  const hasLatexSource = attachments.some((item) => item.kind === 'resource' && item.source === 'latexTrans')
   const readingState = snapshot.readingStates.find((state) => state.paperId === paper?.id)
 
   const [readerMode, setReaderMode] = useState<ReaderMode>('pdf')
@@ -708,6 +709,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
             <span className="spacer" />
             {run?.needsSetup && <button type="button" className="link-button" onClick={() => void window.freddie.settings.openSettings('general')}>{t('Set Up Translation…')}</button>}
             {run?.logPath && <IconButton icon="doc.text" size={14} label={t('Show LaTeX Compilation Log')} onClick={() => void window.freddie.translation.revealLog(run.logPath!)} />}
+            {paper && hasLatexSource && <IconButton icon="folder" size={14} label={t('Reveal Translated LaTeX Source')} onClick={() => void window.freddie.translation.revealLatexSource(paper.id)} />}
             <IconButton icon="doc.on.doc" size={14} label={t('Copy Message')} onClick={() => void window.freddie.shell.copyText(statusMessage)} />
             <IconButton icon="xmark" size={13} label={t('Close')} onClick={() => setStatusMessage(null)} />
           </div>

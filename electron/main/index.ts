@@ -2,7 +2,7 @@ import electron from 'electron'
 import type { BrowserWindowConstructorOptions, IpcMainInvokeEvent, MenuItemConstructorOptions, WebContents } from 'electron'
 import { access, readFile, rm, writeFile } from 'node:fs/promises'
 import { constants } from 'node:fs'
-import { delimiter, join } from 'node:path'
+import { delimiter, join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type {
   AppSettings,
@@ -36,6 +36,7 @@ import { complete, LLMError, routeFor } from './llm'
 import { SecretStore } from './secrets'
 import { builtInProviders, FreddieStore } from './store'
 import { TranslationService, translationDisplayCSS } from './translation'
+import { latestLatexSourcePath } from '../../LaTeXTransKit'
 import { WritingStore } from './writings'
 import { importNativeLibrary, nativeLibraryExists } from './nativeLibrary'
 import { applyLiquidGlass, applyUnifiedToolbar, supportsLiquidGlass } from './windowChrome'
@@ -623,9 +624,13 @@ function registerIpc(): void {
   handle('translation:cancel', (_event, paperId: string) => translations.cancel(requireUUID(paperId)))
   handle('translation:abstract', (_event, paperId: string) => translations.translateAbstract(requireUUID(paperId)))
   handle('translation:reveal-log', (_event, path: string) => {
-    const resolved = String(path)
-    if (!resolved.startsWith(store.libraryRoot)) throw new Error('Invalid log path')
+    const resolved = resolve(String(path))
+    if (!resolved.startsWith(resolve(store.libraryRoot) + sep)) throw new Error('Invalid log path')
     shell.showItemInFolder(resolved)
+  })
+  handle('translation:reveal-latex-source', (_event, paperId: string) => {
+    const path = latestLatexSourcePath(store, requireUUID(paperId))
+    if (path) shell.showItemInFolder(path)
   })
 
   // Assistant
@@ -859,7 +864,8 @@ async function exportHTMLAsPDF(sender: WebContents, paperId: string, displayMode
 }
 
 async function findExecutable(name: string, directories: string[]): Promise<string | undefined> {
-  const extensions = isWindows ? ['.exe', '.bat', '.cmd', ''] : ['']
+  // TeX tools are started without a shell, which cannot run .bat or .cmd scripts on Windows.
+  const extensions = isWindows ? ['.exe'] : ['']
   for (const directory of directories) {
     for (const extension of extensions) {
       const candidate = join(directory, name + extension)

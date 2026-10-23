@@ -10,3 +10,4 @@ RebuildPDFKit/bin/
 .env.*
 !.env.example
 RebuildPDFKit/.build/*
+scripts/latex-trans-parity/.build/

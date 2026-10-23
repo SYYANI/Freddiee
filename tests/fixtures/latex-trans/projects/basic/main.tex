@@ -1,0 +1,50 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\newcommand{\method}{\textsc{Freddie}}
+\newcommand*{\vect}[1]{\mathbf{#1}}
+\def\eg{e.g.,\xspace}
+% A full-line comment that must disappear.
+\title{A Study of Structured Translation}
+\author{Ada Lovelace \and Alan Turing}
+\date{}
+\begin{document}
+\maketitle
+\begin{abstract}
+We present \method, a system that translates papers while keeping their structure intact. It reaches 95\% accuracy on 10-12$\times$ longer inputs.
+\end{abstract}
+\begin{comment}
+This block is a comment environment and must be removed.
+\end{comment}
+\input{sections/intro}
+\section{Method}\label{sec:method}
+Our approach splits the source into units.   % trailing comment
+Each unit is translated with its neighbors as context, see Section~\ref{sec:intro} and \cite{smith2020,doe2021}.
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.8\linewidth]{figures/overview.pdf}
+  \caption{Overview of the pipeline. Units flow from parsing to reconstruction.}
+  \label{fig:overview}
+\end{figure}
+\begin{itemize}
+  \item First, we \emph{parse} the project.
+  \item Second, we translate every unit\footnote{Concurrently, with bounded parallelism.}.
+\end{itemize}
+\begin{equation}
+  \vect{y} = W \vect{x} + b
+\end{equation}
+\subsection{Validation}
+We validate commands, placeholders and delimiters; failing units are retried up to three times.
+\begin{table}[h]
+\caption{Results on the benchmark.}
+\begin{tabular}{lc}
+Model & Score \\
+Ours & 0.95 \\
+\end{tabular}
+\end{table}
+\section{Conclusion}
+The structure survives translation, as shown in Figure~\ref{fig:overview}.
+\include{appendix}
+\bibliographystyle{plain}
+\bibliography{refs}
+\end{document}

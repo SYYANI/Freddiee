@@ -12,7 +12,7 @@ Electron main process
   ├─ PaperImporter       arXiv / web page / local PDF ingestion with staged progress
   ├─ localizer           Readability extraction, sanitizing, resource localization
   ├─ TranslationService  HTML segment pipeline, LaTeX and scanned-PDF jobs, abstract translation
-  ├─ LaTeX pipeline      secure arXiv source extraction, protected translation, XeLaTeX
+  ├─ LaTeXTransKit       port of the Swift kit: secure arXiv extraction, structured units, slot templates, latexmk
   ├─ RebuildPDFKit       scanned PDFs: Tesseract measurement, vision transcription, review, translation, XeLaTeX
   ├─ AssistantService    retrieval, prompts, streaming answers, saved conversations
   ├─ AnnotationStore     PDF annotation overlays and annotated-PDF export
