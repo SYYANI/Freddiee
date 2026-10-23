@@ -52,7 +52,10 @@ jobs:
             command: package:mac:x64
             artifact_platform: macOS-x64
           - os: windows-2025
-            command: package:win
+            command: package:win:arm64
+            artifact_platform: Windows-arm64
+          - os: windows-2025
+            command: package:win:x64
             artifact_platform: Windows-x64
           - os: ubuntu-24.04
             command: package:linux:arm64
