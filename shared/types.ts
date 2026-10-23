@@ -231,7 +231,7 @@ export interface NoteNavigationRequest {
   quote?: string
 }
 
-export type TranslationKind = 'html' | 'pdf' | 'abstract'
+export type TranslationKind = 'html' | 'pdf' | 'latex' | 'scan' | 'abstract'
 
 export interface TranslationEvent {
   paperId: string
@@ -416,6 +416,8 @@ export interface FreddieAPI {
   translation: {
     translateHTML(paperId: string): Promise<void>
     translatePDF(paperId: string, lastPage?: number, firstPage?: number): Promise<void>
+    translateLatex(paperId: string): Promise<void>
+    translateScannedPDF(paperId: string, lastPage?: number): Promise<void>
     cancel(paperId: string): Promise<void>
     translateAbstract(paperId: string): Promise<string>
     onEvent(listener: (event: TranslationEvent) => void): () => void

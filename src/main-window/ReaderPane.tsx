@@ -25,7 +25,7 @@ interface TranslationRun {
   outcome?: CapsulePhase
   needsSetup?: boolean
   logPath?: string
-  kind?: 'html' | 'pdf'
+  kind?: 'html' | 'pdf' | 'latex' | 'scan'
 }
 
 const annotationColors: Array<{ id: string; title: string; color: string }> = [
@@ -209,7 +209,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
       setStatusMessage(plain ? null : event.message ?? null)
       // Show the saved page, including segments that arrived while it was reloading.
       if (event.kind === 'html') setHtmlReload((value) => value + 1)
-      if (event.kind === 'pdf') {
+      if (event.kind === 'pdf' || event.kind === 'latex' || event.kind === 'scan') {
         setPdfReload((value) => value + 1)
         setReaderMode('bilingualPDF')
         setLastPDFMode('bilingualPDF')
@@ -395,11 +395,36 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
     }
   }
 
+  const startLatex = async (): Promise<void> => {
+    if (!paper) return
+    setStatusMessage(null)
+    setRuns((current) => ({ ...current, [paper.id]: { working: true, cancelling: false, message: t('Preparing arXiv LaTeX source...'), kind: 'latex' } }))
+    try {
+      await window.freddie.translation.translateLatex(paper.id)
+    } catch (error) {
+      setRuns((current) => ({ ...current, [paper.id]: { working: false, cancelling: false } }))
+      setStatusMessage(errorText(error))
+    }
+  }
+
+  const startScan = async (lastPage?: number): Promise<void> => {
+    if (!paper) return
+    setStatusMessage(null)
+    setRuns((current) => ({ ...current, [paper.id]: { working: true, cancelling: false, message: t('Preparing scanned PDF translation...'), kind: 'scan' } }))
+    try {
+      await window.freddie.translation.translateScannedPDF(paper.id, lastPage)
+    } catch (error) {
+      setRuns((current) => ({ ...current, [paper.id]: { working: false, cancelling: false } }))
+      setStatusMessage(errorText(error))
+    }
+  }
+
   const batch = settings.pdfTranslationBatchSize
   const continuePDF = (lastPage?: number): void => {
     if (!translated?.translatedLastPage || !originalPageCount) return
     const last = Math.min(lastPage ?? translated.translatedLastPage + batch, originalPageCount)
-    void startPDF(last, translated.translatedLastPage + 1)
+    if (translated.source === 'scanRebuild') void startScan(last)
+    else void startPDF(last, translated.translatedLastPage + 1)
   }
 
   const translatePDF = async (): Promise<void> => {
@@ -421,14 +446,31 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
     void startPDF()
   }
 
+  const translateScan = async (): Promise<void> => {
+    if (!paper || !originalPageCount) return
+    const response = await messageBox({
+      type: 'question',
+      message: t('Translate Scanned PDF'),
+      detail: t('Page images go to the model chosen for scanned pages in Settings > Reader, which must accept images. Expect about a minute and 50,000 tokens per page (%d pages). Finished pages are saved, so running it again only pays for new pages. XeLaTeX (MacTeX) is required.', originalPageCount),
+      buttons: originalPageCount > batch ? [t('First %d Pages', batch), t('All Pages'), t('Cancel')] : [t('Translate'), t('Cancel')],
+      defaultId: 0,
+      cancelId: originalPageCount > batch ? 2 : 1
+    })
+    if (response === 0) void startScan(originalPageCount > batch ? batch : undefined)
+    if (response === 1 && originalPageCount > batch) void startScan()
+  }
+
   const showTranslateMenu = async (anchor: HTMLElement): Promise<void> => {
     const choice = await popupMenu([
       { id: 'html', label: t('Translate HTML'), enabled: Boolean(html) },
       { id: 'pdf', label: partial ? t('Translate More PDF Pages') : fullComplete ? t('Retranslate PDF') : t('Translate PDF'), enabled: Boolean(pdf) },
-      { id: 'scan', label: t('Translate Scanned PDF…'), enabled: false }
+      { id: 'latex', label: t('Translate arXiv LaTeX'), enabled: Boolean(paper?.arxivId && settings.latexTranslationEnabled) },
+      { id: 'scan', label: t('Translate Scanned PDF…'), enabled: Boolean(pdf) }
     ], anchor)
     if (choice === 'html') void translateHTML()
     if (choice === 'pdf') void translatePDF()
+    if (choice === 'latex') void startLatex()
+    if (choice === 'scan') void translateScan()
   }
 
   const showShareMenu = async (anchor: HTMLElement): Promise<void> => {

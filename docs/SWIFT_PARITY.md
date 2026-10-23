@@ -25,9 +25,13 @@
 | `Localizable.xcstrings` (en, zh-Hans) | The catalog is reused as `shared/locales/zh-Hans.json` |
 | `PaperTheme` Paper Tone, light-only interface | Same colors and PDF color matrix, light-only |
 
+## Additional cross-platform pipelines
+
+- arXiv LaTeX translation lives in the top-level `LaTeXTransKit/` package, with secure archive extraction, protected-token translation, checkpoint-friendly source storage, XeLaTeX compilation, and translated-source export.
+- Scanned-PDF translation lives in the top-level `RebuildPDFKit/` package; it renders pages locally with PDF.js, uses the configured vision and PDF routes, validates constrained LaTeX, checkpoints each page, and assembles XeLaTeX output with original-page fallback.
+- BabelDOC semantic hints are generated from cached arXiv source. Commands can consume the path through `{semanticHints}`; when omitted from a custom argument template, Freddie appends `--semantic-hints <path>`.
+
 ## Not yet ported
 
-- arXiv LaTeX translation (`LaTeXTranslationService`) and scanned-PDF translation (`RebuildPDFKit`). The LaTeX settings tab and toolchain detection are in place; the Translate menu shows *Translate Scanned PDF…* disabled.
-- BabelDOC semantic hints from arXiv LaTeX (the setting is kept for when the runtime supports it).
 - TeX typesetting inside HTML pages that ship raw TeX (`HTMLTeXRendering` / Temml).
 - The native app's per-selection assistant history markers in the reader and the web-search trace panel in Settings.

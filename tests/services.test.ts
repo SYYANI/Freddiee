@@ -5,6 +5,8 @@ import { applyHiddenRegions, sanitize } from '../electron/main/localizer'
 import { parseArxivAtom } from '../electron/main/importer'
 import { parseResponse } from '../electron/main/llm'
 import { assistantMessages } from '../electron/main/assistant'
+import { extractSemanticDocument, protectLatex, restoreLatex } from '../LaTeXTransKit'
+import { validatePageMarkup } from '../RebuildPDFKit'
 
 describe('HTML translation pipeline', () => {
   const page = `<html><head></head><body class="rp-readability-body"><main><h2>Method</h2>
@@ -56,6 +58,38 @@ describe('BabelDOC arguments', () => {
     expect(expandArguments(['--files', '{input}', '--pages', '{pages}', '--lang-out', '{lang}'], { '{input}': '/a b.pdf', '{pages}': '', '{lang}': 'zh-CN' }))
       .toEqual(['--files', '/a b.pdf', '--lang-out', 'zh-CN'])
     expect(expandArguments(['--pages', '{pages}'], { '{pages}': '1-10' })).toEqual(['--pages', '1-10'])
+  })
+})
+
+describe('LaTeXTransKit port', () => {
+  it('extracts ordered semantic blocks and protects math and citations', () => {
+    const document = extractSemanticDocument([{ name: 'main.tex', source: String.raw`\documentclass{article}
+\title{A Useful Paper}
+\begin{document}
+\section{Method}
+
+We prove $x^2$ using \cite{knuth} in this paragraph.
+\end{document}` }], '2401.00001')
+    expect(document.sourceIdentifier).toBe('2401.00001')
+    expect(document.blocks.map((block) => block.kind)).toEqual(['documentTitle', 'sectionHeading', 'paragraph'])
+    expect(document.blocks[2].alignmentText).toContain('[PROTECTED_SEMANTIC_0]')
+    expect(document.blocks[2].atoms.map((atom) => atom.kind)).toEqual(['math', 'citation'])
+  })
+
+  it('restores protected LaTeX only when every token keeps its order', () => {
+    const value = protectLatex(String.raw`\textbf{Proof} uses $x+y$ and \cite{a}.`)
+    expect(restoreLatex(value.template.replace('Proof', '证明').replace('uses', '使用'), value)).toBe(String.raw`\textbf{证明} 使用 $x+y$ and \cite{a}.`)
+    expect(restoreLatex(value.template.replace('[PROTECTED_LATEX_0]', ''), value)).toBeUndefined()
+    expect(restoreLatex(value.template.replace('[PROTECTED_LATEX_0]', '[PROTECTED_LATEX_1]'), value)).toBeUndefined()
+  })
+})
+
+describe('RebuildPDFKit port', () => {
+  it('accepts balanced page markup and rejects file access and definitions', () => {
+    expect(validatePageMarkup(String.raw`<page>\textbf{Title}\n\begin{align*}x&=1\end{align*}</page>`)).toContain('Title')
+    expect(validatePageMarkup(String.raw`\input{/etc/passwd}`)).toBeUndefined()
+    expect(validatePageMarkup(String.raw`\newcommand{\x}{unsafe}`)).toBeUndefined()
+    expect(validatePageMarkup(String.raw`\begin{itemize}\item Missing end`)).toBeUndefined()
   })
 })
 

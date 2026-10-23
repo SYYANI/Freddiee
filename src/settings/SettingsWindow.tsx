@@ -294,7 +294,7 @@ function BabelDocSettings(): JSX.Element {
 
   return (
     <>
-      <FormRow stacked><FormNote>{t('Freddie runs PDF translation through a local BabelDOC command. Arguments are passed without a shell; {input}, {outputDir}, {lang}, {model}, {baseUrl}, {apiKey}, {qps} and {pages} are replaced before it starts.')}</FormNote></FormRow>
+      <FormRow stacked><FormNote>{t('Freddie runs PDF translation through a local BabelDOC command. Arguments are passed without a shell; {input}, {outputDir}, {lang}, {model}, {baseUrl}, {apiKey}, {qps}, {pages} and {semanticHints} are replaced before it starts.')}</FormNote></FormRow>
       <FieldRow label={t('BabelDOC command')}>
         <TextInput monospaced value={command} onChange={(value) => { setCommand(value); persist(value, args) }} />
       </FieldRow>
@@ -389,7 +389,7 @@ function LatexTab(): JSX.Element {
           <Switch checked={settings.latexTranslationEnabled} onChange={(value) => save({ latexTranslationEnabled: value })} />
         </FormRow>
         <FormRow stacked><FormNote>{t("Translate Scanned PDF always uses this distribution's XeLaTeX.")}</FormNote></FormRow>
-        <FormRow stacked><FormNote>{t('arXiv LaTeX translation and scanned PDF translation are not available in the cross-platform app yet. Toolchain detection works so the paths are ready when they are.')}</FormNote></FormRow>
+        <FormRow stacked><FormNote>{t('LaTeX translation uses latexmk and XeLaTeX. Scanned PDF translation uses XeLaTeX and sends page images to the selected scanned-page model.')}</FormNote></FormRow>
         {settings.latexTranslationEnabled && status && !status.healthy && (
           <FormRow stacked><span className="warning inline-icon"><Icon name="exclamationmark.triangle" size={14} />{t('LaTeX translation is enabled, but the selected toolchain is not ready. Install MacTeX or choose a directory that contains latexmk and a PDF engine.')}</span></FormRow>
         )}

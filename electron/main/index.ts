@@ -596,6 +596,21 @@ function registerIpc(): void {
     const first = Number.isInteger(firstPage) && firstPage! > 0 ? firstPage : 1
     void translations.translatePDF(requireUUID(paperId), last, first)
   })
+  handle('translation:latex', async (_event, paperId: string) => {
+    const id = requireUUID(paperId)
+    if (translations.isRunning(id)) throw new Error(translator('Translation in Progress'))
+    const status = await latexStatus()
+    if (!status.latexmkPath) throw new Error(translator('PDF compilation requires a TeX distribution that includes latexmk.'))
+    void translations.translateLatex(id, status.latexmkPath)
+  })
+  handle('translation:scan', async (_event, paperId: string, lastPage?: number) => {
+    const id = requireUUID(paperId)
+    if (translations.isRunning(id)) throw new Error(translator('Translation in Progress'))
+    const status = await latexStatus()
+    if (!status.xelatexPath) throw new Error(translator('Scanned PDF translation needs XeLaTeX. Install MacTeX, or choose its folder in Settings > LaTeX.'))
+    const last = Number.isInteger(lastPage) && lastPage! > 0 ? lastPage : undefined
+    void translations.translateScannedPDF(id, status.xelatexPath, last)
+  })
   handle('translation:cancel', (_event, paperId: string) => translations.cancel(requireUUID(paperId)))
   handle('translation:abstract', (_event, paperId: string) => translations.translateAbstract(requireUUID(paperId)))
   handle('translation:reveal-log', (_event, path: string) => {

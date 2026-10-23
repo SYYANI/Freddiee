@@ -12,6 +12,8 @@ Electron main process
   ├─ PaperImporter       arXiv / web page / local PDF ingestion with staged progress
   ├─ localizer           Readability extraction, sanitizing, resource localization
   ├─ TranslationService  HTML segment pipeline, BabelDOC process, abstract translation
+  ├─ LaTeX pipeline      secure arXiv source extraction, semantic hints, protected translation, XeLaTeX
+  ├─ Scan rebuild        PDF.js page rendering, vision transcription, checked LaTeX, XeLaTeX assembly
   ├─ AssistantService    retrieval, prompts, streaming answers, saved conversations
   ├─ AnnotationStore     PDF annotation overlays and annotated-PDF export
   ├─ WritingStore        Markdown writings in Writings/{id}
@@ -34,6 +36,8 @@ The windows match native Freddie's scenes. Each is the same renderer bundle open
 7. BabelDOC is started with `spawn` without a shell and expands only exact argument placeholders. Its API key is also redacted from the saved log.
 8. API keys remain in the main process and are encrypted by the operating system.
 9. The native-library import runs the system `sqlite3` with a read-only URI and copies files; it never writes to the native store.
+10. arXiv source extraction rejects traversal, links, special files, oversized archives, and excessive file counts. TeX subprocesses run without shell escape and with paranoid TeX input/output restrictions.
+11. Scanned-page model output is size-limited, structurally checked, and rejected if it contains file access, macro-definition, shell, or dynamic-control-sequence commands.
 
 ## Persistence
 
@@ -41,4 +45,4 @@ The windows match native Freddie's scenes. Each is the same renderer bundle open
 
 ## Long-running work
 
-Import, translation, and the assistant publish typed events. The renderer treats its snapshot as a projection and reloads it after each change. HTML translation rewrites `paper.html` after every batch and sends each finished segment to the reader, which inserts it without reloading. PDF translation is replace-at-end: BabelDOC writes into `translations/run-*`, and only a successful run becomes the visible translated attachment; a continued run merges the new pages after the existing ones.
+Import, translation, and the assistant publish typed events. The renderer treats its snapshot as a projection and reloads it after each change. HTML translation rewrites `paper.html` after every batch and sends each finished segment to the reader, which inserts it without reloading. PDF translation is replace-at-end: BabelDOC writes into `translations/run-*`, and only a successful run becomes the visible translated attachment; a continued run merges the new pages after the existing ones. LaTeX units and scanned pages use credential-free checkpoints; changing a text route or glossary does not invalidate the more expensive cached page-image transcription.

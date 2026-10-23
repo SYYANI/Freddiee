@@ -11,6 +11,8 @@ import type { Translator } from '../../shared/i18n'
 import { latestAttachment, firstAttachment } from '../../shared/library'
 import { atomicWriteFile } from './files'
 import { complete, requestFor, resolveRoute, RouteError, type ResolvedRoute } from './llm'
+import { prepareSemanticHints, runLatexTranslation } from '../../LaTeXTransKit'
+import { runScannedTranslation } from '../../RebuildPDFKit'
 import type { FreddieStore } from './store'
 import type { SecretStore } from './secrets'
 
@@ -268,7 +270,7 @@ interface CacheEntry {
 
 interface RunningJob {
   controller: AbortController
-  kind: 'html' | 'pdf'
+  kind: 'html' | 'pdf' | 'latex' | 'scan'
 }
 
 export class TranslationService {
@@ -292,14 +294,14 @@ export class TranslationService {
     job.controller.abort(new DOMException('Translation cancelled', 'AbortError'))
   }
 
-  private begin(paperId: string, kind: 'html' | 'pdf'): AbortController {
+  private begin(paperId: string, kind: 'html' | 'pdf' | 'latex' | 'scan'): AbortController {
     if (this.jobs.has(paperId)) throw new Error(this.translator()('Translation in Progress'))
     const controller = new AbortController()
     this.jobs.set(paperId, { controller, kind })
     return controller
   }
 
-  private fail(paperId: string, kind: 'html' | 'pdf', error: unknown, signal: AbortSignal, logPath?: string): void {
+  private fail(paperId: string, kind: 'html' | 'pdf' | 'latex' | 'scan', error: unknown, signal: AbortSignal, logPath?: string): void {
     const t = this.translator()
     if (signal.aborted) {
       this.emit({ paperId, kind, type: 'cancelled', message: t('Translation cancelled.') })
@@ -437,6 +439,31 @@ export class TranslationService {
     return translateSegment(route, paper.abstract, settings.targetLanguage, { documentTitle: paper.title, glossary: normalizedGlossary(settings.translationGlossary) })
   }
 
+  async translateLatex(paperId: string, latexmkPath: string): Promise<void> {
+    const t = this.translator()
+    const controller = this.begin(paperId, 'latex')
+    try {
+      await runLatexTranslation({ paperId, store: this.store, secrets: this.secrets, latexmkPath, signal: controller.signal, emit: this.emit, t })
+    } catch (error) {
+      const logPath = error && typeof error === 'object' && 'logPath' in error && typeof error.logPath === 'string' ? error.logPath : undefined
+      this.fail(paperId, 'latex', error, controller.signal, logPath)
+    } finally {
+      this.jobs.delete(paperId)
+    }
+  }
+
+  async translateScannedPDF(paperId: string, xelatexPath: string, lastPage?: number): Promise<void> {
+    const t = this.translator()
+    const controller = this.begin(paperId, 'scan')
+    try {
+      await runScannedTranslation({ paperId, lastPage, store: this.store, secrets: this.secrets, xelatexPath, signal: controller.signal, emit: this.emit, t })
+    } catch (error) {
+      this.fail(paperId, 'scan', error, controller.signal)
+    } finally {
+      this.jobs.delete(paperId)
+    }
+  }
+
   // MARK: PDF (BabelDOC)
 
   /**
@@ -460,6 +487,15 @@ export class TranslationService {
       await mkdir(outputDirectory, { recursive: true })
       logPath = join(outputDirectory, 'babeldoc.log')
       const input = this.store.attachmentPath(paperId, pdf.id)
+      let semanticHints: string | undefined
+      if (settings.useArxivLatexStructure && this.store.paper(paperId).arxivId) {
+        this.emit({ paperId, kind: 'pdf', type: 'status', message: t('Preparing arXiv LaTeX source...') })
+        try {
+          semanticHints = await prepareSemanticHints(paperId, this.store, signal)
+        } catch {
+          // Semantic hints are optional evidence; PDF-only translation remains available.
+        }
+      }
       const pages = lastPage ? `${firstPage}-${lastPage}` : ''
       const replacements: Record<string, string> = {
         '{input}': input,
@@ -469,9 +505,11 @@ export class TranslationService {
         '{baseUrl}': route.baseURL,
         '{apiKey}': route.apiKey,
         '{qps}': String(Math.max(1, settings.babelDocQPS)),
-        '{pages}': pages
+        '{pages}': pages,
+        '{semanticHints}': semanticHints ?? ''
       }
       const args = expandArguments(settings.babelDocArguments, replacements)
+      if (semanticHints && !settings.babelDocArguments.some((argument) => argument.includes('{semanticHints}'))) args.push('--semantic-hints', semanticHints)
       this.emit({ paperId, kind: 'pdf', type: 'status', message: t('Translating PDF with BabelDOC...') })
       await runBabelDoc(settings.babelDocCommand, args, logPath, route.apiKey, signal, (percent) => {
         this.emit({ paperId, kind: 'pdf', type: 'progress', completed: percent, total: 100, summary: `${Math.round(percent)}%`, message: t('Translating PDF with BabelDOC...') })

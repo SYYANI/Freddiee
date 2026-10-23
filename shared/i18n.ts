@@ -10,16 +10,16 @@ const extraZhHans: Record<string, string> = {
   'PDF Translation Runtime': 'PDF 翻译运行时',
   'BabelDOC command': 'BabelDOC 命令',
   'Command arguments (one per line)': '命令参数（每行一项）',
-  'Freddie runs PDF translation through a local BabelDOC command. Arguments are passed without a shell; {input}, {outputDir}, {lang}, {model}, {baseUrl}, {apiKey}, {qps} and {pages} are replaced before it starts.':
-    'Freddie 通过本地 BabelDOC 命令运行 PDF 翻译。参数不经过 shell 直接传递；启动前会替换 {input}、{outputDir}、{lang}、{model}、{baseUrl}、{apiKey}、{qps} 和 {pages}。',
+  'Freddie runs PDF translation through a local BabelDOC command. Arguments are passed without a shell; {input}, {outputDir}, {lang}, {model}, {baseUrl}, {apiKey}, {qps}, {pages} and {semanticHints} are replaced before it starts.':
+    'Freddie 通过本地 BabelDOC 命令运行 PDF 翻译。参数不经过 shell 直接传递；启动前会替换 {input}、{outputDir}、{lang}、{model}、{baseUrl}、{apiKey}、{qps}、{pages} 和 {semanticHints}。',
   'Check BabelDOC': '检查 BabelDOC',
   'Restore Default Arguments': '恢复默认参数',
   'BabelDOC was not found. Install it (for example `uv tool install BabelDOC`) or set its full path.':
     '未找到 BabelDOC。请先安装（例如 `uv tool install BabelDOC`）或填写完整路径。',
   'API keys are encrypted with the operating system’s credential storage. Leaving the API key field blank while editing keeps the saved key.':
     'API 密钥由操作系统的凭据存储加密保存。编辑时将 API 密钥留空会保留已保存的密钥。',
-  'arXiv LaTeX translation and scanned PDF translation are not available in the cross-platform app yet. Toolchain detection works so the paths are ready when they are.':
-    '跨平台版暂不支持 arXiv LaTeX 翻译和扫描版 PDF 翻译。工具链检测已可用，后续接入时可直接使用这些路径。',
+  'LaTeX translation uses latexmk and XeLaTeX. Scanned PDF translation uses XeLaTeX and sends page images to the selected scanned-page model.':
+    'LaTeX 翻译使用 latexmk 和 XeLaTeX。扫描版 PDF 翻译使用 XeLaTeX，并会把页面图像发送给所选的扫描页模型。',
   'TeX Live / MacTeX': 'TeX Live / MacTeX',
   'Download TeX Live': '下载 TeX Live',
   'Writing Window': '写作窗口',

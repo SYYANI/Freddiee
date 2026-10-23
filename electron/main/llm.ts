@@ -3,12 +3,18 @@ import type { Translator } from '../../shared/i18n'
 import type { FreddieStore } from './store'
 import type { SecretStore } from './secrets'
 
+export type LLMMessagePart = { type: 'text'; text: string } | { type: 'image'; data: Uint8Array; mediaType: 'image/jpeg' | 'image/png' }
+export interface LLMMessage {
+  role: ChatMessage['role']
+  content: string | LLMMessagePart[]
+}
+
 export interface CompletionRequest {
   baseURL: string
   apiStyle: LLMAPIStyle
   apiKey: string
   model: string
-  messages: ChatMessage[]
+  messages: LLMMessage[]
   temperature?: number
   topP?: number
   maxTokens?: number
@@ -27,6 +33,8 @@ export interface WebSearchSource {
 export interface CompletionResponse {
   text: string
   sources: WebSearchSource[]
+  finishReason?: 'stop' | 'length' | 'other'
+  usage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number }
 }
 
 export class LLMError extends Error {
@@ -105,7 +113,7 @@ export function routeFor(provider: { id: string; name: string; baseURL: string; 
 }
 
 /** The request for a route; Anthropic models only receive sampling values that were set explicitly. */
-export function requestFor(route: ResolvedRoute, messages: ChatMessage[], options: { defaultTemperature?: number; webSearch?: boolean; signal?: AbortSignal; maxTokens?: number } = {}): CompletionRequest {
+export function requestFor(route: ResolvedRoute, messages: LLMMessage[], options: { defaultTemperature?: number; webSearch?: boolean; signal?: AbortSignal; maxTokens?: number; timeoutMs?: number } = {}): CompletionRequest {
   return {
     baseURL: route.baseURL,
     apiStyle: route.apiStyle,
@@ -114,12 +122,38 @@ export function requestFor(route: ResolvedRoute, messages: ChatMessage[], option
     messages,
     temperature: route.temperature ?? (route.apiStyle === 'anthropic-messages' ? undefined : options.defaultTemperature),
     topP: route.topP,
-    maxTokens: route.maxTokens ?? options.maxTokens,
+    maxTokens: options.maxTokens ?? route.maxTokens,
     thinkingMode: route.thinkingMode,
     reasoningEffort: route.reasoningEffort,
     webSearch: options.webSearch,
-    signal: options.signal
+    signal: options.signal,
+    timeoutMs: options.timeoutMs
   }
+}
+
+function dataURL(part: Extract<LLMMessagePart, { type: 'image' }>): string {
+  return `data:${part.mediaType};base64,${Buffer.from(part.data).toString('base64')}`
+}
+
+function chatContent(content: LLMMessage['content']): string | Array<Record<string, unknown>> {
+  if (typeof content === 'string') return content
+  return content.map((part) => part.type === 'text'
+    ? { type: 'text', text: part.text }
+    : { type: 'image_url', image_url: { url: dataURL(part) } })
+}
+
+function responsesContent(content: LLMMessage['content']): string | Array<Record<string, unknown>> {
+  if (typeof content === 'string') return content
+  return content.map((part) => part.type === 'text'
+    ? { type: 'input_text', text: part.text }
+    : { type: 'input_image', image_url: dataURL(part) })
+}
+
+function anthropicContent(content: LLMMessage['content']): string | Array<Record<string, unknown>> {
+  if (typeof content === 'string') return content
+  return content.map((part) => part.type === 'text'
+    ? { type: 'text', text: part.text }
+    : { type: 'image', source: { type: 'base64', media_type: part.mediaType, data: Buffer.from(part.data).toString('base64') } })
 }
 
 function endpoint(baseURL: string, apiStyle: LLMAPIStyle): string {
@@ -131,7 +165,7 @@ function endpoint(baseURL: string, apiStyle: LLMAPIStyle): string {
 function body(request: CompletionRequest, stream: boolean): Record<string, unknown> {
   const { messages } = request
   if (request.apiStyle === 'chat-completions') {
-    const result: Record<string, unknown> = { model: request.model, messages, stream }
+    const result: Record<string, unknown> = { model: request.model, messages: messages.map((message) => ({ role: message.role, content: chatContent(message.content) })), stream }
     if (request.temperature !== undefined) result.temperature = request.temperature
     if (request.topP !== undefined) result.top_p = request.topP
     if (request.maxTokens !== undefined) result.max_tokens = request.maxTokens
@@ -145,7 +179,7 @@ function body(request: CompletionRequest, stream: boolean): Record<string, unkno
   if (request.apiStyle === 'responses') {
     const result: Record<string, unknown> = {
       model: request.model,
-      input: messages.map((message) => ({ role: message.role === 'system' ? 'developer' : message.role, content: message.content })),
+      input: messages.map((message) => ({ role: message.role === 'system' ? 'developer' : message.role, content: responsesContent(message.content) })),
       stream
     }
     if (request.temperature !== undefined) result.temperature = request.temperature
@@ -159,11 +193,11 @@ function body(request: CompletionRequest, stream: boolean): Record<string, unkno
     }
     return result
   }
-  const system = messages.filter((message) => message.role === 'system').map((message) => message.content).filter(Boolean).join('\n\n')
+  const system = messages.filter((message) => message.role === 'system').map((message) => typeof message.content === 'string' ? message.content : message.content.filter((part) => part.type === 'text').map((part) => part.text).join('\n')).filter(Boolean).join('\n\n')
   const result: Record<string, unknown> = {
     model: request.model,
     max_tokens: request.maxTokens ?? 16_000,
-    messages: messages.filter((message) => message.role !== 'system').map((message) => ({ role: message.role === 'assistant' ? 'assistant' : 'user', content: message.content })),
+    messages: messages.filter((message) => message.role !== 'system').map((message) => ({ role: message.role === 'assistant' ? 'assistant' : 'user', content: anthropicContent(message.content) })),
     stream
   }
   if (system) result.system = system
@@ -250,7 +284,22 @@ export function parseResponse(apiStyle: LLMAPIStyle, json: Record<string, unknow
       }
     }
   }
-  return { text: text.trim(), sources: dedupeSources(sources) }
+  const finish = apiStyle === 'chat-completions'
+    ? (json.choices as Array<{ finish_reason?: string }> | undefined)?.[0]?.finish_reason
+    : apiStyle === 'responses'
+      ? (json.status === 'incomplete' ? 'length' : json.status === 'completed' ? 'stop' : undefined)
+      : json.stop_reason
+  const usage = json.usage as { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; input_tokens?: number; output_tokens?: number } | undefined
+  return {
+    text: text.trim(),
+    sources: dedupeSources(sources),
+    finishReason: finish === 'length' || finish === 'max_tokens' ? 'length' : finish === 'stop' || finish === 'end_turn' ? 'stop' : finish ? 'other' : undefined,
+    usage: usage ? {
+      inputTokens: usage.prompt_tokens ?? usage.input_tokens,
+      outputTokens: usage.completion_tokens ?? usage.output_tokens,
+      totalTokens: usage.total_tokens ?? ((usage.prompt_tokens ?? usage.input_tokens ?? 0) + (usage.completion_tokens ?? usage.output_tokens ?? 0))
+    } : undefined
+  }
 }
 
 function dedupeSources(sources: WebSearchSource[]): WebSearchSource[] {
