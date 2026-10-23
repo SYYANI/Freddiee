@@ -463,7 +463,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   const showTranslateMenu = async (anchor: HTMLElement): Promise<void> => {
     const choice = await popupMenu([
       { id: 'html', label: t('Translate HTML'), enabled: Boolean(html) },
-      { id: 'latex', label: t('Translate arXiv LaTeX'), enabled: Boolean(paper?.arxivId && settings.latexTranslationEnabled) },
+      { id: 'latex', label: t('Translate arXiv LaTeX'), enabled: Boolean(paper?.arxivId) },
       continuable
         ? { id: 'more', label: t('Translate More PDF Pages'), enabled: Boolean(pdf) }
         : { id: 'scan', label: t('Translate Scanned PDF…'), enabled: Boolean(pdf) }

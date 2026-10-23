@@ -791,7 +791,6 @@ function sanitizeSettings(patch: Partial<AppSettings>): Partial<AppSettings> {
   assign('digestTemplate', isString)
   assign('digestExportDirectory', (value) => value === undefined || value === null)
   assign('latexToolchainDirectory', (value) => value === undefined || value === null)
-  assign('latexTranslationEnabled', isBoolean)
   assign('quickSetupHidden', isBoolean)
   assign('translationSetupNoticeHandled', isBoolean)
   assign('scannedTranscriptionPaperIds', (value) => Array.isArray(value) && value.every(isUUID))

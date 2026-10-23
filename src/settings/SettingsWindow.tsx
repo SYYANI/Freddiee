@@ -321,16 +321,6 @@ function LatexTab(): JSX.Element {
 
   return (
     <div className="settings-form">
-      <FormSection title={t('LaTeX Translation')}>
-        <FormRow label={t('Enable arXiv LaTeX translation')} help={t("When enabled, Translate arXiv LaTeX appears in the reader's Translate menu. It downloads the paper source, translates its semantic units, and uses the selected external TeX distribution to compile the translated PDF.")}>
-          <Switch checked={settings.latexTranslationEnabled} onChange={(value) => save({ latexTranslationEnabled: value })} />
-        </FormRow>
-        <FormRow stacked><FormNote>{t("Translate Scanned PDF always uses this distribution's XeLaTeX.")}</FormNote></FormRow>
-        <FormRow stacked><FormNote>{t('LaTeX translation uses latexmk and XeLaTeX. Scanned PDF translation uses XeLaTeX and sends page images to the selected scanned-page model.')}</FormNote></FormRow>
-        {settings.latexTranslationEnabled && status && !status.healthy && (
-          <FormRow stacked><span className="warning inline-icon"><Icon name="exclamationmark.triangle" size={14} />{t('LaTeX translation is enabled, but the selected toolchain is not ready. Install MacTeX or choose a directory that contains latexmk and a PDF engine.')}</span></FormRow>
-        )}
-      </FormSection>
       <FormSection title={t('TeX Live / MacTeX')}>
         <FormRow stacked><span>{t('If you do not have a TeX distribution installed, MacTeX is recommended. The distribution is installed and maintained separately from Freddie.')}</span></FormRow>
         <FormRow>

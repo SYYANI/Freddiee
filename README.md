@@ -9,7 +9,7 @@ The desktop architecture follows DeepSeek Harness Desktop: an Electron shell own
 - **Library**: folders (collapsible sections, drag papers onto a folder), favorites, Zotero item types with detection, a filter for favorites / translated / noted papers and item types, and native context menus.
 - **Import**: arXiv ID or URL (Atom API with abs-page fallback, PDF, optional arXiv HTML → ar5iv), any web page (Readability extraction, localized images and styles, PDF responses routed to the PDF path), local PDFs from a file dialog or by dropping them on the window. Every import reports staged progress.
 - **Reading**: PDF.js continuous pages with text selection, find, links, Paper Tone, and margin notes; side-by-side bilingual PDF with leader/follower scroll sync; sandboxed, script-free HTML reader with Original/Bilingual/Translated display, font size, find, margin notes, and region hiding.
-- **Translation**: HTML segment translation with the native academic prompt, placeholder protection, output validation, a per-paper cache, and live updates; PDF translation that rebuilds each page with a vision model, Tesseract and XeLaTeX on the original layout, like native Freddie's scanned-PDF route (needs TeX Live, MacTeX or MiKTeX), including first-N-pages batches and continuing a partial translation; abstract translation in the inspector.
+- **Translation**: HTML segment translation with the native academic prompt, placeholder protection, output validation, a per-paper cache, and live updates; arXiv LaTeX source translation with semantic units and external TeX compilation; PDF translation that rebuilds each page with a vision model, Tesseract and XeLaTeX on the original layout, like native Freddie's scanned-PDF route (needs TeX Live, MacTeX or MiKTeX), including first-N-pages batches and continuing a partial translation; abstract translation in the inspector.
 - **Reading assistant**: Explain, Ask, and Translate on any selection, with retrieved paper sources, streaming answers, follow-ups, optional server-side web search, saved conversations, and Save as Note.
 - **Notes and annotations**: notes anchored to PDF pages or HTML passages, Markdown previews, highlight / underline / strike-out / ink / text-note PDF annotations with undo, and annotated-PDF export.
 - **Writing**: Markdown writings in the inspector or their own window, with live syntax, inline images and math, citations of passages (`readpaper://` links compatible with native Freddie), Quote in Writing, word counts, and rename / trash.
@@ -17,8 +17,6 @@ The desktop architecture follows DeepSeek Harness Desktop: an Electron shell own
 - **Settings**: General (quick setup, language, target language, glossary, performance), Reader (typography, appearance, translation routes), LaTeX (toolchain detection), Digest, Providers, and Models, using the OpenAI Responses, Chat Completions, or Anthropic Messages API.
 - **Moving from the Mac app**: on macOS, *File → Import Library from Freddie for macOS…* copies papers, attachments, translations, notes, folders, item types, reading positions, and writings from the native app's library. The native library is opened read-only and not changed; API keys stay in the Keychain and must be entered again.
 - **Interface**: English and Simplified Chinese (the native string catalog is reused), Default and Paper Tone appearances, macOS vibrancy and Windows acrylic window materials.
-
-Not yet available in the cross-platform app: arXiv LaTeX translation. Its settings and toolchain detection are present so the path is ready.
 
 ## Develop
 

@@ -148,7 +148,6 @@ export interface AppSettings {
   collapsedFolderIds: string[]
   digestExportDirectory?: string
   digestTemplate: string
-  latexTranslationEnabled: boolean
   latexToolchainDirectory?: string
   quickSetupHidden: boolean
   translationSetupNoticeHandled: boolean

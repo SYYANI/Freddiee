@@ -128,12 +128,13 @@ describe('migrateDatabase', () => {
     expect(result.legacyWritings[0]).toMatchObject({ markdown: '# Draft' })
   })
 
-  it('drops the settings of the removed BabelDOC runtime', () => {
-    const { database } = migrateDatabase({ schemaVersion, settings: { babelDocQPS: 8, babelDocCommand: 'babeldoc', babelDocArguments: ['--openai'], useArxivLatexStructure: true, htmlFontSize: 19 } })
+  it('drops settings for removed translation controls', () => {
+    const { database } = migrateDatabase({ schemaVersion, settings: { babelDocQPS: 8, babelDocCommand: 'babeldoc', babelDocArguments: ['--openai'], useArxivLatexStructure: true, latexTranslationEnabled: true, htmlFontSize: 19 } })
     expect(database.settings).not.toHaveProperty('babelDocQPS')
     expect(database.settings).not.toHaveProperty('babelDocCommand')
     expect(database.settings).not.toHaveProperty('babelDocArguments')
     expect(database.settings).not.toHaveProperty('useArxivLatexStructure')
+    expect(database.settings).not.toHaveProperty('latexTranslationEnabled')
     expect(database.settings.htmlFontSize).toBe(19)
   })
 

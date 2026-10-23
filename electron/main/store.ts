@@ -92,7 +92,6 @@ export const defaultSettings = (): AppSettings => ({
   inspectorMode: 'paper',
   collapsedFolderIds: [],
   digestTemplate: defaultDigestTemplate,
-  latexTranslationEnabled: false,
   quickSetupHidden: false,
   translationSetupNoticeHandled: false,
   scannedTranscriptionPaperIds: [],
@@ -568,9 +567,9 @@ export function migrateDatabase(value: Record<string, unknown>): MigrationResult
   return migrateV2(value)
 }
 
-// Settings of the removed BabelDOC runtime. Dropping them needs no schema change: an older
-// build fills in its defaults again.
-const removedSettingKeys = ['babelDocQPS', 'babelDocCommand', 'babelDocArguments', 'useArxivLatexStructure']
+// Obsolete translation settings. Dropping them needs no schema change: an older build fills in
+// its defaults again.
+const removedSettingKeys = ['babelDocQPS', 'babelDocCommand', 'babelDocArguments', 'useArxivLatexStructure', 'latexTranslationEnabled']
 
 function normalizeV3(value: Partial<Database>): Database {
   const base = emptyDatabase()

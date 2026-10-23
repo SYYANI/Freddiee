@@ -10,7 +10,7 @@ Freddie Cross-Platform is an Electron 44 + React 18 + TypeScript application.
 
 Preserve the security invariants in `docs/ARCHITECTURE.md`. Do not expose arbitrary filesystem paths, generic IPC, raw secrets, or shell execution to the renderer. Add persisted fields through a monotonic store migration. Use atomic replacement for user-authored data and translation outputs.
 
-Before handing off changes, run:
+Validate changes proportionally. For small, localized changes, run `npm run typecheck` and only the directly relevant targeted tests; do not run the full test suite or production build every time. Run the complete validation set for broad, high-risk, cross-module, release-oriented changes, or when the user explicitly requests it:
 
 ```sh
 npm run typecheck
