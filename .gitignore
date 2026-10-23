@@ -4,6 +4,9 @@ release/
 coverage/
 .DS_Store
 *.log
+RebuildPDFKit/.build/
+RebuildPDFKit/bin/
 .env
 .env.*
 !.env.example
+RebuildPDFKit/.build/*
