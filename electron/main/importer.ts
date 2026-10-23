@@ -419,6 +419,15 @@ export async function readPDFMetadata(data: Uint8Array): Promise<{ title?: strin
  * builds unpack the fonts outside the asar archive.
  */
 export function standardFontDataURL(): string {
-  const directory = join(dirname(require.resolve('pdfjs-dist/package.json')), 'standard_fonts').replace(/app\.asar([\\/])/, 'app.asar.unpacked$1')
+  return pdfjsDataDirectory('standard_fonts')
+}
+
+/** pdf.js's WebAssembly image decoders (JBIG2, JPEG 2000), needed to render scanned pages. */
+export function wasmDataURL(): string {
+  return pdfjsDataDirectory('wasm')
+}
+
+function pdfjsDataDirectory(name: string): string {
+  const directory = join(dirname(require.resolve('pdfjs-dist/package.json')), name).replace(/app\.asar([\\/])/, 'app.asar.unpacked$1')
   return `${directory}${sep}`
 }

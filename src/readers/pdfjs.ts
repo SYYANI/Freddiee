@@ -1,10 +1,30 @@
 import * as pdfjs from 'pdfjs-dist'
 import workerURL from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+import jbig2URL from 'pdfjs-dist/wasm/jbig2.wasm?url'
+import openjpegURL from 'pdfjs-dist/wasm/openjpeg.wasm?url'
+import qcmsURL from 'pdfjs-dist/wasm/qcms_bg.wasm?url'
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist'
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerURL
 
 export { pdfjs }
+
+const wasmURLs: Record<string, string> = { 'jbig2.wasm': jbig2URL, 'openjpeg.wasm': openjpegURL, 'qcms_bg.wasm': qcmsURL }
+
+/**
+ * pdf.js decodes JBIG2 and JPEG 2000 images (common in scanned papers) and ICC colors with
+ * WebAssembly it requests by file name. Vite emits those files with hashed names, so this
+ * factory maps each name to its bundled URL; without it such pages draw blank.
+ */
+class BundledBinaryDataFactory {
+  async fetch({ kind, filename }: { kind: string; filename: string }): Promise<Uint8Array> {
+    const url = kind === 'wasmUrl' ? wasmURLs[filename] : undefined
+    if (!url) throw new Error(`Unable to load ${kind} data: ${filename}`)
+    const response = await fetch(url)
+    if (!response.ok) throw new Error(`Unable to load ${kind} data: ${filename}`)
+    return new Uint8Array(await response.arrayBuffer())
+  }
+}
 
 interface CachedDocument {
   url: string
@@ -19,7 +39,7 @@ const cache = new Map<string, CachedDocument>()
 export function openDocument(url: string): { promise: Promise<PDFDocumentProxy>; release: () => void } {
   let entry = cache.get(url)
   if (!entry) {
-    const task = pdfjs.getDocument({ url, enableXfa: false })
+    const task = pdfjs.getDocument({ url, enableXfa: false, useWorkerFetch: false, BinaryDataFactory: BundledBinaryDataFactory })
     entry = { url, task, promise: task.promise, users: 0 }
     cache.set(url, entry)
   }

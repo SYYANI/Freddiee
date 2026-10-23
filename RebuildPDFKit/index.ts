@@ -9,6 +9,7 @@ import type { TranslationEvent } from '../shared/types'
 import type { Translator } from '../shared/i18n'
 import { firstAttachment } from '../shared/library'
 import { atomicWriteFile } from '../electron/main/files'
+import { wasmDataURL } from '../electron/main/importer'
 import { complete, requestFor, resolveRoute, type ResolvedRoute } from '../electron/main/llm'
 import { protectLatex, restoreLatex } from '../LaTeXTransKit'
 import type { FreddieStore } from '../electron/main/store'
@@ -223,7 +224,7 @@ export async function runScannedTranslation(options: {
   const inputPath = store.attachmentPath(paperId, attachment.id)
   const inputBytes = new Uint8Array(await readFile(inputPath))
   const sourceHash = sha256(inputBytes)
-  const task = getDocument({ data: inputBytes.slice(), useSystemFonts: true })
+  const task = getDocument({ data: inputBytes.slice(), useSystemFonts: true, wasmUrl: wasmDataURL() })
   const document = await task.promise
   const pageCount = document.numPages
   try {
