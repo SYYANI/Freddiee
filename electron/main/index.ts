@@ -608,6 +608,7 @@ function registerIpc(): void {
   })
   handle('settings:latex-status', () => latexStatus())
   handle('settings:open', (_event, tab?: string) => openSettingsWindow(typeof tab === 'string' ? tab : undefined))
+  handle('about:open', () => openAboutWindow())
 
   // Translation
   handle('translation:html', (_event, paperId: string) => {

@@ -67,7 +67,8 @@ const api: FreddieAPI = {
     quickSetup: (providerId, apiKey) => invoke('settings:quick-setup', providerId, apiKey),
     chooseDirectory: (purpose) => invoke('settings:choose-directory', purpose),
     latexStatus: () => invoke('settings:latex-status'),
-    openSettings: (tab) => invoke('settings:open', tab)
+    openSettings: (tab) => invoke('settings:open', tab),
+    openAbout: () => invoke('about:open')
   },
   translation: {
     translateHTML: (paperId) => invoke('translation:html', paperId),

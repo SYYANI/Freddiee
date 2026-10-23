@@ -415,6 +415,7 @@ export interface FreddieAPI {
     chooseDirectory(purpose: 'digest' | 'latex'): Promise<string | null>
     latexStatus(): Promise<LatexToolchainStatus>
     openSettings(tab?: string): Promise<void>
+    openAbout(): Promise<void>
   }
   translation: {
     translateHTML(paperId: string): Promise<void>

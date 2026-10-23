@@ -150,6 +150,15 @@ function GeneralTab({ onSelectTab }: { onSelectTab: (tab: Tab) => void }): JSX.E
           </Disclosure>
         </FormRow>
       </FormSection>
+
+      {/* macOS reaches About from the app menu; elsewhere the menu bar is hidden. */}
+      {window.freddie.platform !== 'darwin' && (
+        <FormSection>
+          <FormRow label={<span className="secondary">{t('Version %@ (Build %@)', __APP_VERSION__, __APP_BUILD__)}</span>}>
+            <Button onClick={() => void window.freddie.settings.openAbout()}>{`${t('About Freddie')}…`}</Button>
+          </FormRow>
+        </FormSection>
+      )}
     </div>
   )
 }
