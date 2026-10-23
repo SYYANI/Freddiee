@@ -16,7 +16,8 @@
     "package": "npm run build && electron-builder",
     "package:mac": "npm run build && electron-builder --mac",
     "package:win": "npm run build && electron-builder --win",
-    "package:linux": "npm run build && electron-builder --linux"
+    "package:linux": "npm run build && electron-builder --linux",
+    "postinstall": "node scripts/patch-dev-electron-name.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",
@@ -29,6 +30,7 @@
     "cheerio": "^1.1.2",
     "jsdom": "^25.0.1",
     "katex": "^0.18.10",
+    "koffi": "^3.3.3",
     "lucide-react": "^0.468.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.4.299",

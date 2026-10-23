@@ -42,8 +42,6 @@ export interface ReaderPaneProps {
   notes: Note[]
   inspectorCollapsed: boolean
   onToggleInspector: () => void
-  sidebarOpen: boolean
-  onShowSidebar: () => void
   selection: NoteSelectionContext | null
   onSelection: (selection: NoteSelectionContext | null) => void
   onCreateNote: (asSidenote: boolean) => void
@@ -596,11 +594,6 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   return (
     <div className={`reader-pane appearance-${appearance}`}>
       <div className="reader-toolbar drag-region">
-        {!props.sidebarOpen && (
-          <div className="toolbar-leading no-drag">
-            <IconButton icon="sidebar.left" label={t('Show Sidebar')} size={19} onClick={props.onShowSidebar} />
-          </div>
-        )}
         <div className="window-title">{titleBarTitle}</div>
         <div className="toolbar-trailing no-drag">
           {paper && (

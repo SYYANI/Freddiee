@@ -38,6 +38,7 @@ import { builtInProviders, FreddieStore } from './store'
 import { babelDocVersion, TranslationService, translationDisplayCSS } from './translation'
 import { WritingStore } from './writings'
 import { importNativeLibrary, nativeLibraryExists } from './nativeLibrary'
+import { applyUnifiedToolbar } from './windowChrome'
 import { applyHiddenRegions, readableProseColorCSS, readableProseLayoutCSS } from './localizer'
 import * as cheerio from 'cheerio'
 
@@ -210,6 +211,7 @@ function createMainWindow(): void {
   const route: WindowRoute = { kind: 'main' }
   const window = new BrowserWindow({ width: 1220, height: 780, minWidth: 1040, minHeight: 640, title: 'Freddie', ...baseWindowOptions(route, 'sidebar') })
   windows.main = window
+  applyUnifiedToolbar(window)
   hardenWindow(window)
   window.on('closed', () => {
     windows.main = undefined

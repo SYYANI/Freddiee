@@ -2,6 +2,9 @@
 
 .main-window {
   --sidebar-inset: 8px;
+  --sidebar-transition: 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  --leading-toolbar-left: 102px;
+  --leading-toolbar-width: 130px;
   --reader-left: calc(var(--sidebar-width) + var(--sidebar-inset));
   position: relative;
   width: 100%;
@@ -22,6 +25,7 @@
   width: var(--reader-left);
   background: var(--reader-bg);
   pointer-events: none;
+  transition: width var(--sidebar-transition);
 }
 
 .reader-column {
@@ -31,6 +35,7 @@
   left: var(--reader-left);
   right: var(--inspector-width);
   min-width: 0;
+  transition: left var(--sidebar-transition);
 }
 
 .column-resizer {
@@ -54,7 +59,7 @@
   position: absolute;
   inset: 6px;
   z-index: 90;
-  border-radius: 14px;
+  border-radius: max(calc(var(--window-radius) - 6px), 4px);
   border: 2.5px solid var(--accent);
   background: rgba(0, 122, 255, 0.06);
   pointer-events: none;
@@ -71,7 +76,7 @@
   z-index: 20;
   display: flex;
   flex-direction: column;
-  border-radius: 18px;
+  border-radius: max(calc(var(--window-radius) - var(--sidebar-inset)), 4px);
   background: var(--sidebar-bg);
   box-shadow:
     inset 0 1px 0 var(--sidebar-rim),
@@ -80,6 +85,43 @@
     0 1px 2px rgba(0, 0, 0, 0.05),
     0 12px 32px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  transition: transform var(--sidebar-transition), visibility 0s;
+}
+
+.sidebar-hidden .sidebar {
+  transform: translateX(calc(-100% - 2 * var(--sidebar-inset)));
+  visibility: hidden;
+  transition: transform var(--sidebar-transition), visibility 0s 0.28s;
+}
+
+body.resizing-columns .main-window::before,
+body.resizing-columns .reader-column,
+body.resizing-columns .reader-toolbar {
+  transition: none;
+}
+
+/* Add, delete and sidebar buttons keep one position whether the sidebar is shown or hidden;
+   only their glass backing appears once they float over the reader. */
+.window-leading-toolbar {
+  position: fixed;
+  top: 0;
+  left: var(--leading-toolbar-left);
+  z-index: 50;
+  height: var(--toolbar-height);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.window-leading-toolbar .toolbar-group {
+  transition: background-color var(--sidebar-transition), box-shadow var(--sidebar-transition);
+}
+
+.main-window:not(.sidebar-hidden) .window-leading-toolbar .toolbar-group {
+  background-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 /* Specular edge: brighter along the top-left, fading toward the bottom-right. */
@@ -108,23 +150,6 @@ html[data-platform="linux"] .sidebar::after {
 .sidebar-toolbar {
   flex: none;
   height: calc(var(--toolbar-height) - var(--sidebar-inset));
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0 7px 0 80px;
-}
-
-.sidebar-toolbar-items {
-  display: flex;
-  align-items: center;
-}
-
-.sidebar-toolbar-items .icon-button:nth-child(1) {
-  margin-right: 18px;
-}
-
-.sidebar-toolbar-items .icon-button:nth-child(2) {
-  margin-right: 12px;
 }
 
 .sidebar-list {
@@ -337,6 +362,7 @@ html[data-appearance="paper"] .reader-pane {
   gap: 10px;
   padding: 0 8px 0 20px;
   pointer-events: none;
+  transition: left var(--sidebar-transition), padding-left var(--sidebar-transition);
 }
 
 .reader-toolbar > * {
@@ -344,18 +370,12 @@ html[data-appearance="paper"] .reader-pane {
 }
 
 .sidebar-hidden .reader-toolbar {
-  padding-left: 84px;
+  padding-left: calc(var(--leading-toolbar-left) + var(--leading-toolbar-width) + 22px);
 }
 
 html[data-platform="win32"] .reader-toolbar,
 html[data-platform="linux"] .reader-toolbar {
   padding-right: 150px;
-}
-
-.toolbar-leading {
-  display: flex;
-  align-items: center;
-  margin-left: -6px;
 }
 
 .window-title {

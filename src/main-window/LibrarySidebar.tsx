@@ -12,16 +12,14 @@ import {
 } from '../../shared/library'
 import { useApp } from '../app/context'
 import { popupMenu } from '../app/native'
-import { Button, IconButton } from '../ui/controls'
+import { Button } from '../ui/controls'
 import { Icon } from '../ui/Icon'
 
 const paperDragType = 'application/x-freddie-paper'
 
 export interface SidebarActions {
   onSelect: (paperId: string) => void
-  onAddPaper: () => void
   onDeletePaper: (paper: Paper) => void
-  onToggleSidebar: () => void
   onNewFolder: (paperId?: string) => void
   onRenameFolder: (folderId: string, name: string) => void
   onDeleteFolder: (folderId: string, name: string) => void
@@ -106,13 +104,7 @@ export function LibrarySidebar({ grouping, itemTypes, filter, onFilterChange, se
 
   return (
     <aside className="sidebar" aria-label={t('Library')}>
-      <div className="sidebar-toolbar drag-region">
-        <div className="sidebar-toolbar-items no-drag">
-          <IconButton icon="plus" label={t('Add Paper')} size={19} onClick={actions.onAddPaper} />
-          <IconButton icon="trash" label={t('Delete Paper')} size={18} disabled={!selectedPaper} onClick={() => selectedPaper && actions.onDeletePaper(selectedPaper)} />
-          <IconButton icon="sidebar.left" label={t('Hide Sidebar')} size={19} onClick={actions.onToggleSidebar} />
-        </div>
-      </div>
+      <div className="sidebar-toolbar drag-region" />
       {papers.length === 0 ? (
         <div className="sidebar-empty">{t('No papers yet')}</div>
       ) : active && visibleCount === 0 ? (

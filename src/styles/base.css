@@ -45,6 +45,8 @@
 
   --toolbar-height: 52px;
   --radius-control: 7px;
+  /* The native window's corner; inset surfaces subtract their inset to stay concentric. */
+  --window-radius: 26px;
 
   color-scheme: light;
   font-family: var(--font);
@@ -65,6 +67,7 @@ html[data-platform="linux"] {
 }
 
 html[data-platform="win32"] {
+  --window-radius: 8px;
   --sidebar-bg: rgba(243, 245, 247, 0.78);
   --reader-bg: rgba(255, 255, 255, 0.86);
   --inspector-bg: rgba(248, 249, 250, 0.92);

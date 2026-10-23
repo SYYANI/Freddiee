@@ -5,7 +5,7 @@ import { citationFromSelection, citationLabel, escapeInlineMarkdown, inlineCitat
 import { normalizeArxivIdentifier, arxivQueryId } from '../../shared/identifiers'
 import { useApp } from '../app/context'
 import { alertError, confirmDestructive, errorText, messageBox } from '../app/native'
-import { Button, PromptSheet, Sheet } from '../ui/controls'
+import { Button, IconButton, PromptSheet, Sheet, ToolbarGroup } from '../ui/controls'
 import { LibrarySidebar } from './LibrarySidebar'
 import { ReaderPane } from './ReaderPane'
 import { Inspector } from './Inspector'
@@ -357,7 +357,7 @@ export function MainWindow(): JSX.Element {
 
   const inspectorOpen = !settings.inspectorCollapsed
   const style = {
-    '--sidebar-width': `${sidebarOpen ? sidebarWidth : 0}px`,
+    '--sidebar-width': `${sidebarWidth}px`,
     '--inspector-width': `${inspectorOpen ? inspectorWidth : 0}px`
   } as CSSProperties
 
@@ -371,25 +371,21 @@ export function MainWindow(): JSX.Element {
       }}
       onDrop={(event) => void drop(event)}
     >
-      {sidebarOpen && (
-        <LibrarySidebar
-          grouping={visibleGrouping}
-          itemTypes={itemTypes}
-          filter={filter}
-          onFilterChange={setFilter}
-          selectedPaper={selectedPaper}
-          visibleCount={visibleIds.length}
-          actions={{
-            onSelect: select,
-            onAddPaper: () => setAdding(true),
-            onDeletePaper: (paper) => void deletePaper(paper),
-            onToggleSidebar: () => setSidebarOpen(false),
-            onNewFolder: (paperId) => setFolderPrompt({ kind: 'create', paperId }),
-            onRenameFolder: (folderId, name) => setFolderPrompt({ kind: 'rename', folderId, name }),
-            onDeleteFolder: (folderId, name) => void deleteFolder(folderId, name)
-          }}
-        />
-      )}
+      <LibrarySidebar
+        grouping={visibleGrouping}
+        itemTypes={itemTypes}
+        filter={filter}
+        onFilterChange={setFilter}
+        selectedPaper={selectedPaper}
+        visibleCount={visibleIds.length}
+        actions={{
+          onSelect: select,
+          onDeletePaper: (paper) => void deletePaper(paper),
+          onNewFolder: (paperId) => setFolderPrompt({ kind: 'create', paperId }),
+          onRenameFolder: (folderId, name) => setFolderPrompt({ kind: 'rename', folderId, name }),
+          onDeleteFolder: (folderId, name) => void deleteFolder(folderId, name)
+        }}
+      />
       {sidebarOpen && <div className="column-resizer sidebar-resizer" onPointerDown={(event) => beginResize(event, 'sidebar')} />}
       <main className="reader-column">
         <ReaderPane
@@ -398,8 +394,6 @@ export function MainWindow(): JSX.Element {
           notes={notes}
           inspectorCollapsed={!inspectorOpen}
           onToggleInspector={() => setInspectorCollapsed(inspectorOpen)}
-          sidebarOpen={sidebarOpen}
-          onShowSidebar={() => setSidebarOpen(true)}
           selection={selection}
           onSelection={setSelection}
           onCreateNote={(asSidenote) => void createNote(asSidenote)}
@@ -438,6 +432,16 @@ export function MainWindow(): JSX.Element {
           onOpenCitation={openCitation}
         />
       )}
+      {/* Rendered after the reader and sidebar drag regions so its no-drag area takes precedence. */}
+      <div className="window-leading-toolbar no-drag">
+        <ToolbarGroup className="circle">
+          <IconButton icon="plus" label={t('Add Paper')} size={19} onClick={() => setAdding(true)} />
+        </ToolbarGroup>
+        <ToolbarGroup>
+          <IconButton icon="trash" label={t('Delete Paper')} size={18} disabled={!selectedPaper} onClick={() => selectedPaper && void deletePaper(selectedPaper)} />
+          <IconButton icon="sidebar.left" label={sidebarOpen ? t('Hide Sidebar') : t('Show Sidebar')} size={19} onClick={() => setSidebarOpen((value) => !value)} />
+        </ToolbarGroup>
+      </div>
       {dropActive && <div className="drop-highlight" />}
       {adding && <AddPaperSheet onClose={() => setAdding(false)} onImported={(paper) => { setAdding(false); select(paper.id) }} />}
       {folderPrompt && (
