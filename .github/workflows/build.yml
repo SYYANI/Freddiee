@@ -46,11 +46,17 @@ jobs:
       matrix:
         include:
           - os: macos-15
-            command: package:mac
+            command: package:mac:arm64
+            artifact_platform: macOS-arm64
+          - os: macos-15
+            command: package:mac:x64
+            artifact_platform: macOS-x64
           - os: windows-2025
             command: package:win
+            artifact_platform: Windows-x64
           - os: ubuntu-24.04
             command: package:linux
+            artifact_platform: Linux-x64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     steps:
@@ -67,7 +73,7 @@ jobs:
         shell: bash
         run: |
           app_version="$(node -p "require('./package.json').version")"
-          echo "artifact_name=Freddie-${app_version}-${RUNNER_OS}" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=Freddie-${app_version}-${{ matrix.artifact_platform }}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v6
         with:

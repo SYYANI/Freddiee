@@ -297,7 +297,7 @@ function ReaderTab(): JSX.Element {
         </FormRow>
       </FormSection>
       <FormSection title={t('Reader Controls')}>
-        <FormRow label={t('Show PDF zoom buttons')} help={t('Adds zoom-out and zoom-in buttons to the PDF reader toolbar.')}>
+        <FormRow label={t('Show PDF hand and zoom controls')} help={t('Adds a hand tool and zoom buttons to the PDF reader toolbar.')}>
           <Switch checked={settings.showPDFZoomControls} onChange={(value) => save({ showPDFZoomControls: value })} />
         </FormRow>
       </FormSection>

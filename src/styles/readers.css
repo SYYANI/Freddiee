@@ -17,6 +17,18 @@
   overscroll-behavior: contain;
 }
 
+.pdf-view.mode-pan .pdf-scroller,
+.pdf-view.mode-pan .pdf-scroller * {
+  cursor: grab !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.pdf-view.mode-pan.panning .pdf-scroller,
+.pdf-view.mode-pan.panning .pdf-scroller * {
+  cursor: grabbing !important;
+}
+
 .pdf-canvas-area {
   position: relative;
 }

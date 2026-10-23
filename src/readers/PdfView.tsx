@@ -1,4 +1,4 @@
-import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
 import type { Note, NoteSelectionContext, PdfAnnotation } from '../../shared/types'
 import { openDocument, pageTexts, pdfjs } from './pdfjs'
@@ -6,7 +6,7 @@ import { buildMatcher, type FindRequest, type FindStatus } from './find'
 import { SidenoteRail } from './SidenoteRail'
 import { clampScale, fittedScale, pageSideMargin, resolvedScale, shouldRestoreAutomaticScaling, wheelZoomFactor, type PdfScaling } from './pdfScaling'
 
-export type AnnotationMode = 'browse' | 'ink' | 'textNote' | 'erase'
+export type AnnotationMode = 'browse' | 'pan' | 'ink' | 'textNote' | 'erase'
 
 export interface AnnotationTool {
   mode: AnnotationMode
@@ -107,6 +107,8 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
   const [annotations, setAnnotations] = useState<PdfAnnotation[]>([])
   const history = useRef<{ undo: PdfAnnotation[][]; redo: PdfAnnotation[][] }>({ undo: [], redo: [] })
   const [renderedPages, setRenderedPages] = useState(0)
+  const panDrag = useRef<{ pointerId: number; x: number; y: number; left: number; top: number }>()
+  const [panning, setPanning] = useState(false)
 
   // Load the document and every page's size.
   useEffect(() => {
@@ -276,6 +278,35 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     if (scroller.current) rememberScrollPosition(scroller.current)
     updateVisible()
     if (programmatic.current === 0) props.onUserScroll?.()
+  }
+
+  const beginPan = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (props.tool?.mode !== 'pan' || event.button !== 0) return
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    panDrag.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      left: event.currentTarget.scrollLeft,
+      top: event.currentTarget.scrollTop
+    }
+    setPanning(true)
+  }
+
+  const movePan = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    const drag = panDrag.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    event.preventDefault()
+    event.currentTarget.scrollLeft = drag.left - (event.clientX - drag.x)
+    event.currentTarget.scrollTop = drag.top - (event.clientY - drag.y)
+  }
+
+  const endPan = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (panDrag.current?.pointerId !== event.pointerId) return
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+    panDrag.current = undefined
+    setPanning(false)
   }
 
   // Zoom around the pointer with pinch or Command/Control and the wheel; zooming stops fitting the width.
@@ -607,8 +638,22 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
   const totalHeight = tops[pageCount] ?? 0
 
   return (
-    <div className={`pdf-view appearance-${appearance}`}>
-      <div ref={scroller} className="pdf-scroller" onScroll={onScroll}>
+    <div className={`pdf-view appearance-${appearance} mode-${props.tool?.mode ?? 'browse'} ${panning ? 'panning' : ''}`}>
+      <div
+        ref={scroller}
+        className="pdf-scroller"
+        onScroll={onScroll}
+        onPointerDown={beginPan}
+        onPointerMove={movePan}
+        onPointerUp={endPan}
+        onPointerCancel={endPan}
+        onClickCapture={(event) => {
+          if (props.tool?.mode === 'pan') {
+            event.preventDefault()
+            event.stopPropagation()
+          }
+        }}
+      >
         {error && <div className="pdf-error">{error}</div>}
         <div className="pdf-canvas-area" style={{ height: totalHeight, width: showsRail ? readerWidth : Math.max(readerWidth, Math.round(widestPage * scale + 2 * pageSideMargin)) }}>
           {document && sizes.map((size, index) => {
