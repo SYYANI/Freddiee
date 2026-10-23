@@ -67,12 +67,10 @@ const api: FreddieAPI = {
     quickSetup: (providerId, apiKey) => invoke('settings:quick-setup', providerId, apiKey),
     chooseDirectory: (purpose) => invoke('settings:choose-directory', purpose),
     latexStatus: () => invoke('settings:latex-status'),
-    babelDocStatus: () => invoke('settings:babeldoc-status'),
     openSettings: (tab) => invoke('settings:open', tab)
   },
   translation: {
     translateHTML: (paperId) => invoke('translation:html', paperId),
-    translatePDF: (paperId, lastPage, firstPage) => invoke('translation:pdf', paperId, lastPage, firstPage),
     translateLatex: (paperId) => invoke('translation:latex', paperId),
     translateScannedPDF: (paperId, lastPage) => invoke('translation:scan', paperId, lastPage),
     cancel: (paperId) => invoke('translation:cancel', paperId),

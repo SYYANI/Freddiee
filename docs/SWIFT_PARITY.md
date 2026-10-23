@@ -14,7 +14,7 @@
 | `HTMLReaderView` (WKWebView), display modes, typography, sidenotes, region editing | Script-free sandboxed frame driven by `HtmlView`, same CSS |
 | `HTMLLocalizer` + `swift-readability` | `localizer.ts` with Mozilla Readability and the same `rp-readability-*` document shell |
 | `HTMLTranslationPipeline`, `AcademicTranslationPrompt`, `TranslationOutputValidator` | `translation.ts` with the same prompt (`academic-v3`), placeholders, and validation |
-| Bundled native BabelDOC helper | Configurable local BabelDOC command (cross-platform) |
+| Bundled native BabelDOC helper | Not ported: PDFs are translated by `RebuildPDFKit` or `LaTeXTransKit` |
 | `SelectionAssistantOverlay` / `Orchestrator` / `Service` | `SelectionAssistant` overlay and `AssistantService` with the same prompt |
 | PDF annotations (PDFKit) and export | Overlay annotations and pdf-lib export |
 | `WritingPaneView`, `WritingWindow`, `MarkdownLiveSyntax`, `PaperCitation` | `WritingPane`, Writing window, CodeMirror live Markdown, same `readpaper://` links |
@@ -29,7 +29,6 @@
 
 - arXiv LaTeX translation lives in the top-level `LaTeXTransKit/` package, with secure archive extraction, protected-token translation, checkpoint-friendly source storage, XeLaTeX compilation, and translated-source export.
 - Scanned-PDF translation lives in the top-level `RebuildPDFKit/` package, a TypeScript port of the Swift `RebuildPDFKit` checked against its Python-computed parity fixtures. Tesseract (tesseract.js) stands in for Apple Vision and PDF.js for CoreGraphics, so it runs on every platform; see `RebuildPDFKit/README.md`.
-- BabelDOC semantic hints are generated from cached arXiv source. Commands can consume the path through `{semanticHints}`; when omitted from a custom argument template, Freddie appends `--semantic-hints <path>`.
 
 ## Not yet ported
 

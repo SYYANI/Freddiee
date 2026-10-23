@@ -79,28 +79,12 @@ export const builtInProviders: BuiltInProvider[] = [
   }
 ]
 
-export const defaultBabelDocArguments = [
-  '--openai',
-  '--openai-model', '{model}',
-  '--openai-base-url', '{baseUrl}',
-  '--openai-api-key', '{apiKey}',
-  '--files', '{input}',
-  '--output', '{outputDir}',
-  '--lang-out', '{lang}',
-  '--qps', '{qps}',
-  '--pages', '{pages}',
-  '--no-dual',
-  '--watermark-output-mode', 'no_watermark'
-]
-
 export const defaultSettings = (): AppSettings => ({
   appLanguage: 'system',
   targetLanguage: 'zh-CN',
   htmlTranslationConcurrency: 4,
-  babelDocQPS: 4,
   pdfTranslationBatchSize: 10,
   translationGlossary: '',
-  useArxivLatexStructure: false,
   htmlFontSize: 17,
   readerAppearance: 'default',
   assistantWebSearch: false,
@@ -109,8 +93,6 @@ export const defaultSettings = (): AppSettings => ({
   collapsedFolderIds: [],
   digestTemplate: defaultDigestTemplate,
   latexTranslationEnabled: false,
-  babelDocCommand: 'babeldoc',
-  babelDocArguments: [...defaultBabelDocArguments],
   quickSetupHidden: false,
   translationSetupNoticeHandled: false,
   scannedTranscriptionPaperIds: []
@@ -585,8 +567,14 @@ export function migrateDatabase(value: Record<string, unknown>): MigrationResult
   return migrateV2(value)
 }
 
+// Settings of the removed BabelDOC runtime. Dropping them needs no schema change: an older
+// build fills in its defaults again.
+const removedSettingKeys = ['babelDocQPS', 'babelDocCommand', 'babelDocArguments', 'useArxivLatexStructure']
+
 function normalizeV3(value: Partial<Database>): Database {
   const base = emptyDatabase()
+  const settings: Record<string, unknown> = { ...base.settings, ...value.settings }
+  for (const key of removedSettingKeys) delete settings[key]
   return {
     ...base,
     ...value,
@@ -601,7 +589,7 @@ function normalizeV3(value: Partial<Database>): Database {
     providers: value.providers ?? [],
     models: value.models ?? [],
     deletedBuiltInIds: value.deletedBuiltInIds ?? [],
-    settings: { ...base.settings, ...value.settings }
+    settings: settings as unknown as AppSettings
   }
 }
 
@@ -677,12 +665,11 @@ function migrateV2(value: Record<string, unknown>): MigrationResult {
     language?: string
     theme?: string
     provider?: { baseUrl?: string; model?: string; apiKeyConfigured?: boolean; temperature?: number }
-    translation?: { targetLanguage?: string; babeldocCommand?: string; babeldocArgs?: string[] }
+    translation?: { targetLanguage?: string }
   }
   if (legacySettings.language === 'en' || legacySettings.language === 'zh-Hans') database.settings.appLanguage = legacySettings.language
   if (legacySettings.theme === 'paper') database.settings.readerAppearance = 'paper'
   if (legacySettings.translation?.targetLanguage && /english/i.test(legacySettings.translation.targetLanguage)) database.settings.targetLanguage = 'EN'
-  if (legacySettings.translation?.babeldocCommand) database.settings.babelDocCommand = legacySettings.translation.babeldocCommand
   if (typeof value.selectedPaperId === 'string' && paperIds.has(value.selectedPaperId)) database.settings.lastOpenedPaperId = value.selectedPaperId
 
   // The single provider becomes a custom profile; its key is moved to that profile by the caller.

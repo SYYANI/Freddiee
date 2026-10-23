@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { AppSettings, BabelDocStatus, LatexToolchainStatus, LLMAPIStyle, LLMReasoningEffort, LLMThinkingMode, ModelProfile, ProviderProfile } from '../../shared/types'
+import type { AppSettings, LatexToolchainStatus, LLMAPIStyle, LLMReasoningEffort, LLMThinkingMode, ModelProfile, ProviderProfile } from '../../shared/types'
 import { defaultDigestTemplate, digestPlaceholders } from '../../shared/digest'
 import { formatDate, useApp } from '../app/context'
 import { confirmDestructive, errorText, popupMenu } from '../app/native'
@@ -126,9 +126,6 @@ function GeneralTab({ onSelectTab }: { onSelectTab: (tab: Tab) => void }): JSX.E
         <FormRow label={t('Target language')}>
           <MenuPicker value={settings.targetLanguage} onChange={(value) => save({ targetLanguage: value })} options={[{ value: 'EN', title: 'English' }, { value: 'zh-CN', title: '中文（简体）' }]} />
         </FormRow>
-        <FormRow label={t('Use arXiv LaTeX structure for PDF translation')} help={t('When enabled, ReadPaper uses available arXiv source to improve BabelDOC structure and translation context. No TeX installation is required, and failures fall back to PDF-only analysis.')}>
-          <Switch checked={settings.useArxivLatexStructure} onChange={(value) => save({ useArxivLatexStructure: value })} />
-        </FormRow>
         <FormRow stacked label={t('Optional glossary')}>
           <textarea className="field-well template-editor small" value={glossary} onChange={(event) => updateGlossary(event.target.value)} spellCheck={false} />
         </FormRow>
@@ -136,10 +133,6 @@ function GeneralTab({ onSelectTab }: { onSelectTab: (tab: Tab) => void }): JSX.E
           <Button destructive disabled={!glossary} onClick={() => updateGlossary('')}>{t('Clear glossary')}</Button>
         </FormRow>
         <FormRow><FormNote>{t('One term per line, for example “large language model = 大语言模型”.')}</FormNote></FormRow>
-      </FormSection>
-
-      <FormSection title={t('PDF Translation Runtime')}>
-        <BabelDocSettings />
       </FormSection>
 
       <FormSection title={t('Advanced')}>
@@ -150,14 +143,10 @@ function GeneralTab({ onSelectTab }: { onSelectTab: (tab: Tab) => void }): JSX.E
               <Stepper value={settings.htmlTranslationConcurrency} min={1} max={12} onChange={(value) => save({ htmlTranslationConcurrency: value })} />
             </div>
             <div className="stepper-row">
-              <span>{t('BabelDOC QPS: %d', settings.babelDocQPS)}</span>
-              <Stepper value={settings.babelDocQPS} min={1} max={32} onChange={(value) => save({ babelDocQPS: value })} />
-            </div>
-            <div className="stepper-row">
               <span>{t('PDF pages per batch: %d', settings.pdfTranslationBatchSize)}</span>
               <Stepper value={settings.pdfTranslationBatchSize} min={1} max={50} onChange={(value) => save({ pdfTranslationBatchSize: value })} />
             </div>
-            <FormNote>{t('Lower concurrency or QPS if your provider reports rate limits.')}</FormNote>
+            <FormNote>{t('Lower concurrency if your provider reports rate limits.')}</FormNote>
           </Disclosure>
         </FormRow>
       </FormSection>
@@ -270,58 +259,6 @@ function GettingStarted({ onSelectTab }: { onSelectTab: (tab: Tab) => void }): J
   )
 }
 
-function BabelDocSettings(): JSX.Element {
-  const { snapshot, t } = useApp()
-  const settings = snapshot.settings
-  const [command, setCommand] = useState(settings.babelDocCommand)
-  const [args, setArgs] = useState(settings.babelDocArguments.join('\n'))
-  const [status, setStatus] = useState<BabelDocStatus | null>(null)
-  const [checking, setChecking] = useState(false)
-  const timer = useRef<ReturnType<typeof setTimeout>>()
-
-  const persist = (nextCommand: string, nextArgs: string): void => {
-    clearTimeout(timer.current)
-    timer.current = setTimeout(() => {
-      if (nextCommand.trim()) save({ babelDocCommand: nextCommand.trim(), babelDocArguments: nextArgs.split('\n').map((line) => line.trim()).filter(Boolean) })
-    }, 500)
-  }
-
-  const check = async (): Promise<void> => {
-    setChecking(true)
-    setStatus(await window.freddie.settings.babelDocStatus())
-    setChecking(false)
-  }
-
-  return (
-    <>
-      <FormRow stacked><FormNote>{t('Freddie runs PDF translation through a local BabelDOC command. Arguments are passed without a shell; {input}, {outputDir}, {lang}, {model}, {baseUrl}, {apiKey}, {qps}, {pages} and {semanticHints} are replaced before it starts.')}</FormNote></FormRow>
-      <FieldRow label={t('BabelDOC command')}>
-        <TextInput monospaced value={command} onChange={(value) => { setCommand(value); persist(value, args) }} />
-      </FieldRow>
-      <FormRow stacked label={t('Command arguments (one per line)')}>
-        <textarea className="field-well template-editor mono small" value={args} spellCheck={false} onChange={(event) => { setArgs(event.target.value); persist(command, event.target.value) }} />
-      </FormRow>
-      <FormRow>
-        <div className="button-row">
-          <Button onClick={() => void check()}>{t('Check BabelDOC')}</Button>
-          <Button onClick={() => {
-            const defaults = ['--openai', '--openai-model', '{model}', '--openai-base-url', '{baseUrl}', '--openai-api-key', '{apiKey}', '--files', '{input}', '--output', '{outputDir}', '--lang-out', '{lang}', '--qps', '{qps}', '--pages', '{pages}', '--no-dual', '--watermark-output-mode', 'no_watermark']
-            setArgs(defaults.join('\n'))
-            save({ babelDocArguments: defaults })
-          }}>{t('Restore Default Arguments')}</Button>
-          {checking && <Spinner />}
-        </div>
-      </FormRow>
-      {status && (
-        <FormRow label={t('BabelDOC native runtime')}>
-          <span className={status.available ? '' : 'secondary'}>{status.available ? (status.version ?? 'OK') : t('Not installed')}</span>
-        </FormRow>
-      )}
-      {status && !status.available && <FormRow stacked><FormNote error>{t('BabelDOC was not found. Install it (for example `uv tool install BabelDOC`) or set its full path.')}</FormNote></FormRow>}
-    </>
-  )
-}
-
 // MARK: Reader
 
 function ReaderTab(): JSX.Element {
@@ -354,11 +291,11 @@ function ReaderTab(): JSX.Element {
         <FormRow label={t('HTML Model')}>
           <MenuPicker value={settings.htmlModelId ?? ''} onChange={(value) => save({ htmlModelId: value || undefined })} options={[{ value: '', title: t('Not Selected') }, ...choices]} />
         </FormRow>
-        <FormRow label={t('PDF/BabelDOC Model')}>
+        <FormRow label={t('PDF Model')}>
           <MenuPicker value={settings.pdfModelId ?? ''} onChange={(value) => save({ pdfModelId: value || undefined })} options={[{ value: '', title: t('Not Selected') }, ...choices]} />
         </FormRow>
-        <FormRow label={t('Scanned Page Model')} help={t('Translating a scanned PDF sends each page image to the scanned page model, which must accept image input; the PDF/BabelDOC model then translates the transcribed text.')}>
-          <MenuPicker value={settings.scannedPageModelId ?? ''} onChange={(value) => save({ scannedPageModelId: value || undefined })} options={[{ value: '', title: t('Use PDF/BabelDOC Model') }, ...choices]} />
+        <FormRow label={t('Scanned Page Model')} help={t('Translating a scanned PDF sends each page image to the scanned page model, which must accept image input; the PDF model then translates the transcribed text.')}>
+          <MenuPicker value={settings.scannedPageModelId ?? ''} onChange={(value) => save({ scannedPageModelId: value || undefined })} options={[{ value: '', title: t('Use PDF Model') }, ...choices]} />
         </FormRow>
         <FormRow label={t('Reading Assistant Model')}>
           <MenuPicker value={settings.assistantModelId ?? ''} onChange={(value) => save({ assistantModelId: value || undefined })} options={[{ value: '', title: t('Use HTML Model') }, ...choices]} />

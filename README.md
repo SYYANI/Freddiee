@@ -9,12 +9,12 @@ The desktop architecture follows DeepSeek Harness Desktop: an Electron shell own
 - **Library**: folders (collapsible sections, drag papers onto a folder), favorites, Zotero item types with detection, a filter for favorites / translated / noted papers and item types, and native context menus.
 - **Import**: arXiv ID or URL (Atom API with abs-page fallback, PDF, optional arXiv HTML → ar5iv), any web page (Readability extraction, localized images and styles, PDF responses routed to the PDF path), local PDFs from a file dialog or by dropping them on the window. Every import reports staged progress.
 - **Reading**: PDF.js continuous pages with text selection, find, links, Paper Tone, and margin notes; side-by-side bilingual PDF with leader/follower scroll sync; sandboxed, script-free HTML reader with Original/Bilingual/Translated display, font size, find, margin notes, and region hiding.
-- **Translation**: HTML segment translation with the native academic prompt, placeholder protection, output validation, a per-paper cache, and live updates; PDF translation through a local BabelDOC command, including first-N-pages batches and continuing a partial translation; scanned-PDF translation that rebuilds each page with a vision model, Tesseract and XeLaTeX on the original layout, like native Freddie (needs TeX Live, MacTeX or MiKTeX); abstract translation in the inspector.
+- **Translation**: HTML segment translation with the native academic prompt, placeholder protection, output validation, a per-paper cache, and live updates; PDF translation that rebuilds each page with a vision model, Tesseract and XeLaTeX on the original layout, like native Freddie's scanned-PDF route (needs TeX Live, MacTeX or MiKTeX), including first-N-pages batches and continuing a partial translation; abstract translation in the inspector.
 - **Reading assistant**: Explain, Ask, and Translate on any selection, with retrieved paper sources, streaming answers, follow-ups, optional server-side web search, saved conversations, and Save as Note.
 - **Notes and annotations**: notes anchored to PDF pages or HTML passages, Markdown previews, highlight / underline / strike-out / ink / text-note PDF annotations with undo, and annotated-PDF export.
 - **Writing**: Markdown writings in the inspector or their own window, with live syntax, inline images and math, citations of passages (`readpaper://` links compatible with native Freddie), Quote in Writing, word counts, and rename / trash.
 - **Export**: copy link, copy digest, export digest Markdown with a template, export HTML as PDF.
-- **Settings**: General (quick setup, language, target language, glossary, BabelDOC runtime, performance), Reader (typography, appearance, translation routes), LaTeX (toolchain detection), Digest, Providers, and Models, using the OpenAI Responses, Chat Completions, or Anthropic Messages API.
+- **Settings**: General (quick setup, language, target language, glossary, performance), Reader (typography, appearance, translation routes), LaTeX (toolchain detection), Digest, Providers, and Models, using the OpenAI Responses, Chat Completions, or Anthropic Messages API.
 - **Moving from the Mac app**: on macOS, *File → Import Library from Freddie for macOS…* copies papers, attachments, translations, notes, folders, item types, reading positions, and writings from the native app's library. The native library is opened read-only and not changed; API keys stay in the Keychain and must be entered again.
 - **Interface**: English and Simplified Chinese (the native string catalog is reused), Default and Paper Tone appearances, macOS vibrancy and Windows acrylic window materials.
 
@@ -52,7 +52,7 @@ Freddie/
   Library/{paper id}/
     paper.pdf, paper.html      originals
     assets/ (or Resources/)    localized page resources
-    translations/              BabelDOC runs, html-cache.json
+    translations/              translated PDFs, html-cache.json
     annotations/{attachment}.json
     assistant/conversations.json
   Writings/{writing id}/
@@ -63,15 +63,7 @@ User-authored data and translation outputs are written through a temporary file 
 
 ## PDF translation
 
-PDF translation runs a locally installed BabelDOC-compatible command, so each platform can use the runtime it supports (for example `uv tool install BabelDOC`). The default arguments are
-
-```text
---openai --openai-model {model} --openai-base-url {baseUrl} --openai-api-key {apiKey}
---files {input} --output {outputDir} --lang-out {lang} --qps {qps} --pages {pages}
---no-dual --watermark-output-mode no_watermark
-```
-
-Change the command and arguments in Settings → General → PDF Translation Runtime. Arguments are passed to `spawn` without a shell, and an argument whose placeholder is empty (such as `{pages}` for a full translation) is dropped together with its flag. The finished PDF only replaces the visible translation after BabelDOC exits successfully; the log is kept next to the run.
+The Electron app has no BabelDOC dependency. PDFs are translated in-process by `RebuildPDFKit` (page images, Tesseract, a vision model and XeLaTeX) or, for arXiv papers with source, by `LaTeXTransKit`. Translated PDFs made by BabelDOC in native Freddie or in earlier versions of this app stay readable.
 
 ## Architecture
 

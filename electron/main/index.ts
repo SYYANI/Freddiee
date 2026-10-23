@@ -35,7 +35,7 @@ import { ImportError, PaperImporter, readPDFMetadata } from './importer'
 import { complete, LLMError, routeFor } from './llm'
 import { SecretStore } from './secrets'
 import { builtInProviders, FreddieStore } from './store'
-import { babelDocVersion, TranslationService, translationDisplayCSS } from './translation'
+import { TranslationService, translationDisplayCSS } from './translation'
 import { WritingStore } from './writings'
 import { importNativeLibrary, nativeLibraryExists } from './nativeLibrary'
 import { applyUnifiedToolbar } from './windowChrome'
@@ -588,19 +588,12 @@ function registerIpc(): void {
     return path
   })
   handle('settings:latex-status', () => latexStatus())
-  handle('settings:babeldoc-status', () => babelDocVersion(store.database.settings.babelDocCommand))
   handle('settings:open', (_event, tab?: string) => openSettingsWindow(typeof tab === 'string' ? tab : undefined))
 
   // Translation
   handle('translation:html', (_event, paperId: string) => {
     if (translations.isRunning(requireUUID(paperId))) throw new Error(translator('Translation in Progress'))
     void translations.translateHTML(paperId)
-  })
-  handle('translation:pdf', (_event, paperId: string, lastPage?: number, firstPage?: number) => {
-    if (translations.isRunning(requireUUID(paperId))) throw new Error(translator('Translation in Progress'))
-    const last = Number.isInteger(lastPage) && lastPage! > 0 ? lastPage : undefined
-    const first = Number.isInteger(firstPage) && firstPage! > 0 ? firstPage : 1
-    void translations.translatePDF(requireUUID(paperId), last, first)
   })
   handle('translation:latex', async (_event, paperId: string) => {
     const id = requireUUID(paperId)
@@ -776,10 +769,8 @@ function sanitizeSettings(patch: Partial<AppSettings>): Partial<AppSettings> {
   assign('appLanguage', (value) => ['system', 'en', 'zh-Hans'].includes(value as string))
   assign('targetLanguage', (value) => ['EN', 'zh-CN'].includes(value as string))
   assign('htmlTranslationConcurrency', integerIn(1, 16))
-  assign('babelDocQPS', integerIn(1, 32))
   assign('pdfTranslationBatchSize', integerIn(1, 50))
   assign('translationGlossary', isString)
-  assign('useArxivLatexStructure', isBoolean)
   assign('htmlFontSize', integerIn(13, 28))
   assign('readerAppearance', (value) => value === 'default' || value === 'paper')
   for (const key of ['htmlModelId', 'pdfModelId', 'scannedPageModelId', 'assistantModelId', 'lastOpenedPaperId', 'currentWritingId'] as const) assign(key, optionalUUID)
@@ -790,8 +781,6 @@ function sanitizeSettings(patch: Partial<AppSettings>): Partial<AppSettings> {
   assign('digestExportDirectory', (value) => value === undefined || value === null)
   assign('latexToolchainDirectory', (value) => value === undefined || value === null)
   assign('latexTranslationEnabled', isBoolean)
-  assign('babelDocCommand', (value) => isString(value) && (value as string).trim().length > 0)
-  assign('babelDocArguments', (value) => Array.isArray(value) && value.every(isString))
   assign('quickSetupHidden', isBoolean)
   assign('translationSetupNoticeHandled', isBoolean)
   assign('scannedTranscriptionPaperIds', (value) => Array.isArray(value) && value.every(isUUID))

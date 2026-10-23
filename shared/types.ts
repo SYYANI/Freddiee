@@ -131,10 +131,8 @@ export interface AppSettings {
   appLanguage: AppLanguage
   targetLanguage: TargetLanguageCode
   htmlTranslationConcurrency: number
-  babelDocQPS: number
   pdfTranslationBatchSize: number
   translationGlossary: string
-  useArxivLatexStructure: boolean
   htmlFontSize: number
   readerAppearance: ReaderAppearance
   /** The system dark-mode state the appearance was last synchronized with. */
@@ -152,8 +150,6 @@ export interface AppSettings {
   digestTemplate: string
   latexTranslationEnabled: boolean
   latexToolchainDirectory?: string
-  babelDocCommand: string
-  babelDocArguments: string[]
   quickSetupHidden: boolean
   translationSetupNoticeHandled: boolean
   currentWritingId?: string
@@ -231,7 +227,7 @@ export interface NoteNavigationRequest {
   quote?: string
 }
 
-export type TranslationKind = 'html' | 'pdf' | 'latex' | 'scan' | 'abstract'
+export type TranslationKind = 'html' | 'latex' | 'scan' | 'abstract'
 
 export interface TranslationEvent {
   paperId: string
@@ -345,12 +341,6 @@ export interface LatexToolchainStatus {
   detail?: string
 }
 
-export interface BabelDocStatus {
-  available: boolean
-  version?: string
-  detail?: string
-}
-
 export type MenuAction =
   | 'add-paper'
   | 'settings'
@@ -410,12 +400,10 @@ export interface FreddieAPI {
     quickSetup(providerId: string, apiKey: string): Promise<ProviderTestResult>
     chooseDirectory(purpose: 'digest' | 'latex'): Promise<string | null>
     latexStatus(): Promise<LatexToolchainStatus>
-    babelDocStatus(): Promise<BabelDocStatus>
     openSettings(tab?: string): Promise<void>
   }
   translation: {
     translateHTML(paperId: string): Promise<void>
-    translatePDF(paperId: string, lastPage?: number, firstPage?: number): Promise<void>
     translateLatex(paperId: string): Promise<void>
     translateScannedPDF(paperId: string, lastPage?: number): Promise<void>
     cancel(paperId: string): Promise<void>

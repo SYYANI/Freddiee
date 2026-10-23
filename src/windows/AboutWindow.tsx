@@ -29,7 +29,6 @@ export function AboutWindow(): JSX.Element {
         <h3>{t('Credits')}</h3>
         <Credit title={t('Development')}><ExternalLink title="SYYANI" url="https://github.com/SYYANI" /></Credit>
         <Credit title={t('Document Reading')}><span>PDF.js · Cheerio</span><ExternalLink title="Mozilla Readability" url="https://github.com/mozilla/readability" /></Credit>
-        <Credit title={t('PDF Translation')}><ExternalLink title="BabelDOC" url="https://github.com/funstory-ai/BabelDOC" /></Credit>
         <Credit title={t('Interface and Localization')}><span>Electron · React · CodeMirror</span></Credit>
         <Credit title={t('Open Source License')}><ExternalLink title="GNU AGPL v3.0" url="https://www.gnu.org/licenses/agpl-3.0.html" /></Credit>
       </div>

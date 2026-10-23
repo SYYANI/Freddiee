@@ -2,20 +2,16 @@ import zhHans from './locales/zh-Hans.json'
 import type { AppLanguage } from './types'
 
 // Strings the native catalog does not have: platform-specific chrome and the
-// cross-platform BabelDOC process settings.
+// cross-platform translation routes.
 const extraZhHans: Record<string, string> = {
   'Hide Sidebar': '隐藏侧栏',
   'Show Sidebar': '显示侧栏',
   'Show in File Manager': '在文件管理器中显示',
-  'PDF Translation Runtime': 'PDF 翻译运行时',
-  'BabelDOC command': 'BabelDOC 命令',
-  'Command arguments (one per line)': '命令参数（每行一项）',
-  'Freddie runs PDF translation through a local BabelDOC command. Arguments are passed without a shell; {input}, {outputDir}, {lang}, {model}, {baseUrl}, {apiKey}, {qps}, {pages} and {semanticHints} are replaced before it starts.':
-    'Freddie 通过本地 BabelDOC 命令运行 PDF 翻译。参数不经过 shell 直接传递；启动前会替换 {input}、{outputDir}、{lang}、{model}、{baseUrl}、{apiKey}、{qps}、{pages} 和 {semanticHints}。',
-  'Check BabelDOC': '检查 BabelDOC',
-  'Restore Default Arguments': '恢复默认参数',
-  'BabelDOC was not found. Install it (for example `uv tool install BabelDOC`) or set its full path.':
-    '未找到 BabelDOC。请先安装（例如 `uv tool install BabelDOC`）或填写完整路径。',
+  'PDF Model': 'PDF 模型',
+  'Use PDF Model': '使用 PDF 模型',
+  'Translating a scanned PDF sends each page image to the scanned page model, which must accept image input; the PDF model then translates the transcribed text.':
+    '翻译扫描版 PDF 时，每页图像会发送给扫描页模型（必须支持图像输入）识别，识别出的文字再由 PDF 模型翻译。',
+  'Lower concurrency if your provider reports rate limits.': '如果 Provider 提示触发速率限制，可调低并发数。',
   'API keys are encrypted with the operating system’s credential storage. Leaving the API key field blank while editing keeps the saved key.':
     'API 密钥由操作系统的凭据存储加密保存。编辑时将 API 密钥留空会保留已保存的密钥。',
   'LaTeX translation uses latexmk and XeLaTeX. Scanned PDF translation uses XeLaTeX and sends page images to the selected scanned-page model.':

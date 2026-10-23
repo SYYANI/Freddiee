@@ -1,17 +1,15 @@
-import { createHash, randomUUID } from 'node:crypto'
-import { spawn } from 'node:child_process'
-import { mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
-import { join, relative } from 'node:path'
+import { createHash } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import * as cheerio from 'cheerio'
 import type { CheerioAPI } from 'cheerio'
 import type { Element } from 'domhandler'
-import { PDFDocument } from 'pdf-lib'
 import type { TranslationEvent } from '../../shared/types'
 import type { Translator } from '../../shared/i18n'
-import { latestAttachment, firstAttachment } from '../../shared/library'
+import { firstAttachment } from '../../shared/library'
 import { atomicWriteFile } from './files'
 import { complete, requestFor, resolveRoute, RouteError, type ResolvedRoute } from './llm'
-import { prepareSemanticHints, runLatexTranslation } from '../../LaTeXTransKit'
+import { runLatexTranslation } from '../../LaTeXTransKit'
 import { runScannedTranslation } from '../../RebuildPDFKit'
 import type { FreddieStore } from './store'
 import type { SecretStore } from './secrets'
@@ -270,7 +268,7 @@ interface CacheEntry {
 
 interface RunningJob {
   controller: AbortController
-  kind: 'html' | 'pdf' | 'latex' | 'scan'
+  kind: 'html' | 'latex' | 'scan'
 }
 
 export class TranslationService {
@@ -294,14 +292,14 @@ export class TranslationService {
     job.controller.abort(new DOMException('Translation cancelled', 'AbortError'))
   }
 
-  private begin(paperId: string, kind: 'html' | 'pdf' | 'latex' | 'scan'): AbortController {
+  private begin(paperId: string, kind: 'html' | 'latex' | 'scan'): AbortController {
     if (this.jobs.has(paperId)) throw new Error(this.translator()('Translation in Progress'))
     const controller = new AbortController()
     this.jobs.set(paperId, { controller, kind })
     return controller
   }
 
-  private fail(paperId: string, kind: 'html' | 'pdf' | 'latex' | 'scan', error: unknown, signal: AbortSignal, logPath?: string): void {
+  private fail(paperId: string, kind: 'html' | 'latex' | 'scan', error: unknown, signal: AbortSignal, logPath?: string): void {
     const t = this.translator()
     if (signal.aborted) {
       this.emit({ paperId, kind, type: 'cancelled', message: t('Translation cancelled.') })
@@ -463,209 +461,4 @@ export class TranslationService {
       this.jobs.delete(paperId)
     }
   }
-
-  // MARK: PDF (BabelDOC)
-
-  /**
-   * Translates pages `firstPage...lastPage` (all when omitted) with the configured BabelDOC
-   * command. A continued run merges the new pages after the existing partial translation, and
-   * the result only replaces the visible translation after the process succeeds.
-   */
-  async translatePDF(paperId: string, lastPage?: number, firstPage = 1): Promise<void> {
-    const t = this.translator()
-    const controller = this.begin(paperId, 'pdf')
-    const { signal } = controller
-    let logPath: string | undefined
-    try {
-      const attachments = this.store.attachments(paperId)
-      const pdf = firstAttachment(attachments, 'pdf')
-      if (!pdf) throw new Error(t('No PDF attachment is available for this paper.'))
-      this.emit({ paperId, kind: 'pdf', type: 'status', message: t('Running BabelDOC...') })
-      const route = await resolveRoute('pdf', this.store, this.secrets, t)
-      const settings = this.store.database.settings
-      const outputDirectory = join(this.store.paperDirectory(paperId), 'translations', `run-${Date.now()}`)
-      await mkdir(outputDirectory, { recursive: true })
-      logPath = join(outputDirectory, 'babeldoc.log')
-      const input = this.store.attachmentPath(paperId, pdf.id)
-      let semanticHints: string | undefined
-      if (settings.useArxivLatexStructure && this.store.paper(paperId).arxivId) {
-        this.emit({ paperId, kind: 'pdf', type: 'status', message: t('Preparing arXiv LaTeX source...') })
-        try {
-          semanticHints = await prepareSemanticHints(paperId, this.store, signal)
-        } catch {
-          // Semantic hints are optional evidence; PDF-only translation remains available.
-        }
-      }
-      const pages = lastPage ? `${firstPage}-${lastPage}` : ''
-      const replacements: Record<string, string> = {
-        '{input}': input,
-        '{outputDir}': outputDirectory,
-        '{lang}': settings.targetLanguage,
-        '{model}': route.modelName,
-        '{baseUrl}': route.baseURL,
-        '{apiKey}': route.apiKey,
-        '{qps}': String(Math.max(1, settings.babelDocQPS)),
-        '{pages}': pages,
-        '{semanticHints}': semanticHints ?? ''
-      }
-      const args = expandArguments(settings.babelDocArguments, replacements)
-      if (semanticHints && !settings.babelDocArguments.some((argument) => argument.includes('{semanticHints}'))) args.push('--semantic-hints', semanticHints)
-      this.emit({ paperId, kind: 'pdf', type: 'status', message: t('Translating PDF with BabelDOC...') })
-      await runBabelDoc(settings.babelDocCommand, args, logPath, route.apiKey, signal, (percent) => {
-        this.emit({ paperId, kind: 'pdf', type: 'progress', completed: percent, total: 100, summary: `${Math.round(percent)}%`, message: t('Translating PDF with BabelDOC...') })
-      }, t)
-      signal.throwIfAborted()
-      const produced = await newestTranslatedPDF(outputDirectory)
-      if (!produced) throw new Error(t('BabelDOC finished without producing a translated PDF.'))
-
-      const existing = latestAttachment(attachments, 'translatedPDF')
-      let resultPath = produced
-      if (firstPage > 1 && existing?.translatedLastPage) {
-        // Keep the pages already translated and append the new ones.
-        resultPath = join(outputDirectory, `merged-${lastPage ?? 'all'}.pdf`)
-        await mergePDFs(this.store.attachmentPath(paperId, existing.id), existing.translatedLastPage, produced, firstPage, lastPage, resultPath)
-      } else if (lastPage) {
-        // BabelDOC keeps the untranslated pages; trim them so the partial translation ends at its last page.
-        resultPath = join(outputDirectory, `partial-${lastPage}.pdf`)
-        await trimPDF(produced, lastPage, resultPath)
-      }
-      const relativePath = relative(this.store.paperDirectory(paperId), resultPath).split('\\').join('/')
-      const originalPageCount = (await PDFDocument.load(await readFile(input), { ignoreEncryption: true, updateMetadata: false })).getPageCount()
-      const translatedLastPage = lastPage && lastPage < originalPageCount ? lastPage : undefined
-      const previousPath = existing ? this.store.attachmentPath(paperId, existing.id) : undefined
-      if (existing) {
-        await this.store.updateAttachment(paperId, existing.id, { filename: relativePath, source: 'babeldoc', translatedLastPage, createdAt: new Date().toISOString() })
-      } else {
-        await this.store.addAttachment({ id: randomUUID(), paperId, kind: 'translatedPDF', source: 'babeldoc', filename: relativePath, translatedLastPage, createdAt: new Date().toISOString() })
-      }
-      if (previousPath && previousPath !== resultPath) await removeTranslationRun(this.store.paperDirectory(paperId), previousPath)
-      this.emit({ paperId, kind: 'pdf', type: 'finished', message: t('PDF translation completed.') })
-    } catch (error) {
-      this.fail(paperId, 'pdf', error, signal, logPath)
-    } finally {
-      this.jobs.delete(paperId)
-    }
-  }
 }
-
-/** Removes the run directory of a replaced translation, and nothing outside `translations/run-*`. */
-async function removeTranslationRun(paperDirectory: string, translatedPath: string): Promise<void> {
-  const runDirectory = join(translatedPath, '..')
-  const relativeRun = relative(join(paperDirectory, 'translations'), runDirectory)
-  if (!/^run-\d+$/.test(relativeRun)) return
-  await rm(runDirectory, { recursive: true, force: true }).catch(() => undefined)
-}
-
-/** Expands exact placeholders; an empty value drops the argument and the flag before it. */
-export function expandArguments(template: string[], replacements: Record<string, string>): string[] {
-  const result: string[] = []
-  for (const argument of template) {
-    let value = argument
-    for (const [token, replacement] of Object.entries(replacements)) value = value.split(token).join(replacement)
-    if (value === '' && argument !== '') {
-      if (result.length && result[result.length - 1].startsWith('-')) result.pop()
-      continue
-    }
-    result.push(value)
-  }
-  return result
-}
-
-function runBabelDoc(command: string, args: string[], logPath: string, apiKey: string, signal: AbortSignal, onPercent: (percent: number) => void, t: Translator): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
-      shell: false,
-      windowsHide: true,
-      env: { ...process.env, OPENAI_API_KEY: apiKey, PYTHONUNBUFFERED: '1' }
-    })
-    let tail = ''
-    const log: string[] = []
-    const redact = (text: string): string => apiKey ? text.split(apiKey).join('••••') : text
-    const consume = (chunk: Buffer): void => {
-      const text = redact(chunk.toString())
-      log.push(text)
-      tail = `${tail}${text}`.slice(-12_000)
-      const matches = [...tail.matchAll(/(\d{1,3}(?:\.\d+)?)\s*%/g)]
-      const percent = Number(matches.at(-1)?.[1])
-      if (Number.isFinite(percent) && percent <= 100) onPercent(percent)
-    }
-    const abort = (): void => {
-      child.kill('SIGTERM')
-      setTimeout(() => child.kill('SIGKILL'), 4000).unref()
-    }
-    signal.addEventListener('abort', abort, { once: true })
-    child.stdout.on('data', consume)
-    child.stderr.on('data', consume)
-    child.once('error', (error: NodeJS.ErrnoException) => {
-      signal.removeEventListener('abort', abort)
-      void writeFile(logPath, log.join('')).catch(() => undefined)
-      reject(error.code === 'ENOENT' ? new Error(t('BabelDOC was not found. Install it (for example `uv tool install BabelDOC`) or set its full path.')) : error)
-    })
-    child.once('exit', (code) => {
-      signal.removeEventListener('abort', abort)
-      void writeFile(logPath, log.join('')).catch(() => undefined)
-      if (signal.aborted) reject(signal.reason)
-      else if (code === 0) resolve()
-      else {
-        const lastLines = tail.trim().split(/\r?\n/).slice(-6).join('\n')
-        reject(new Error(`${t('BabelDOC error')} (${code}): ${lastLines}`))
-      }
-    })
-  })
-}
-
-async function newestTranslatedPDF(directory: string): Promise<string | undefined> {
-  const files: Array<{ path: string; modified: number; mono: boolean }> = []
-  const walk = async (current: string): Promise<void> => {
-    for (const entry of await readdir(current, { withFileTypes: true })) {
-      const path = join(current, entry.name)
-      if (entry.isDirectory()) await walk(path)
-      else if (entry.name.toLowerCase().endsWith('.pdf')) files.push({ path, modified: (await stat(path)).mtimeMs, mono: /mono/i.test(entry.name) })
-    }
-  }
-  await walk(directory)
-  return files.sort((a, b) => Number(b.mono) - Number(a.mono) || b.modified - a.modified)[0]?.path
-}
-
-async function trimPDF(source: string, lastPage: number, output: string): Promise<void> {
-  const document = await PDFDocument.load(await readFile(source), { ignoreEncryption: true })
-  const result = await PDFDocument.create()
-  const count = Math.min(lastPage, document.getPageCount())
-  const pages = await result.copyPages(document, Array.from({ length: count }, (_, index) => index))
-  pages.forEach((page) => result.addPage(page))
-  await atomicWriteFile(output, await result.save())
-}
-
-async function mergePDFs(existingPath: string, existingLastPage: number, incrementPath: string, firstPage: number, lastPage: number | undefined, output: string): Promise<void> {
-  const existing = await PDFDocument.load(await readFile(existingPath), { ignoreEncryption: true })
-  const increment = await PDFDocument.load(await readFile(incrementPath), { ignoreEncryption: true })
-  const result = await PDFDocument.create()
-  const keep = Math.min(existingLastPage, existing.getPageCount(), firstPage - 1)
-  for (const page of await result.copyPages(existing, Array.from({ length: keep }, (_, index) => index))) result.addPage(page)
-  // BabelDOC output with --pages may contain every page; take only the translated range.
-  const incrementCount = increment.getPageCount()
-  const start = incrementCount > (lastPage ?? incrementCount) - firstPage + 1 ? firstPage - 1 : 0
-  const end = lastPage ? Math.min(incrementCount, start + (lastPage - firstPage + 1)) : incrementCount
-  for (const page of await result.copyPages(increment, Array.from({ length: Math.max(0, end - start) }, (_, index) => start + index))) result.addPage(page)
-  await atomicWriteFile(output, await result.save())
-}
-
-export async function babelDocVersion(command: string): Promise<{ available: boolean; version?: string; detail?: string }> {
-  return new Promise((resolve) => {
-    const child = spawn(command, ['--version'], { shell: false, windowsHide: true })
-    let output = ''
-    const timer = setTimeout(() => child.kill(), 20_000)
-    child.stdout.on('data', (chunk: Buffer) => { output += chunk.toString() })
-    child.stderr.on('data', (chunk: Buffer) => { output += chunk.toString() })
-    child.once('error', (error) => {
-      clearTimeout(timer)
-      resolve({ available: false, detail: error.message })
-    })
-    child.once('exit', (code) => {
-      clearTimeout(timer)
-      const version = output.match(/\d+\.\d+(?:\.\d+)?/)?.[0]
-      resolve(code === 0 ? { available: true, version } : { available: false, detail: output.trim().slice(-400) })
-    })
-  })
-}
-

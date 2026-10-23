@@ -25,7 +25,7 @@ interface TranslationRun {
   outcome?: CapsulePhase
   needsSetup?: boolean
   logPath?: string
-  kind?: 'html' | 'pdf' | 'latex' | 'scan'
+  kind?: 'html' | 'latex' | 'scan'
 }
 
 const annotationColors: Array<{ id: string; title: string; color: string }> = [
@@ -179,7 +179,8 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   }, [paper?.id, pdf?.id])
 
   const partial = isPartialTranslation(translated, originalPageCount)
-  const fullComplete = Boolean(translated) && (!translated?.translatedLastPage || !originalPageCount || translated.translatedLastPage >= originalPageCount)
+  // Only a page rebuild continues where it stopped; other partial translations stay as they are.
+  const continuable = partial && translated?.source === 'scanRebuild'
   const nearEdge = partial && translated?.translatedLastPage !== undefined && pageIndex >= Math.max(0, translated.translatedLastPage - 2)
 
   // MARK: Translation events
@@ -209,7 +210,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
       setStatusMessage(plain ? null : event.message ?? null)
       // Show the saved page, including segments that arrived while it was reloading.
       if (event.kind === 'html') setHtmlReload((value) => value + 1)
-      if (event.kind === 'pdf' || event.kind === 'latex' || event.kind === 'scan') {
+      if (event.kind === 'latex' || event.kind === 'scan') {
         setPdfReload((value) => value + 1)
         setReaderMode('bilingualPDF')
         setLastPDFMode('bilingualPDF')
@@ -383,18 +384,6 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
     }
   }
 
-  const startPDF = async (lastPage?: number, firstPage?: number): Promise<void> => {
-    if (!paper) return
-    setStatusMessage(null)
-    setRuns((current) => ({ ...current, [paper.id]: { working: true, cancelling: false, message: t('Running BabelDOC...'), kind: 'pdf' } }))
-    try {
-      await window.freddie.translation.translatePDF(paper.id, lastPage, firstPage)
-    } catch (error) {
-      setRuns((current) => ({ ...current, [paper.id]: { working: false, cancelling: false } }))
-      setStatusMessage(errorText(error))
-    }
-  }
-
   const startLatex = async (): Promise<void> => {
     if (!paper) return
     setStatusMessage(null)
@@ -421,29 +410,8 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
 
   const batch = settings.pdfTranslationBatchSize
   const continuePDF = (lastPage?: number): void => {
-    if (!translated?.translatedLastPage || !originalPageCount) return
-    const last = Math.min(lastPage ?? translated.translatedLastPage + batch, originalPageCount)
-    if (translated.source === 'scanRebuild') void startScan(last)
-    else void startPDF(last, translated.translatedLastPage + 1)
-  }
-
-  const translatePDF = async (): Promise<void> => {
-    if (partial) return continuePDF()
-    const total = originalPageCount ?? 0
-    if (total > batch) {
-      const response = await messageBox({
-        type: 'question',
-        message: t('Choose Translation Scope'),
-        detail: t('This PDF has %d pages. Translating the first %d pages is faster.', total, batch),
-        buttons: [t('First %d Pages', batch), t('All Pages'), t('Cancel')],
-        defaultId: 0,
-        cancelId: 2
-      })
-      if (response === 0) void startPDF(batch)
-      if (response === 1) void startPDF()
-      return
-    }
-    void startPDF()
+    if (!continuable || !translated?.translatedLastPage || !originalPageCount) return
+    void startScan(Math.min(lastPage ?? translated.translatedLastPage + batch, originalPageCount))
   }
 
   const translateScan = async (): Promise<void> => {
@@ -465,14 +433,15 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   const showTranslateMenu = async (anchor: HTMLElement): Promise<void> => {
     const choice = await popupMenu([
       { id: 'html', label: t('Translate HTML'), enabled: Boolean(html) },
-      { id: 'pdf', label: partial ? t('Translate More PDF Pages') : fullComplete ? t('Retranslate PDF') : t('Translate PDF'), enabled: Boolean(pdf) },
       { id: 'latex', label: t('Translate arXiv LaTeX'), enabled: Boolean(paper?.arxivId && settings.latexTranslationEnabled) },
-      { id: 'scan', label: t('Translate Scanned PDF…'), enabled: Boolean(pdf) }
+      continuable
+        ? { id: 'more', label: t('Translate More PDF Pages'), enabled: Boolean(pdf) }
+        : { id: 'scan', label: t('Translate Scanned PDF…'), enabled: Boolean(pdf) }
     ], anchor)
     if (choice === 'html') void translateHTML()
-    if (choice === 'pdf') void translatePDF()
     if (choice === 'latex') void startLatex()
     if (choice === 'scan') void translateScan()
+    if (choice === 'more') continuePDF()
   }
 
   const showShareMenu = async (anchor: HTMLElement): Promise<void> => {
@@ -738,7 +707,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
             <span className={`status-message ${run?.logPath || run?.needsSetup || /error|错误|failed|失败|无法|Unable/i.test(statusMessage) ? 'error' : ''}`}>{statusMessage}</span>
             <span className="spacer" />
             {run?.needsSetup && <button type="button" className="link-button" onClick={() => void window.freddie.settings.openSettings('general')}>{t('Set Up Translation…')}</button>}
-            {run?.logPath && <IconButton icon="doc.text" size={14} label={t('Show BabelDOC Log')} onClick={() => void window.freddie.translation.revealLog(run.logPath!)} />}
+            {run?.logPath && <IconButton icon="doc.text" size={14} label={t('Show LaTeX Compilation Log')} onClick={() => void window.freddie.translation.revealLog(run.logPath!)} />}
             <IconButton icon="doc.on.doc" size={14} label={t('Copy Message')} onClick={() => void window.freddie.shell.copyText(statusMessage)} />
             <IconButton icon="xmark" size={13} label={t('Close')} onClick={() => setStatusMessage(null)} />
           </div>
@@ -767,8 +736,8 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
           <div className="translate-more">
             <span>{t('Translated pages 1–%@ of %@.', String(translated.translatedLastPage), String(originalPageCount))}</span>
             <span className="spacer" />
-            <Button small prominent glass onClick={() => continuePDF()}>{t('Translate pages %@–%@', String(translated.translatedLastPage + 1), String(Math.min(translated.translatedLastPage + batch, originalPageCount)))}</Button>
-            {translated.translatedLastPage + batch < originalPageCount && <Button small glass onClick={() => continuePDF(originalPageCount)}>{t('Translate All')}</Button>}
+            {continuable && <Button small prominent glass onClick={() => continuePDF()}>{t('Translate pages %@–%@', String(translated.translatedLastPage + 1), String(Math.min(translated.translatedLastPage + batch, originalPageCount)))}</Button>}
+            {continuable && translated.translatedLastPage + batch < originalPageCount && <Button small glass onClick={() => continuePDF(originalPageCount)}>{t('Translate All')}</Button>}
           </div>
         )}
         <div className="bottom-overlays">

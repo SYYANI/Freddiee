@@ -14,37 +14,7 @@ import type { SecretStore } from '../electron/main/secrets'
 const archiveByteLimit = 100 * 1024 * 1024
 const extractedByteLimit = 300 * 1024 * 1024
 const extractedFileLimit = 10_000
-const semanticAlgorithmVersion = 3
 const latexPromptVersion = 'latextranskit-ts-v1'
-
-export interface SemanticAtom {
-  id: string
-  kind: 'math' | 'citation' | 'reference' | 'url' | 'code'
-  token: string
-  rawSource: string
-  visibleText?: string
-}
-
-export interface SemanticBlock {
-  id: string
-  ordinal: number
-  kind: 'documentTitle' | 'sectionHeading' | 'paragraph' | 'abstract' | 'figureCaption' | 'tableCaption' | 'caption' | 'listItem' | 'footnote' | 'reference' | 'equation' | 'other'
-  alignmentText: string
-  translationTemplate: string
-  rawSource: string
-  sectionPath: Array<{ level: number; title: string }>
-  headingLevel?: number
-  environment?: string
-  containerKind?: string
-  parentID?: string
-  atoms: SemanticAtom[]
-}
-
-export interface SemanticDocument {
-  schemaVersion: 1
-  sourceIdentifier: string
-  blocks: SemanticBlock[]
-}
 
 const sha256 = (value: string | Uint8Array): string => createHash('sha256').update(value).digest('hex')
 
@@ -147,91 +117,6 @@ async function acquireSource(paperId: string, arxivId: string, store: FreddieSto
   await mkdir(dirname(ready), { recursive: true })
   await rename(temporary, ready)
   return { root: ready, identifier: cleanId }
-}
-
-function stripComments(source: string): string {
-  return source.replace(/(^|[^\\])%[^\n]*/g, '$1')
-}
-
-function protectSemantic(text: string, blockId: string): { alignmentText: string; template: string; atoms: SemanticAtom[] } {
-  const atoms: SemanticAtom[] = []
-  const pattern = /\$\$[\s\S]*?\$\$|\$(?:\\.|[^$])*\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\(?:cite\w*|ref|eqref|autoref|url|href|verb)\*?(?:\[[^\]]*\])?\{[^{}]*\}(?:\{[^{}]*\})?/g
-  const template = text.replace(pattern, (raw) => {
-    const kind: SemanticAtom['kind'] = /^\$|^\\[[(]/.test(raw) ? 'math' : /^\\cite/.test(raw) ? 'citation' : /^\\(?:ref|eqref|autoref)/.test(raw) ? 'reference' : /^\\(?:url|href)/.test(raw) ? 'url' : 'code'
-    const token = `[PROTECTED_SEMANTIC_${atoms.length}]`
-    atoms.push({ id: `${blockId}-atom-${atoms.length}`, kind, token, rawSource: raw })
-    return token
-  })
-  const alignmentText = template
-    .replace(/\\[A-Za-z@]+\*?(?:\[[^\]]*\])?/g, ' ')
-    .replace(/[{}~]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-  return { alignmentText, template, atoms }
-}
-
-/** Compiler-free semantic extraction compatible with BabelDOC's semantic sidecar schema. */
-export function extractSemanticDocument(files: Array<{ name: string; source: string }>, sourceIdentifier: string): SemanticDocument {
-  const blocks: SemanticBlock[] = []
-  const sectionPath: Array<{ level: number; title: string }> = []
-  const push = (kind: SemanticBlock['kind'], rawSource: string, options: Partial<SemanticBlock> = {}): void => {
-    const clean = rawSource.trim()
-    if (!clean) return
-    const id = `latex-${blocks.length}`
-    const protectedValue = protectSemantic(clean, id)
-    if (!/[\p{L}\p{N}]/u.test(protectedValue.alignmentText)) return
-    blocks.push({
-      id,
-      ordinal: blocks.length,
-      kind,
-      alignmentText: protectedValue.alignmentText,
-      translationTemplate: protectedValue.template,
-      rawSource: clean,
-      sectionPath: [...sectionPath],
-      atoms: protectedValue.atoms,
-      ...options
-    })
-  }
-  const headingNames: Record<string, number> = { part: 1, chapter: 1, section: 1, subsection: 2, subsubsection: 3, paragraph: 4, subparagraph: 5 }
-  for (const file of files.sort((a, b) => a.name.localeCompare(b.name))) {
-    const source = stripComments(file.source)
-    const eventPattern = /\\(title|part|chapter|section|subsection|subsubsection|paragraph|subparagraph|caption|item)\*?(?:\[[^\]]*\])?\{([\s\S]*?)\}|\\begin\{abstract\}([\s\S]*?)\\end\{abstract\}|(?:^|\n)\s*\n([\s\S]*?)(?=\n\s*\n|$)/gm
-    for (const match of source.matchAll(eventPattern)) {
-      const command = match[1]
-      const content = match[2] ?? match[3] ?? match[4] ?? ''
-      if (command === 'title') push('documentTitle', content)
-      else if (command && command in headingNames) {
-        const level = headingNames[command]
-        while (sectionPath.length && sectionPath.at(-1)!.level >= level) sectionPath.pop()
-        sectionPath.push({ level, title: content.replace(/\\\w+|[{}]/g, '').trim() })
-        push('sectionHeading', content, { headingLevel: level })
-      } else if (command === 'caption') push('caption', content)
-      else if (command === 'item') push('listItem', content)
-      else if (match[3] !== undefined) push('abstract', content, { environment: 'abstract' })
-      else if (!/^\s*\\(?:documentclass|usepackage|newcommand|renewcommand|begin\{document\}|end\{document\}|bibliography|bibliographystyle)/.test(content)) push('paragraph', content)
-    }
-  }
-  return { schemaVersion: 1, sourceIdentifier, blocks }
-}
-
-export async function prepareSemanticHints(paperId: string, store: FreddieStore, signal: AbortSignal): Promise<string | undefined> {
-  const paper = store.paper(paperId)
-  if (!paper.arxivId) return undefined
-  const source = await acquireSource(paperId, paper.arxivId, store, signal)
-  const files = await Promise.all((await walk(source.root, '.tex')).map(async (path) => ({ name: relative(source.root, path).split(sep).join('/'), source: await readFile(path, 'utf8') })))
-  const identity = sha256(files.map((file) => `${file.name}\0${file.source}`).join('\0'))
-  const directory = join(store.paperDirectory(paperId), 'Resources', 'LaTeXSemantic')
-  const path = join(directory, `semantic-v${semanticAlgorithmVersion}-${identity.slice(0, 20)}.json`)
-  try {
-    const cached = JSON.parse(await readFile(path, 'utf8')) as SemanticDocument
-    if (cached.schemaVersion === 1 && cached.sourceIdentifier === source.identifier && Array.isArray(cached.blocks)) return path
-  } catch {
-    // Regenerate below.
-  }
-  const document = extractSemanticDocument(files, source.identifier)
-  if (!document.blocks.length) return undefined
-  await atomicWriteFile(path, `${JSON.stringify(document, null, 2)}\n`)
-  return path
 }
 
 interface ProtectedLatex { template: string; values: string[] }

@@ -11,8 +11,8 @@ Electron main process
   ├─ SecretStore         per-provider API keys encrypted with safeStorage
   ├─ PaperImporter       arXiv / web page / local PDF ingestion with staged progress
   ├─ localizer           Readability extraction, sanitizing, resource localization
-  ├─ TranslationService  HTML segment pipeline, BabelDOC process, abstract translation
-  ├─ LaTeX pipeline      secure arXiv source extraction, semantic hints, protected translation, XeLaTeX
+  ├─ TranslationService  HTML segment pipeline, LaTeX and scanned-PDF jobs, abstract translation
+  ├─ LaTeX pipeline      secure arXiv source extraction, protected translation, XeLaTeX
   ├─ RebuildPDFKit       scanned PDFs: Tesseract measurement, vision transcription, review, translation, XeLaTeX
   ├─ AssistantService    retrieval, prompts, streaming answers, saved conversations
   ├─ AnnotationStore     PDF annotation overlays and annotated-PDF export
@@ -33,7 +33,7 @@ The windows match native Freddie's scenes. Each is the same renderer bundle open
 4. `freddie://paper/{id}/a/{attachment}` serves registered attachments; `assets/` and `Resources/` serve localized page resources. Every path is resolved below the paper's UUID directory. `freddie://writing/{id}/images/...` serves writing images the same way. `freddie://pdfjs/` serves only allow-listed PDF.js CMap and standard-font filenames from the packaged dependency so translated CJK PDFs render correctly.
 5. Imported HTML is sanitized on import (scripts, frames, forms, event handlers, and `javascript:` URLs removed) and displayed in a `srcdoc` frame with `sandbox="allow-same-origin"` and no script permission, under the renderer's CSP plus its own. The reader script drives the page from outside.
 6. External navigation is denied in-app; HTTP(S) links open through the OS browser, and arXiv links offer an import first.
-7. BabelDOC is started with `spawn` without a shell and expands only exact argument placeholders. Its API key is also redacted from the saved log.
+7. Model requests are made from the main process. The only subprocesses are the TeX tools and the native-library `sqlite3`, all started without a shell and never given an API key.
 8. API keys remain in the main process and are encrypted by the operating system.
 9. The native-library import runs the system `sqlite3` with a read-only URI and copies files; it never writes to the native store.
 10. arXiv source extraction rejects traversal, links, special files, oversized archives, and excessive file counts. TeX subprocesses run without shell escape and with paranoid TeX input/output restrictions.
@@ -45,4 +45,4 @@ The windows match native Freddie's scenes. Each is the same renderer bundle open
 
 ## Long-running work
 
-Import, translation, and the assistant publish typed events. The renderer treats its snapshot as a projection and reloads it after each change. HTML translation rewrites `paper.html` after every batch and sends each finished segment to the reader, which inserts it without reloading. PDF translation is replace-at-end: BabelDOC writes into `translations/run-*`, and only a successful run becomes the visible translated attachment; a continued run merges the new pages after the existing ones. LaTeX units and scanned pages use credential-free checkpoints; changing a text route or glossary does not invalidate the more expensive cached page-image transcription.
+Import, translation, and the assistant publish typed events. The renderer treats its snapshot as a projection and reloads it after each change. HTML translation rewrites `paper.html` after every batch and sends each finished segment to the reader, which inserts it without reloading. PDF translation is replace-at-end: only a successful run becomes the visible translated attachment. LaTeX units and scanned pages use credential-free checkpoints; changing a text route or glossary does not invalidate the more expensive cached page-image transcription.
