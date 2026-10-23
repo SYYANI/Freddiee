@@ -95,7 +95,8 @@ export const defaultSettings = (): AppSettings => ({
   latexTranslationEnabled: false,
   quickSetupHidden: false,
   translationSetupNoticeHandled: false,
-  scannedTranscriptionPaperIds: []
+  scannedTranscriptionPaperIds: [],
+  scannedPDFTranslationConfirmed: false
 })
 
 const emptyDatabase = (): Database => ({

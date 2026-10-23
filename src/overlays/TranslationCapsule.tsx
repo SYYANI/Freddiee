@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useT } from '../app/context'
 import { Icon } from '../ui/Icon'
 
@@ -22,6 +22,7 @@ export function TranslationCapsule({ phase, detail, fraction, summary, onCancel 
 }): JSX.Element {
   const t = useT()
   const [hovered, setHovered] = useState(false)
+  const filterId = `capsule-glass-${useId().replace(/:/g, '')}`
   const running = phase.kind === 'running'
   const cancelling = phase.kind === 'running' && phase.cancelling
   const displayed = phase.kind === 'completed' ? 1 : phase.kind === 'cancelled' ? 0 : Math.min(Math.max(fraction ?? 0, 0), 1)
@@ -36,9 +37,17 @@ export function TranslationCapsule({ phase, detail, fraction, summary, onCancel 
 
   return (
     <div className="translation-capsule" style={{ width, height }} title={detail}>
-      <div className="capsule-shapes">
-        <div className="capsule-main glass" style={{ width: capsuleWidth }} />
-        <div className="capsule-bubble glass" style={{ left: capsuleWidth + gap }} />
+      {/* Liquid glass joins nearby shapes: blurring both and cutting the alpha back to a hard edge
+          grows a neck across the gap that thickens as the bubble closes in, then melts into the capsule. */}
+      <svg className="capsule-filter" aria-hidden="true">
+        <filter id={filterId} colorInterpolationFilters="sRGB">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
+          <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 12 -5.5" />
+        </filter>
+      </svg>
+      <div className="capsule-shapes" style={{ filter: `url(#${filterId}) drop-shadow(0 0 0.5px var(--glass-border))` }}>
+        <div className="capsule-main" style={{ width: capsuleWidth }} />
+        <div className="capsule-bubble" style={{ left: capsuleWidth + gap }} />
       </div>
       <div className="capsule-glow-clip">
         <div

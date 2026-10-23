@@ -154,6 +154,8 @@ export interface AppSettings {
   translationSetupNoticeHandled: boolean
   currentWritingId?: string
   scannedTranscriptionPaperIds: string[]
+  /** Set after the first scanned PDF translation, so later runs skip the page-image notice. */
+  scannedPDFTranslationConfirmed: boolean
 }
 
 export interface WritingCitationRecord {

@@ -795,6 +795,7 @@ function sanitizeSettings(patch: Partial<AppSettings>): Partial<AppSettings> {
   assign('quickSetupHidden', isBoolean)
   assign('translationSetupNoticeHandled', isBoolean)
   assign('scannedTranscriptionPaperIds', (value) => Array.isArray(value) && value.every(isUUID))
+  assign('scannedPDFTranslationConfirmed', isBoolean)
   for (const key of Object.keys(result) as Array<keyof AppSettings>) if (result[key] === null) result[key] = undefined as never
   return result
 }

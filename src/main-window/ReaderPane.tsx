@@ -399,6 +399,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
 
   const startScan = async (lastPage?: number): Promise<void> => {
     if (!paper) return
+    if (!settings.scannedPDFTranslationConfirmed) void window.freddie.settings.save({ scannedPDFTranslationConfirmed: true })
     setStatusMessage(null)
     setRuns((current) => ({ ...current, [paper.id]: { working: true, cancelling: false, message: t('Preparing scanned PDF translation...'), kind: 'scan' } }))
     try {
@@ -415,20 +416,45 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
     void startScan(Math.min(lastPage ?? translated.translatedLastPage + batch, originalPageCount))
   }
 
+  /** Shows the page-image notice once; later runs only choose the page range, or start at once. */
   const translateScan = async (): Promise<void> => {
     if (!paper || !originalPageCount) return
+    const confirmed = settings.scannedPDFTranslationConfirmed
+    // A translation of every page has no last page; running it again only retries the pages
+    // that kept the scan, so there is no range to choose.
+    const translatedLastPage = translated?.source === 'scanRebuild' ? translated.translatedLastPage ?? originalPageCount : 0
+    const nextLastPage = translatedLastPage + batch
+    if (confirmed && originalPageCount <= nextLastPage) {
+      void startScan()
+      return
+    }
+    const cost = window.freddie.platform === 'darwin'
+      ? t('Page images go to the model chosen for scanned pages in Settings > Reader, which must accept images. Expect about a minute and 50,000 tokens per page (%d pages). Finished pages are saved, so running it again only pays for new pages. XeLaTeX (MacTeX) is required.', originalPageCount)
+      : t('Page images go to the model chosen for scanned pages in Settings > Reader, which must accept images. Expect about a minute and 50,000 tokens per page (%d pages). Finished pages are saved, so running it again only pays for new pages. XeLaTeX (TeX Live or MiKTeX) is required.', originalPageCount)
+    const detail = translatedLastPage > 0
+      ? t('Translated pages 1–%@ of %@.', String(translatedLastPage), String(originalPageCount))
+      : confirmed
+        ? t('This PDF has %d pages. Translating the first %d pages is faster.', originalPageCount, batch)
+        : `${t('Freddie reads each page image with a vision model, translates the text, and typesets it on the original page layout. Use this for scans and for PDFs whose text layer is unreliable.')}\n\n${cost}`
+    const ranged = originalPageCount > nextLastPage
     const response = await messageBox({
       type: 'question',
-      message: t('Translate Scanned PDF'),
-      detail: window.freddie.platform === 'darwin'
-        ? t('Page images go to the model chosen for scanned pages in Settings > Reader, which must accept images. Expect about a minute and 50,000 tokens per page (%d pages). Finished pages are saved, so running it again only pays for new pages. XeLaTeX (MacTeX) is required.', originalPageCount)
-        : t('Page images go to the model chosen for scanned pages in Settings > Reader, which must accept images. Expect about a minute and 50,000 tokens per page (%d pages). Finished pages are saved, so running it again only pays for new pages. XeLaTeX (TeX Live or MiKTeX) is required.', originalPageCount),
-      buttons: originalPageCount > batch ? [t('First %d Pages', batch), t('All Pages'), t('Cancel')] : [t('Translate'), t('Cancel')],
+      message: confirmed ? t('Choose Translation Scope') : t('Translate Scanned PDF'),
+      detail,
+      buttons: ranged
+        ? [
+            translatedLastPage > 0
+              ? t('Translate pages %@–%@', String(translatedLastPage + 1), String(nextLastPage))
+              : t('Translate First %d Pages', batch),
+            t('Translate All %d Pages', originalPageCount),
+            t('Cancel')
+          ]
+        : [t('Translate'), t('Cancel')],
       defaultId: 0,
-      cancelId: originalPageCount > batch ? 2 : 1
+      cancelId: ranged ? 2 : 1
     })
-    if (response === 0) void startScan(originalPageCount > batch ? batch : undefined)
-    if (response === 1 && originalPageCount > batch) void startScan()
+    if (response === 0) void startScan(ranged ? nextLastPage : undefined)
+    if (response === 1 && ranged) void startScan()
   }
 
   const showTranslateMenu = async (anchor: HTMLElement): Promise<void> => {
