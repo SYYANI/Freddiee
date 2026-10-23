@@ -298,6 +298,11 @@ function registerProtocol(): void {
       } else if (url.hostname === 'writing' && parts.length >= 2) {
         const [writingId, ...rest] = parts
         if (rest[0] === 'images') path = writings.resolve(writingId, rest.join('/'))
+      } else if (url.hostname === 'pdfjs' && parts.length === 2) {
+        const [kind, file] = parts
+        if (['cmaps', 'standard_fonts'].includes(kind) && /^[A-Za-z0-9_.-]+$/.test(file)) {
+          path = join(app.getAppPath(), 'node_modules', 'pdfjs-dist', kind, file)
+        }
       }
       if (!path) return new Response('Not found', { status: 404 })
       const response = await net.fetch(pathToFileURL(path).toString())

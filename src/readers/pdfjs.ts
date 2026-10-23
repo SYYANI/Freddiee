@@ -18,7 +18,13 @@ const wasmURLs: Record<string, string> = { 'jbig2.wasm': jbig2URL, 'openjpeg.was
  */
 class BundledBinaryDataFactory {
   async fetch({ kind, filename }: { kind: string; filename: string }): Promise<Uint8Array> {
-    const url = kind === 'wasmUrl' ? wasmURLs[filename] : undefined
+    const url = kind === 'wasmUrl'
+      ? wasmURLs[filename]
+      : kind === 'cMapUrl'
+        ? `freddie://pdfjs/cmaps/${encodeURIComponent(filename)}`
+        : kind === 'standardFontDataUrl'
+          ? `freddie://pdfjs/standard_fonts/${encodeURIComponent(filename)}`
+          : undefined
     if (!url) throw new Error(`Unable to load ${kind} data: ${filename}`)
     const response = await fetch(url)
     if (!response.ok) throw new Error(`Unable to load ${kind} data: ${filename}`)
@@ -39,7 +45,16 @@ const cache = new Map<string, CachedDocument>()
 export function openDocument(url: string): { promise: Promise<PDFDocumentProxy>; release: () => void } {
   let entry = cache.get(url)
   if (!entry) {
-    const task = pdfjs.getDocument({ url, enableXfa: false, useWorkerFetch: false, BinaryDataFactory: BundledBinaryDataFactory })
+    const task = pdfjs.getDocument({
+      url,
+      enableXfa: false,
+      cMapUrl: 'freddie://pdfjs/cmaps/',
+      cMapPacked: true,
+      standardFontDataUrl: 'freddie://pdfjs/standard_fonts/',
+      wasmUrl: 'freddie://pdfjs/wasm/',
+      useWorkerFetch: false,
+      BinaryDataFactory: BundledBinaryDataFactory
+    })
     entry = { url, task, promise: task.promise, users: 0 }
     cache.set(url, entry)
   }
