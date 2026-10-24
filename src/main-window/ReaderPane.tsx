@@ -189,8 +189,8 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   }, [paper?.id, pdf?.id])
 
   const partial = isPartialTranslation(translated, originalPageCount)
-  // Only a page rebuild continues where it stopped; other partial translations stay as they are.
-  const continuable = partial && translated?.source === 'scanRebuild'
+  // A page rebuild and a BabelDOC batch both continue where they stopped; other partial translations stay as they are.
+  const continuable = partial && (translated?.source === 'scanRebuild' || translated?.source === 'babeldoc')
   const nearEdge = partial && translated?.translatedLastPage !== undefined && pageIndex >= Math.max(0, translated.translatedLastPage - 2)
 
   // MARK: Translation events
@@ -426,12 +426,12 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
     }
   }
 
-  const startBabeldoc = async (): Promise<void> => {
+  const startBabeldoc = async (pageRange?: string): Promise<void> => {
     if (!paper) return
     setStatusMessage(null)
     setRuns((current) => ({ ...current, [paper.id]: { working: true, cancelling: false, message: t('Preparing BabelDOC translation...'), kind: 'babeldoc' } }))
     try {
-      await window.freddie.translation.translateBabeldocPDF(paper.id)
+      await window.freddie.translation.translateBabeldocPDF(paper.id, pageRange)
     } catch (error) {
       setRuns((current) => ({ ...current, [paper.id]: { working: false, cancelling: false } }))
       setStatusMessage(errorText(error))
@@ -439,9 +439,42 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   }
 
   const batch = settings.pdfTranslationBatchSize
+  /** Only the new pages go to the model; the service merges them into the saved output. */
+  const continueBabeldoc = (lastPage?: number): void => {
+    if (!continuable || translated?.source !== 'babeldoc' || !translated.translatedLastPage || !originalPageCount) return
+    const nextLastPage = Math.min(lastPage ?? translated.translatedLastPage + batch, originalPageCount)
+    void startBabeldoc(`${translated.translatedLastPage + 1}-${nextLastPage}`)
+  }
   const continuePDF = (lastPage?: number): void => {
     if (!continuable || !translated?.translatedLastPage || !originalPageCount) return
+    if (translated.source === 'babeldoc') {
+      continueBabeldoc(lastPage)
+      return
+    }
     void startScan(Math.min(lastPage ?? translated.translatedLastPage + batch, originalPageCount))
+  }
+
+  /** BabelDOC follows the batch setting: a partial translation continues with the next batch, a longer paper chooses its scope first. */
+  const translateBabeldoc = async (): Promise<void> => {
+    if (!paper) return
+    if (partial && translated?.source === 'babeldoc') {
+      continueBabeldoc()
+      return
+    }
+    if (!originalPageCount || originalPageCount <= batch) {
+      void startBabeldoc()
+      return
+    }
+    const response = await messageBox({
+      type: 'question',
+      message: t('Choose Translation Scope'),
+      detail: t('This PDF has %d pages. Translating the first %d pages is faster.', originalPageCount, batch),
+      buttons: [t('Translate First %d Pages', batch), t('Translate All %d Pages', originalPageCount), t('Cancel')],
+      defaultId: 0,
+      cancelId: 2
+    })
+    if (response === 0) void startBabeldoc(`1-${batch}`)
+    if (response === 1) void startBabeldoc()
   }
 
   /** Shows the page-image notice once; later runs only choose the page range, or start at once. */
@@ -501,11 +534,11 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
       // The LaTeX path needs a local TeX distribution; without one, a
       // born-digital arXiv PDF still translates through BabelDOC.
       else if (paper?.arxivId && (await window.freddie.settings.latexStatus()).latexmkPath) void startLatex()
-      else void startBabeldoc()
+      else void translateBabeldoc()
     }
     if (choice === 'html') void translateHTML()
     if (choice === 'latex') void startLatex()
-    if (choice === 'babeldoc') void startBabeldoc()
+    if (choice === 'babeldoc') void translateBabeldoc()
     if (choice === 'scan') void translateScan()
     if (choice === 'more') continuePDF()
   }

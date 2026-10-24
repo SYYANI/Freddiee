@@ -81,6 +81,36 @@ const result: BabelDocWorkerEvent = {
   }
 }
 
+/** Produces a real translated output: the selected pages are uppercased through the native backend. */
+async function uppercaseTranslation(data: BabelDocWorkerData, source: Uint8Array): Promise<Uint8Array> {
+  const { document } = await extractFrontend(source, data.pages!)
+  for (const page of document.page ?? []) {
+    for (const character of page.pdf_character ?? []) {
+      const uppercase = character.char_unicode?.toUpperCase()
+      if (uppercase) {
+        character.char_unicode = uppercase
+        character.pdf_character_id = uppercase.codePointAt(0)
+      }
+    }
+  }
+  const written = await NativePDFBackend.write(source, document, {
+    renderingMode: data.configuration.renderingMode,
+    onlyIncludeTranslatedPages: false,
+    targetFontDirectory: data.configuration.targetFontDirectory,
+    skipForms: false, skipCurves: false, maximumUnmatchedGlyphFraction: 0.01
+  })
+  return written.pdf
+}
+
+async function fourPageSource(): Promise<Uint8Array> {
+  const source = await PDFDocument.create()
+  const font = await source.embedFont(StandardFonts.Helvetica)
+  for (let page = 1; page <= 4; page += 1) {
+    source.addPage([612, 792]).drawText(`source page ${page}`, { x: 50, y: 700, size: 12, font })
+  }
+  return source.save()
+}
+
 describe('BabelDOC translation service', () => {
   it('cancels during preparation without starting a worker or saving an output', async () => {
     const { store, paperId, events, service } = await prepareTranslation()
@@ -181,6 +211,41 @@ describe('BabelDOC translation service', () => {
     expect(Worker).not.toHaveBeenCalled()
     expect(events.at(-1)).toMatchObject({ type: 'failed', message: expect.stringContaining('beyond this document') })
     expect(service.isRunning(paperId)).toBe(false)
+  })
+
+  it('continues a partial translation by merging the next batch into the saved output', async () => {
+    const source = await fourPageSource()
+    const first = await startTranslation('1-2', source)
+    expect(first.data.pages).toEqual([1, 2])
+    first.worker.emit('message', { ...result, pdf: await uppercaseTranslation(first.data, source) })
+    await first.job
+    const firstAttachment = first.store.attachments(first.paperId).find((item) => item.source === 'babeldoc')!
+    expect(firstAttachment.filename).toBe('translations/babeldoc/translated-1-2.pdf')
+    expect(firstAttachment.translatedLastPage).toBe(2)
+
+    const second = first.service.translateBabeldocPDF(first.paperId, '3')
+    await vi.waitFor(() => expect(Worker).toHaveBeenCalledTimes(2))
+    const data = vi.mocked(Worker).mock.calls[1][1]!.workerData as BabelDocWorkerData
+    expect(data.pages).toEqual([3])
+    vi.mocked(Worker).mock.results[1].value.emit('message', { ...result, pdf: await uppercaseTranslation(data, source) })
+    await second
+
+    const attachment = first.store.attachments(first.paperId).find((item) => item.source === 'babeldoc')!
+    expect(attachment.filename).toBe('translations/babeldoc/translated-1-3.pdf')
+    expect(attachment.translatedLastPage).toBe(3)
+    const babeldocDirectory = first.store.resolvePaperPath(first.paperId, 'translations/babeldoc')
+    expect((await readdir(babeldocDirectory)).includes('translated-1-2.pdf')).toBe(false)
+    const saved = new Uint8Array(await readFile(first.store.attachmentPath(first.paperId, attachment.id)))
+    const output = await extractFrontend(saved)
+    expect(output.document.page?.map((page) => (page.pdf_character ?? []).map((character) => character.char_unicode ?? '').join('')))
+      .toEqual(['SOURCE PAGE 1', 'SOURCE PAGE 2', 'SOURCE PAGE 3', 'source page 4'])
+  })
+
+  it('does not record progress for a range that starts mid-document', async () => {
+    const { store, paperId, job, worker } = await startTranslation('2-3', await fourPageSource())
+    worker.emit('message', result)
+    await job
+    expect(store.attachments(paperId).find((item) => item.source === 'babeldoc')!.translatedLastPage).toBeUndefined()
   })
 
   it('drops a layout checkpoint that fails a later run', async () => {

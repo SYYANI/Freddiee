@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { readFile, readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { Worker } from 'node:worker_threads'
+import { PDFDocument } from 'pdf-lib'
 import * as cheerio from 'cheerio'
 import type { CheerioAPI } from 'cheerio'
 import type { Element } from 'domhandler'
@@ -511,6 +512,15 @@ export class TranslationService {
           pages = clamped
         }
       }
+      // A continuation is a contiguous selection that starts exactly one page
+      // past the saved output; its increment is merged into that output so
+      // already-translated pages never go to the model again.
+      const existingPartial = this.store.attachments(paperId)
+        .find((item) => item.kind === 'translatedPDF' && item.source === 'babeldoc' && item.translatedLastPage !== undefined)
+      const savedLastPage = existingPartial?.translatedLastPage
+      const continuing = savedLastPage !== undefined && pages !== null
+        && pages[0] === savedLastPage + 1
+        && pages.every((page, index) => index === 0 || page === pages[index - 1] + 1)
       const layoutIdentity = createHash('sha256')
         .update(bytes)
         .update(JSON.stringify({ version: structuredDocumentVersion, pages, model: runtimeManifest.layoutModel.sha256 }))
@@ -573,27 +583,44 @@ export class TranslationService {
       // Older checkpoints cannot match the new identity again; keep only the newest.
       await this.pruneBabelDocLayoutCaches(paperId, `layout-${layoutIdentity}.json`)
 
-      const relativePath = pages
-        ? `translations/babeldoc/translated-${babelDocOutputLabel(pages)}.pdf`
-        : 'translations/babeldoc/translated.pdf'
-      const outputPath = this.store.resolvePaperPath(paperId, relativePath)
-      await atomicWriteFile(outputPath, result.pdf)
-      signal.throwIfAborted()
-      // One attachment per output file: rerunning the same range replaces it,
-      // while a different range keeps the earlier translation on disk instead
-      // of overwriting it. The reader shows the most recent one.
-      const existing = this.store.attachments(paperId)
-        .find((item) => item.kind === 'translatedPDF' && item.source === 'babeldoc' && item.filename === relativePath)
       const createdAt = new Date().toISOString()
-      if (existing) {
-        await this.store.updateAttachment(paperId, existing.id, {
-          filename: relativePath, translatedLastPage: undefined, createdAt
-        })
+      if (continuing && existingPartial && pages && savedLastPage !== undefined) {
+        const nextLastPage = pages[pages.length - 1]
+        const merged = await mergeBabelDocIncrement(this.store.attachmentPath(paperId, existingPartial.id), result.pdf, savedLastPage)
+        const relativePath = `translations/babeldoc/translated-${babelDocOutputLabel(Array.from({ length: nextLastPage }, (_, index) => index + 1))}.pdf`
+        await atomicWriteFile(this.store.resolvePaperPath(paperId, relativePath), merged)
+        signal.throwIfAborted()
+        // Capture the superseded file first: the attachment record is updated
+        // in place, so its old filename does not survive the patch below.
+        const supersededPath = existingPartial.filename !== relativePath ? existingPartial.filename : undefined
+        await this.store.updateAttachment(paperId, existingPartial.id, { filename: relativePath, translatedLastPage: nextLastPage, createdAt })
+        if (supersededPath) {
+          await rm(this.store.resolvePaperPath(paperId, supersededPath), { force: true }).catch(() => undefined)
+        }
       } else {
-        await this.store.addAttachment({
-          id: randomUUID(), paperId, kind: 'translatedPDF', source: 'babeldoc',
-          filename: relativePath, createdAt
-        })
+        const relativePath = pages
+          ? `translations/babeldoc/translated-${babelDocOutputLabel(pages)}.pdf`
+          : 'translations/babeldoc/translated.pdf'
+        await atomicWriteFile(this.store.resolvePaperPath(paperId, relativePath), result.pdf)
+        signal.throwIfAborted()
+        // A run that covers pages from the start records how far it got; a
+        // mid-document selection has no translated prefix to continue from.
+        const translatedLastPage = pages && pages[0] === 1 ? pages[pages.length - 1] : undefined
+        // One attachment per output file: rerunning the same range replaces it,
+        // while a different range keeps the earlier translation on disk instead
+        // of overwriting it. The reader shows the most recent one.
+        const existing = this.store.attachments(paperId)
+          .find((item) => item.kind === 'translatedPDF' && item.source === 'babeldoc' && item.filename === relativePath)
+        if (existing) {
+          await this.store.updateAttachment(paperId, existing.id, {
+            filename: relativePath, translatedLastPage, createdAt
+          })
+        } else {
+          await this.store.addAttachment({
+            id: randomUUID(), paperId, kind: 'translatedPDF', source: 'babeldoc',
+            filename: relativePath, translatedLastPage, createdAt
+          })
+        }
       }
 
       const diagnostics = babelDocDiagnostics(result.diagnostics)
@@ -711,6 +738,21 @@ export function babelDocOutputLabel(pages: number[]): string {
   const label = describeBabelDocPages(pages)
   if (label.length <= 64) return label
   return `h${createHash('sha256').update(label).digest('hex').slice(0, 16)}`
+}
+
+/** A continuation splices the newly translated pages into the earlier output:
+ * the saved head, the fresh increment, and the increment's untouched tail stay
+ * one full-length document, which the bilingual reader synchronizes by
+ * physical page index. */
+async function mergeBabelDocIncrement(existingPath: string, increment: Uint8Array, translatedLastPage: number): Promise<Uint8Array> {
+  const existing = await PDFDocument.load(await readFile(existingPath))
+  const addendum = await PDFDocument.load(increment)
+  const merged = await PDFDocument.create()
+  const head = Math.min(translatedLastPage, existing.getPageCount(), addendum.getPageCount())
+  const indices = (from: number, to: number): number[] => Array.from({ length: Math.max(0, to - from) }, (_, index) => from + index)
+  for (const page of await merged.copyPages(existing, indices(0, head))) merged.addPage(page)
+  for (const page of await merged.copyPages(addendum, indices(head, addendum.getPageCount()))) merged.addPage(page)
+  return new Uint8Array(await merged.save())
 }
 
 function babelDocDiagnostics(value: BabelDocPipelineDiagnostics): BabelDocTranslationDiagnostics {
