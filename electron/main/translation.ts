@@ -8,7 +8,7 @@ import type { CheerioAPI } from 'cheerio'
 import type { Element } from 'domhandler'
 import type { BabelDocTranslationDiagnostics, TranslationEvent } from '../../shared/types'
 import type { Translator } from '../../shared/i18n'
-import { firstAttachment } from '../../shared/library'
+import { firstAttachment, latestAttachment } from '../../shared/library'
 import { atomicWriteFile } from './files'
 import { complete, requestFor, resolveRoute, RouteError, type ResolvedRoute } from './llm'
 import { runLatexTranslation } from '../../LaTeXTransKit'
@@ -514,13 +514,16 @@ export class TranslationService {
       }
       // A continuation is a contiguous selection that starts exactly one page
       // past the saved output; its increment is merged into that output so
-      // already-translated pages never go to the model again.
-      const existingPartial = this.store.attachments(paperId)
-        .find((item) => item.kind === 'translatedPDF' && item.source === 'babeldoc' && item.translatedLastPage !== undefined)
+      // already-translated pages never go to the model again. The reader
+      // continues the newest translation, so only that one can be extended.
+      const latestTranslation = latestAttachment(this.store.attachments(paperId), 'translatedPDF')
+      const existingPartial = latestTranslation?.source === 'babeldoc' && latestTranslation.translatedLastPage !== undefined
+        ? latestTranslation
+        : undefined
       const savedLastPage = existingPartial?.translatedLastPage
       const continuing = savedLastPage !== undefined && pages !== null
         && pages[0] === savedLastPage + 1
-        && pages.every((page, index) => index === 0 || page === pages[index - 1] + 1)
+        && isContiguousPageSelection(pages)
       const layoutIdentity = createHash('sha256')
         .update(bytes)
         .update(JSON.stringify({ version: structuredDocumentVersion, pages, model: runtimeManifest.layoutModel.sha256 }))
@@ -594,6 +597,13 @@ export class TranslationService {
         // in place, so its old filename does not survive the patch below.
         const supersededPath = existingPartial.filename !== relativePath ? existingPartial.filename : undefined
         await this.store.updateAttachment(paperId, existingPartial.id, { filename: relativePath, translatedLastPage: nextLastPage, createdAt })
+        // An earlier run of the same range owned the file just overwritten;
+        // keep one attachment per output file so no record outlives its file.
+        for (const duplicate of this.store.attachments(paperId)) {
+          if (duplicate.kind === 'translatedPDF' && duplicate.source === 'babeldoc' && duplicate.filename === relativePath && duplicate.id !== existingPartial.id) {
+            await this.store.removeAttachment(paperId, duplicate.id)
+          }
+        }
         if (supersededPath) {
           await rm(this.store.resolvePaperPath(paperId, supersededPath), { force: true }).catch(() => undefined)
         }
@@ -604,8 +614,8 @@ export class TranslationService {
         await atomicWriteFile(this.store.resolvePaperPath(paperId, relativePath), result.pdf)
         signal.throwIfAborted()
         // A run that covers pages from the start records how far it got; a
-        // mid-document selection has no translated prefix to continue from.
-        const translatedLastPage = pages && pages[0] === 1 ? pages[pages.length - 1] : undefined
+        // mid-document or gapped selection has no translated prefix to continue from.
+        const translatedLastPage = pages && pages[0] === 1 && isContiguousPageSelection(pages) ? pages[pages.length - 1] : undefined
         // One attachment per output file: rerunning the same range replaces it,
         // while a different range keeps the earlier translation on disk instead
         // of overwriting it. The reader shows the most recent one.
@@ -738,6 +748,10 @@ export function babelDocOutputLabel(pages: number[]): string {
   const label = describeBabelDocPages(pages)
   if (label.length <= 64) return label
   return `h${createHash('sha256').update(label).digest('hex').slice(0, 16)}`
+}
+
+function isContiguousPageSelection(pages: number[]): boolean {
+  return pages.every((page, index) => index === 0 || page === pages[index - 1] + 1)
 }
 
 /** A continuation splices the newly translated pages into the earlier output:

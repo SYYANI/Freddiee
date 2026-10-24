@@ -457,6 +457,11 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   /** BabelDOC follows the batch setting: a partial translation continues with the next batch, a longer paper chooses its scope first. */
   const translateBabeldoc = async (): Promise<void> => {
     if (!paper) return
+    // A page range set in Settings is an explicit selection and takes precedence over batching.
+    if (settings.babelDocPageRange.trim()) {
+      void startBabeldoc()
+      return
+    }
     if (partial && translated?.source === 'babeldoc') {
       continueBabeldoc()
       return

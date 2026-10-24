@@ -102,6 +102,15 @@ async function uppercaseTranslation(data: BabelDocWorkerData, source: Uint8Array
   return written.pdf
 }
 
+/** Starts another run on the same service and answers it with a real translation of its pages. */
+async function translateAgain(context: { service: TranslationService, paperId: string }, pageRange: string, source: Uint8Array, call: number): Promise<void> {
+  const job = context.service.translateBabeldocPDF(context.paperId, pageRange)
+  await vi.waitFor(() => expect(Worker).toHaveBeenCalledTimes(call + 1))
+  const data = vi.mocked(Worker).mock.calls[call][1]!.workerData as BabelDocWorkerData
+  vi.mocked(Worker).mock.results[call].value.emit('message', { ...result, pdf: await uppercaseTranslation(data, source) })
+  await job
+}
+
 async function fourPageSource(): Promise<Uint8Array> {
   const source = await PDFDocument.create()
   const font = await source.embedFont(StandardFonts.Helvetica)
@@ -223,12 +232,8 @@ describe('BabelDOC translation service', () => {
     expect(firstAttachment.filename).toBe('translations/babeldoc/translated-1-2.pdf')
     expect(firstAttachment.translatedLastPage).toBe(2)
 
-    const second = first.service.translateBabeldocPDF(first.paperId, '3')
-    await vi.waitFor(() => expect(Worker).toHaveBeenCalledTimes(2))
-    const data = vi.mocked(Worker).mock.calls[1][1]!.workerData as BabelDocWorkerData
-    expect(data.pages).toEqual([3])
-    vi.mocked(Worker).mock.results[1].value.emit('message', { ...result, pdf: await uppercaseTranslation(data, source) })
-    await second
+    await translateAgain(first, '3', source, 1)
+    expect((vi.mocked(Worker).mock.calls[1][1]!.workerData as BabelDocWorkerData).pages).toEqual([3])
 
     const attachment = first.store.attachments(first.paperId).find((item) => item.source === 'babeldoc')!
     expect(attachment.filename).toBe('translations/babeldoc/translated-1-3.pdf')
@@ -241,8 +246,42 @@ describe('BabelDOC translation service', () => {
       .toEqual(['SOURCE PAGE 1', 'SOURCE PAGE 2', 'SOURCE PAGE 3', 'source page 4'])
   })
 
-  it('does not record progress for a range that starts mid-document', async () => {
-    const { store, paperId, job, worker } = await startTranslation('2-3', await fourPageSource())
+  it('continues the newest partial translation when an older one is still on disk', async () => {
+    const source = await fourPageSource()
+    const first = await startTranslation('1-2', source)
+    first.worker.emit('message', { ...result, pdf: await uppercaseTranslation(first.data, source) })
+    await first.job
+    const older = first.store.attachments(first.paperId).find((item) => item.source === 'babeldoc')!
+    await translateAgain(first, '1-3', source, 1)
+    // Both runs can finish within one millisecond; date the older one back so recency is unambiguous.
+    await first.store.updateAttachment(first.paperId, older.id, { createdAt: '2000-01-01T00:00:00.000Z' })
+
+    await translateAgain(first, '4', source, 2)
+    expect(first.store.attachments(first.paperId).filter((item) => item.source === 'babeldoc')
+      .map((item) => [item.filename, item.translatedLastPage])).toEqual([
+      ['translations/babeldoc/translated-1-2.pdf', 2],
+      ['translations/babeldoc/translated-1-4.pdf', 4]
+    ])
+  })
+
+  it('drops the attachment whose output file a continuation replaced', async () => {
+    const source = await fourPageSource()
+    const first = await startTranslation('1-3', source)
+    first.worker.emit('message', { ...result, pdf: await uppercaseTranslation(first.data, source) })
+    await first.job
+    const older = first.store.attachments(first.paperId).find((item) => item.source === 'babeldoc')!
+    await translateAgain(first, '1-2', source, 1)
+    await first.store.updateAttachment(first.paperId, older.id, { createdAt: '2000-01-01T00:00:00.000Z' })
+
+    await translateAgain(first, '3', source, 2)
+    const attachments = first.store.attachments(first.paperId).filter((item) => item.source === 'babeldoc')
+    expect(attachments).toHaveLength(1)
+    expect(attachments[0]).toMatchObject({ filename: 'translations/babeldoc/translated-1-3.pdf', translatedLastPage: 3 })
+    expect(await readdir(first.store.resolvePaperPath(first.paperId, 'translations/babeldoc'))).not.toContain('translated-1-2.pdf')
+  })
+
+  it.each(['2-3', '1-2,4'])('does not record progress for %s, which has no translated prefix', async (pageRange) => {
+    const { store, paperId, job, worker } = await startTranslation(pageRange, await fourPageSource())
     worker.emit('message', result)
     await job
     expect(store.attachments(paperId).find((item) => item.source === 'babeldoc')!.translatedLastPage).toBeUndefined()
