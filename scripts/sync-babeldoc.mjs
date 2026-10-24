@@ -76,27 +76,42 @@ const upstreamModel = join(upstream, 'Vendor', 'Models', model.file.split('/').p
 /** A manifest path (fonts/…, models/…) relative to the upstream Vendor directories. */
 const upstreamRelative = (file) => file.replace(/^(fonts|models)\//, '')
 
+/** True when the runtime already holds a verified copy (e.g. restored from a CI cache). */
+const present = (asset) => {
+  const target = join(runtime, asset.file)
+  return existsSync(target) && !lstatSync(target).isSymbolicLink() &&
+    statSync(target).size === asset.size && sha256(target) === asset.sha256
+}
+
 mkdirSync(runtime, { recursive: true })
-if (existsSync(upstreamModel)) {
+if (present(model)) {
+  console.log(`${model.file} is already up to date`)
+} else if (existsSync(upstreamModel)) {
   place(model, upstreamModel)
 } else {
   console.log(`Model not found at ${upstreamModel}; downloading from ${model.huggingFaceRepository}`)
   download(model.url, join(runtime, model.file), model.sha256)
 }
 
+// Without a sibling checkout (CI), every font comes from its pinned sourceURL.
 const upstreamFontsManifest = join(upstream, 'Vendor', 'Fonts', 'manifest.json')
-if (!existsSync(upstreamFontsManifest)) fail(`fonts manifest not found at ${upstreamFontsManifest}`)
-const upstreamFonts = JSON.parse(readFileSync(upstreamFontsManifest, 'utf8'))
-const byName = new Map(upstreamFonts.assets.map((asset) => [`fonts/${asset.file}`, asset]))
-for (const license of upstreamFonts.licenses) byName.set(`fonts/${license.file}`, license)
+const byName = new Map()
+if (existsSync(upstreamFontsManifest)) {
+  const upstreamFonts = JSON.parse(readFileSync(upstreamFontsManifest, 'utf8'))
+  for (const asset of upstreamFonts.assets) byName.set(`fonts/${asset.file}`, asset)
+  for (const license of upstreamFonts.licenses) byName.set(`fonts/${license.file}`, license)
+} else {
+  console.log(`Fonts manifest not found at ${upstreamFontsManifest}; using pinned font sources`)
+}
 for (const asset of manifest.fonts.files) {
   const upstreamEntry = byName.get(asset.file)
-  if (!upstreamEntry || upstreamEntry.sha256 !== asset.sha256 || upstreamEntry.size !== asset.size) {
+  if (byName.size > 0 && (!upstreamEntry || upstreamEntry.sha256 !== asset.sha256 || upstreamEntry.size !== asset.size)) {
     fail(`reWriteBabelDoc fonts manifest disagrees with our pinned entry for ${asset.file}`)
   }
+  if (present(asset)) continue
   const source = join(upstream, 'Vendor', 'Fonts', upstreamRelative(asset.file))
   if (!place(asset, source)) {
-    const sourceURL = asset.sourceURL ?? upstreamEntry.sourceURL
+    const sourceURL = asset.sourceURL ?? upstreamEntry?.sourceURL
     if (!sourceURL) fail(`${asset.file} is missing under ${join(upstream, 'Vendor', 'Fonts')} and has no download source`)
     download(sourceURL, join(runtime, asset.file), asset.sha256)
   }
@@ -113,7 +128,7 @@ for (const file of walkFiles(runtime)) {
 
 let commit = 'unknown'
 try {
-  commit = execFileSync('git', ['-C', upstream, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+  commit = execFileSync('git', ['-C', upstream, 'rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
 } catch { /* Not a git checkout. */ }
 writeFileSync(join(runtime, 'UPSTREAM.json'), `${JSON.stringify({ repository: 'reWriteBabelDoc', commit }, null, 2)}\n`)
 
