@@ -10,7 +10,7 @@
 // Usage: node scripts/install-native-targets.mjs <platform> [<arch>]
 // An omitted architecture follows the host, matching electron-builder's default.
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
