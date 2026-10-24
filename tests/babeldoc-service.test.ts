@@ -38,7 +38,7 @@ afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })))
 })
 
-async function startTranslation(pageRange = '', pdf: Uint8Array = new TextEncoder().encode('%PDF-test source')) {
+async function prepareTranslation(pdf: Uint8Array = new TextEncoder().encode('%PDF-test source')) {
   const root = await mkdtemp(join(tmpdir(), 'freddie-babeldoc-service-'))
   roots.push(root)
   const store = new FreddieStore(root)
@@ -57,6 +57,11 @@ async function startTranslation(pageRange = '', pdf: Uint8Array = new TextEncode
   const events: TranslationEvent[] = []
   const secrets = { key: async () => 'test-key' } as unknown as SecretStore
   const service = new TranslationService(store, secrets, (event) => events.push(event), () => createTranslator('en'))
+  return { store, paperId, events, service }
+}
+
+async function startTranslation(pageRange = '', pdf?: Uint8Array) {
+  const { store, paperId, events, service } = await prepareTranslation(pdf)
   const job = service.translateBabeldocPDF(paperId, pageRange)
   await vi.waitFor(() => expect(Worker).toHaveBeenCalledOnce())
   const worker = vi.mocked(Worker).mock.results[0].value as Worker
@@ -77,6 +82,26 @@ const result: BabelDocWorkerEvent = {
 }
 
 describe('BabelDOC translation service', () => {
+  it('cancels during preparation without starting a worker or saving an output', async () => {
+    const { store, paperId, events, service } = await prepareTranslation()
+    const job = service.translateBabeldocPDF(paperId)
+    service.cancel(paperId)
+    await job
+    expect(Worker).not.toHaveBeenCalled()
+    expect(service.isRunning(paperId)).toBe(false)
+    expect(events.at(-1)?.type).toBe('cancelled')
+    expect(store.attachments(paperId).some((item) => item.kind === 'translatedPDF')).toBe(false)
+  })
+
+  it('terminates an active worker when cancelled', async () => {
+    const { paperId, events, service, worker, job } = await startTranslation()
+    service.cancel(paperId)
+    await job
+    expect(worker.terminate).toHaveBeenCalledOnce()
+    expect(service.isRunning(paperId)).toBe(false)
+    expect(events.at(-1)?.type).toBe('cancelled')
+  })
+
   it.each(['2-3', '2,4'])('keeps all physical pages for the bilingual reader when selecting %s', async (pageRange) => {
     const source = await PDFDocument.create()
     const font = await source.embedFont(StandardFonts.Helvetica)

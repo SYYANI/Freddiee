@@ -110,8 +110,10 @@ structured-IL checkpoint is keyed by the source PDF, selected pages and layout
 model, while the final PDF is atomically installed as a `babeldoc` attachment
 only after a successful run. A page selection limits which pages are translated;
 unselected pages stay in the output so the bilingual reader keeps matching page
-indices. Checkpoint write failures are logged and translation continues without
-the optional cache.
+indices. Before writing, shared form streams and their resource paths are copied
+per affected page, so rebuilding a selected page cannot overwrite another page's
+content. Cached IL keeps its original object references. Checkpoint write failures
+are logged and translation continues without the optional cache.
 
 Stages 5-8 (`babeldoc-stage4-parity.test.ts` and
 `babeldoc-translation-parity.test.ts`): StylesAndFormulas, semantic-hint

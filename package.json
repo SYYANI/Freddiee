@@ -25,7 +25,7 @@
     "package:win": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs win32 x64 && npm run build && electron-builder --win --x64",
     "package:win:arm64": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs win32 arm64 && npm run build && electron-builder --win --arm64",
     "package:win:x64": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs win32 x64 && npm run build && electron-builder --win --x64",
-    "package:linux": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs linux x64 && npm run build && electron-builder --linux",
+    "package:linux": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs linux && npm run build && electron-builder --linux",
     "package:linux:arm64": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs linux arm64 && npm run build && electron-builder --linux --arm64",
     "package:linux:x64": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs linux x64 && npm run build && electron-builder --linux --x64",
     "postinstall": "node scripts/patch-dev-electron-name.mjs && node scripts/patch-osx-sign-isbinaryfile.mjs"

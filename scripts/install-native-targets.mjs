@@ -7,7 +7,8 @@
 // the tarball when a previous package build pruned it, then prune every other
 // platform so installers do not ship all six (~290 MB) native sets.
 //
-// Usage: node scripts/install-native-targets.mjs <platform> <arch>
+// Usage: node scripts/install-native-targets.mjs <platform> [<arch>]
+// An omitted architecture follows the host, matching electron-builder's default.
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -15,9 +16,9 @@ import { join } from 'node:path'
 
 const NATIVE_PARENTS = ['@napi-rs/canvas', 'koffi']
 
-const [platform, arch] = process.argv.slice(2)
+const [platform, arch = process.arch] = process.argv.slice(2)
 if (!platform || !arch) {
-  console.error('Usage: node scripts/install-native-targets.mjs <platform> <arch>')
+  console.error('Usage: node scripts/install-native-targets.mjs <platform> [<arch>]')
   process.exit(1)
 }
 

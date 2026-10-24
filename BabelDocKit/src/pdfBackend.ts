@@ -8,6 +8,7 @@ import {
   type SourcePreservingDocumentPlan, type SourcePreservingPagePlan
 } from './sourcePreservingPlan'
 import { ensureWriterFontsLoaded, fontDirectory, type FontTable } from './pdfBackendFonts'
+import { isolateSharedPageStreams } from './pdfPageIsolation'
 
 export type NativePDFRenderingMode = 'rebuild' | 'source-preserving'
 
@@ -96,10 +97,12 @@ export const NativePDFBackend = {
     configuration: NativePDFBackendConfiguration = defaultBackendConfiguration,
     sourcePlan?: SourcePreservingDocumentPlan | null
   ): Promise<{ pdf: Uint8Array; report: NativePDFBackendReport }> {
+    const isolated = await isolateSharedPageStreams(sourcePDF, document)
+    document = isolated.document
     const wasm = await babelDocWasm()
     await ensureWriterFontsLoaded(configuration.targetFontDirectory ?? undefined)
     const fonts = fontDirectory(configuration.targetFontDirectory ?? undefined)
-    const writer = wasm.writerOpen(sourcePDF)
+    const writer = wasm.writerOpen(isolated.pdf)
 
     const reports = new Map<number, BackendPageReport>()
     const rebuilt: Array<{ page: ILPage; fallback?: BackendFallbackReason }> = []
@@ -124,8 +127,7 @@ export const NativePDFBackend = {
         }
         reports.set(pageNumber, report)
       }
-      // Rebuilt pages rewrite shared XObject streams in place, so they go after
-      // every preserved page has instanced the forms it uses.
+      // Each page now owns the streams it can rewrite, including fallbacks.
       for (const { page, fallback } of rebuilt) {
         rebuildPage(page, writer, configuration, fonts, wasm)
         const pageNumber = page.page_number ?? 0

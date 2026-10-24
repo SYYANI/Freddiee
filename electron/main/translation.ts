@@ -667,6 +667,7 @@ async function runBabelDocWorker(
   onProgress: (progress: BabelDocProgress) => void,
   onStructuredDocument: (document: import('../../BabelDocKit').ILDocument) => Promise<void>
 ): Promise<{ pdf: Uint8Array; diagnostics: BabelDocPipelineDiagnostics }> {
+  signal.throwIfAborted()
   const worker = new Worker(join(__dirname, 'babeldocWorker.cjs'), {
     workerData: data,
     transferList: [data.pdf.buffer as ArrayBuffer]
