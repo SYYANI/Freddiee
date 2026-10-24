@@ -2,8 +2,6 @@
 
 Freddie is a local-first paper reader for macOS, Windows, and Linux. This repository is the cross-platform implementation of the native Swift Freddie app, with the same interface: a floating library sidebar, a reader with HTML/PDF and Original/Bilingual/Translated pickers in the toolbar, and an inspector with Paper and Writing tabs.
 
-The desktop architecture follows DeepSeek Harness Desktop: an Electron shell owns native lifecycle, files, secrets, and long-running processes, while one packaged web client draws the whole interface on every platform. The renderer never receives raw filesystem paths or API keys.
-
 ## Features
 
 - **Library**: folders (collapsible sections, drag papers onto a folder), favorites, Zotero item types with detection, a filter for favorites / translated / noted papers and item types, and native context menus.
