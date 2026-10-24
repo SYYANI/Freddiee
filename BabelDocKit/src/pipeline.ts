@@ -24,6 +24,10 @@ export type BabelDocStage = 'frontend' | 'layout' | 'paragraph' | 'styles' | 'se
 
 export const stageOrder: BabelDocStage[] = ['frontend', 'layout', 'paragraph', 'styles', 'semantic', 'translation', 'typesetting', 'backend']
 
+/** Bumps whenever a structured stage (frontend..styles) changes its IL output,
+ * invalidating persisted layout checkpoints. */
+export const structuredDocumentVersion = 1
+
 /** Swift NativeBabelDocStage raw values, used for progress events. */
 export const stageDisplayNames: Record<BabelDocStage, string> = {
   frontend: 'Parse PDF',

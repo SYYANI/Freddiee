@@ -393,7 +393,11 @@ export async function readPDFMetadata(data: Uint8Array): Promise<{ title?: strin
     const infoRecord = info as Record<string, unknown>
     const pages: string[] = []
     let hasText = false
-    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+    // A scanned PDF has no text on any page; stop after a few instead of
+    // walking every page of a hundreds-of-pages document. The first three
+    // pages cover the identifier extraction either way.
+    const textPageLimit = Math.min(document.numPages, 10)
+    for (let pageNumber = 1; pageNumber <= textPageLimit; pageNumber += 1) {
       const content = await (await document.getPage(pageNumber)).getTextContent()
       const text = content.items.map((item) => ('str' in item ? item.str : '')).join(' ')
       if (/\S/u.test(text)) hasText = true
@@ -416,6 +420,20 @@ export async function readPDFMetadata(data: Uint8Array): Promise<{ title?: strin
     return result
   } catch {
     return { authors: [], pageCount: 0, hasText: false }
+  }
+}
+
+/** The page count alone, without any text scanning. 0 when the PDF is unreadable. */
+export async function pdfPageCount(data: Uint8Array): Promise<number> {
+  try {
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    const loadingTask = pdfjs.getDocument({ data: data.slice(), useSystemFonts: false, standardFontDataUrl: standardFontDataURL() })
+    const document = await loadingTask.promise
+    const pageCount = document.numPages
+    await loadingTask.destroy()
+    return pageCount
+  } catch {
+    return 0
   }
 }
 

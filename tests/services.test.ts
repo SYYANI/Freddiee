@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import * as cheerio from 'cheerio'
-import { applyTranslation, isMathOnly, outputIssue, parseBabelDocPageRange, prepareHTML, renderTranslation, userPrompt } from '../electron/main/translation'
+import { applyTranslation, babelDocOutputLabel, describeBabelDocPages, isMathOnly, outputIssue, parseBabelDocPageRange, prepareHTML, renderTranslation, userPrompt } from '../electron/main/translation'
 import { applyHiddenRegions, sanitize } from '../electron/main/localizer'
 import { parseArxivAtom } from '../electron/main/importer'
 import { parseResponse } from '../electron/main/llm'
@@ -88,6 +88,29 @@ describe('BabelDOC integration', () => {
       expect(() => parseBabelDocPageRange(value), value).toThrow(/Invalid BabelDOC page range/)
     }
     expect(parseBabelDocPageRange('2147483646-2147483647')).toEqual([2147483646, 2147483647])
+  })
+
+  it('caps the total number of selected pages across ranges', () => {
+    expect(parseBabelDocPageRange('1-5000,5001-10000')).toHaveLength(10_000)
+    for (const value of ['1-10001', '1-5000,5001-10002', '1,2,3-10000,10001']) {
+      expect(() => parseBabelDocPageRange(value), value).toThrow(/selects more than/)
+    }
+  })
+
+  it('labels a selected page set for output filenames', () => {
+    expect(describeBabelDocPages([1, 2, 3, 5, 8, 9])).toBe('1-3,5,8-9')
+    expect(describeBabelDocPages([4])).toBe('4')
+  })
+
+  it('hashes page labels that would exceed filesystem name limits', () => {
+    expect(babelDocOutputLabel([1, 2, 3, 5, 8, 9])).toBe('1-3,5,8-9')
+    const oddPages = Array.from({ length: 100 }, (_, index) => 2 * index + 1)
+    expect(describeBabelDocPages(oddPages).length).toBeGreaterThan(64)
+    const label = babelDocOutputLabel(oddPages)
+    expect(label).toMatch(/^h[0-9a-f]{16}$/)
+    // The same selection must always land on the same file name.
+    expect(babelDocOutputLabel(oddPages)).toBe(label)
+    expect(babelDocOutputLabel([...oddPages, 201])).not.toBe(label)
   })
 
   it('derives a validated semantic sidecar from parsed LaTeX units', () => {

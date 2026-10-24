@@ -498,7 +498,9 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
     ], anchor)
     if (choice === 'pdf') {
       if (pdfHasText === false) void translateScan()
-      else if (paper?.arxivId) void startLatex()
+      // The LaTeX path needs a local TeX distribution; without one, a
+      // born-digital arXiv PDF still translates through BabelDOC.
+      else if (paper?.arxivId && (await window.freddie.settings.latexStatus()).latexmkPath) void startLatex()
       else void startBabeldoc()
     }
     if (choice === 'html') void translateHTML()

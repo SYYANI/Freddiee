@@ -69,7 +69,7 @@ export * from './src/il'
 export { LetterboxTransform, PageCoordinateConverter, type FloatBox, type IntSize } from './src/geometry'
 export { BabelDocModelMetadata } from './src/modelMetadata'
 export {
-  createPipeline, stageBridgeNames, stageDisplayNames, stageOrder,
+  createPipeline, stageBridgeNames, stageDisplayNames, stageOrder, structuredDocumentVersion,
   type BabelDocPipelineConfiguration, type BabelDocPipelineDiagnostics,
   type BabelDocProgress, type BabelDocStage, type PipelineTranslateResult
 } from './src/pipeline'

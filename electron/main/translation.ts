@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { readFile, rm } from 'node:fs/promises'
+import { readFile, readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { Worker } from 'node:worker_threads'
 import * as cheerio from 'cheerio'
@@ -15,6 +15,7 @@ import { runScannedTranslation } from '../../RebuildPDFKit'
 import {
   defaultSystemPrompt as babelDocSystemPrompt,
   stageBridgeNames,
+  structuredDocumentVersion,
   userPromptSections,
   verifyBabelDocRuntime,
   babeldocRuntimeDirectory,
@@ -27,6 +28,7 @@ import {
 } from '../../BabelDocKit'
 import type { BabelDocWorkerEvent, BabelDocWorkerRequest } from './babeldocWorkerProtocol'
 import { prepareBabelDocSemanticHints } from './babeldocSemanticHints'
+import { pdfPageCount } from './importer'
 import type { FreddieStore } from './store'
 import type { SecretStore } from './secrets'
 
@@ -483,6 +485,9 @@ export class TranslationService {
     const t = this.translator()
     const controller = this.begin(paperId, 'babeldoc')
     const { signal } = controller
+    // Declared here so the failure path can drop a checkpoint that broke a run.
+    let layoutCachePath: string | undefined
+    let usedLayoutCache = false
     try {
       const settings = this.store.database.settings
       if (settings.targetLanguage !== 'zh-CN') {
@@ -493,17 +498,31 @@ export class TranslationService {
       const runtimeDirectory = babeldocRuntimeDirectory()
       verifyBabelDocRuntime(runtimeDirectory)
       const bytes = new Uint8Array(await readFile(this.store.attachmentPath(paperId, source.id)))
-      const pages = parseBabelDocPageRange(pageRange ?? settings.babelDocPageRange)
+      const rangeSource = pageRange ?? settings.babelDocPageRange
+      const parsedPages = parseBabelDocPageRange(rangeSource)
+      let pages = parsedPages
+      if (parsedPages) {
+        // The range setting is global; clamp it to the document so a selection
+        // written for a larger paper neither fails nor runs past the last page.
+        const total = await pdfPageCount(bytes)
+        if (total > 0) {
+          const clamped = parsedPages.filter((page) => page <= total)
+          if (clamped.length === 0) throw new Error(t('The page range %@ goes beyond this document (%d pages).', rangeSource.trim(), total))
+          pages = clamped
+        }
+      }
       const layoutIdentity = createHash('sha256')
         .update(bytes)
-        .update(JSON.stringify({ pages, model: runtimeManifest.layoutModel.sha256 }))
+        .update(JSON.stringify({ version: structuredDocumentVersion, pages, model: runtimeManifest.layoutModel.sha256 }))
         .digest('hex')
         .slice(0, 24)
-      const layoutCachePath = this.store.resolvePaperPath(paperId, `translations/babeldoc/layout-${layoutIdentity}.json`)
+      layoutCachePath = this.store.resolvePaperPath(paperId, `translations/babeldoc/layout-${layoutIdentity}.json`)
       let structuredDocument: import('../../BabelDocKit').ILDocument | undefined
       try {
         const cached = JSON.parse(await readFile(layoutCachePath, 'utf8')) as import('../../BabelDocKit').ILDocument
-        if (cached && typeof cached === 'object' && Array.isArray(cached.page)) structuredDocument = cached
+        if (cached && typeof cached === 'object' && Array.isArray(cached.page) && typeof cached.total_pages === 'number') {
+          structuredDocument = cached
+        }
       } catch {
         // Layout checkpoints are optional and are rebuilt if absent or corrupt.
       }
@@ -522,6 +541,10 @@ export class TranslationService {
           })
         : null
 
+      // Only a run that reaches the worker can implicate the cached IL, so
+      // that is when the failure path may drop it; earlier failures (no model
+      // configured, no runtime) keep the checkpoint for the next attempt.
+      usedLayoutCache = structuredDocument !== undefined
       const result = await runBabelDocWorker({
         appPath: this.appPath(),
         pdf: bytes,
@@ -542,20 +565,25 @@ export class TranslationService {
       }, route, settings.babelDocQPS, settings.babelDocThinkingMode, signal, (progress) => {
         this.emitBabelDocProgress(paperId, progress)
       }, async (document) => {
+        if (!layoutCachePath) return
         await atomicWriteFile(layoutCachePath, `${JSON.stringify(document)}\n`)
       })
       signal.throwIfAborted()
 
-      const relativePath = 'translations/babeldoc/translated.pdf'
+      // Older checkpoints cannot match the new identity again; keep only the newest.
+      await this.pruneBabelDocLayoutCaches(paperId, `layout-${layoutIdentity}.json`)
+
+      const relativePath = pages
+        ? `translations/babeldoc/translated-${babelDocOutputLabel(pages)}.pdf`
+        : 'translations/babeldoc/translated.pdf'
       const outputPath = this.store.resolvePaperPath(paperId, relativePath)
       await atomicWriteFile(outputPath, result.pdf)
       signal.throwIfAborted()
+      // One attachment per output file: rerunning the same range replaces it,
+      // while a different range keeps the earlier translation on disk instead
+      // of overwriting it. The reader shows the most recent one.
       const existing = this.store.attachments(paperId)
-        .filter((item) => item.kind === 'translatedPDF' && item.source === 'babeldoc')
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
-      const oldPath = existing && existing.filename !== relativePath
-        ? this.store.resolvePaperPath(paperId, existing.filename)
-        : undefined
+        .find((item) => item.kind === 'translatedPDF' && item.source === 'babeldoc' && item.filename === relativePath)
       const createdAt = new Date().toISOString()
       if (existing) {
         await this.store.updateAttachment(paperId, existing.id, {
@@ -567,7 +595,6 @@ export class TranslationService {
           filename: relativePath, createdAt
         })
       }
-      if (oldPath) await rm(oldPath, { force: true }).catch(() => undefined)
 
       const diagnostics = babelDocDiagnostics(result.diagnostics)
       this.emit({ paperId, kind: 'babeldoc', type: 'translation_diagnostics', diagnostics })
@@ -581,10 +608,28 @@ export class TranslationService {
           : t('PDF translation completed.')
       })
     } catch (error) {
+      if (usedLayoutCache && layoutCachePath && !signal.aborted) {
+        // A checkpoint the later stages cannot consume must not fail every
+        // future run; drop it so the next attempt rebuilds from the PDF.
+        await rm(layoutCachePath, { force: true }).catch(() => undefined)
+      }
       this.fail(paperId, 'babeldoc', error, signal)
     } finally {
       this.lastBabelDocStage.delete(paperId)
       this.jobs.delete(paperId)
+    }
+  }
+
+  /** Layout checkpoints are keyed by content and pipeline version; keep only the newest. */
+  private async pruneBabelDocLayoutCaches(paperId: string, keep: string): Promise<void> {
+    const directory = this.store.resolvePaperPath(paperId, 'translations/babeldoc')
+    try {
+      const names = await readdir(directory)
+      await Promise.all(names
+        .filter((name) => /^layout-.+\.json$/.test(name) && name !== keep)
+        .map((name) => rm(join(directory, name), { force: true }).catch(() => undefined)))
+    } catch {
+      // Nothing is cached yet.
     }
   }
 
@@ -613,12 +658,20 @@ export class TranslationService {
   }
 }
 
+/** A runaway range string must not build an unbounded page set. */
+export const maximumBabelDocSelectedPages = 10_000
+
 export function parseBabelDocPageRange(value: string): number[] | null {
   const source = value.trim()
   if (!source) return null
   // Page indices cross the wasm boundary as signed 32-bit integers.
   const validPage = (page: number): boolean => Number.isSafeInteger(page) && page >= 1 && page <= 0x7fffffff
   const pages = new Set<number>()
+  const bounded = (): void => {
+    if (pages.size > maximumBabelDocSelectedPages) {
+      throw new Error(`BabelDOC page range selects more than ${maximumBabelDocSelectedPages} pages: ${source}`)
+    }
+  }
   for (const rawPart of source.split(',')) {
     const part = rawPart.trim()
     const range = /^(\d+)\s*-\s*(\d+)$/.exec(part)
@@ -627,12 +680,37 @@ export function parseBabelDocPageRange(value: string): number[] | null {
       const end = Number(range[2])
       if (!validPage(start) || !validPage(end) || end < start || end - start > 10_000) throw new Error(`Invalid BabelDOC page range: ${part}`)
       for (let page = start; page <= end; page += 1) pages.add(page)
+      bounded()
       continue
     }
     if (!/^\d+$/.test(part) || !validPage(Number(part))) throw new Error(`Invalid BabelDOC page range: ${part || source}`)
     pages.add(Number(part))
+    bounded()
   }
   return [...pages].sort((a, b) => a - b)
+}
+
+/** "1-3,7" — a compact, filename-safe label for a selected page set. */
+export function describeBabelDocPages(pages: number[]): string {
+  const parts: string[] = []
+  for (let index = 0; index < pages.length;) {
+    let end = index
+    while (pages[end + 1] === pages[end] + 1) end += 1
+    parts.push(index === end ? `${pages[index]}` : `${pages[index]}-${pages[end]}`)
+    index = end + 1
+  }
+  return parts.join(',')
+}
+
+/** Filename label for a selected page set: the compact description, or a short
+ * hash of it once the description would push the name past filesystem limits —
+ * the write happens after the LLM calls and must not fail there. The "h"
+ * prefix cannot collide with a plain description, which holds only digits,
+ * dashes and commas. */
+export function babelDocOutputLabel(pages: number[]): string {
+  const label = describeBabelDocPages(pages)
+  if (label.length <= 64) return label
+  return `h${createHash('sha256').update(label).digest('hex').slice(0, 16)}`
 }
 
 function babelDocDiagnostics(value: BabelDocPipelineDiagnostics): BabelDocTranslationDiagnostics {
@@ -685,8 +763,17 @@ async function runBabelDocWorker(
       const interval = 1000 / Math.max(0.1, qps)
       const wait = Math.max(0, lastRequestAt + interval - Date.now())
       if (wait > 0) await new Promise<void>((resolve, reject) => {
-        const timer = setTimeout(resolve, wait)
-        signal.addEventListener('abort', () => { clearTimeout(timer); reject(signal.reason) }, { once: true })
+        // Remove the abort listener when the timer wins, or long documents
+        // accumulate one listener per paced request.
+        const onAbort = (): void => {
+          clearTimeout(timer)
+          reject(signal.reason)
+        }
+        const timer = setTimeout(() => {
+          signal.removeEventListener('abort', onAbort)
+          resolve()
+        }, wait)
+        signal.addEventListener('abort', onAbort, { once: true })
       })
       lastRequestAt = Date.now()
     } finally {

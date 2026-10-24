@@ -8,7 +8,13 @@ export async function isolateSharedPageStreams(pdf: Uint8Array, document: ILDocu
     (page.pdf_xobject ?? []).flatMap((object) => object.xref_id === undefined ? [] : [object.xref_id])))
   if (candidates.size === 0 || document.total_pages === 1) return { pdf, document }
 
-  const source = await PDFDocument.load(pdf, { updateMetadata: false })
+  // ignoreEncryption only skips pdf-lib's refusal; it decrypts nothing. An
+  // encrypted document must not be cloned at all — stream keys are bound to
+  // the original object numbers — and MuPDF downstream opens permission-
+  // protected files with an empty password, so fall back to the pre-isolation
+  // order instead of failing after the LLM calls.
+  const source = await PDFDocument.load(pdf, { updateMetadata: false, ignoreEncryption: true })
+  if (source.isEncrypted) return { pdf, document }
   const context = source.context
   const pages = source.getPages()
   const resourcesKey = PDFName.of('Resources')
@@ -57,6 +63,9 @@ export async function isolateSharedPageStreams(pdf: Uint8Array, document: ILDocu
   }
 
   let changed = false
+  // Original → clone for annotations this isolation replaced. Their references
+  // elsewhere must follow, or form fields and popups detach from the page.
+  const clonedAnnotations = new Map<PDFObject, PDFRef>()
   const isolatedPages = (document.page ?? []).map((page) => {
     const pageIndex = page.page_number
     if (pageIndex === undefined || !pages[pageIndex]) return page
@@ -119,13 +128,17 @@ export async function isolateSharedPageStreams(pdf: Uint8Array, document: ILDocu
     if (annotations) {
       const isolated = annotations.clone(context)
       annotations.asArray().forEach((ref, index) => {
+        // lookup returns a (non-conforming) inline annotation dictionary as is.
         const annotation = context.lookup(ref)
         if (!(annotation instanceof PDFDict)) return
         const appearance = annotation.get(appearanceKey)
         if (!appearance || !copies.has(appearance)) return
         const clonedAnnotation = annotation.clone(context)
         clonedAnnotation.set(appearanceKey, copy(appearance))
-        isolated.set(index, context.register(clonedAnnotation))
+        const clone = context.register(clonedAnnotation)
+        // Only indirect annotations can be referenced from AcroForm or a popup.
+        if (ref instanceof PDFRef) clonedAnnotations.set(ref, clone)
+        isolated.set(index, clone)
       })
       node.set(PDFName.of('Annots'), isolated)
     }
@@ -138,6 +151,47 @@ export async function isolateSharedPageStreams(pdf: Uint8Array, document: ILDocu
       })
     }
   })
+  if (clonedAnnotations.size > 0) {
+    // Widget annotations are also referenced from the AcroForm field tree, and
+    // markup annotations reference their popups; repoint those references at
+    // the clones so fields and popups stay attached to the annotation each
+    // page actually shows.
+    const remapIn = (dict: PDFDict, key: PDFName): void => {
+      const value = dict.get(key)
+      const mapped = value instanceof PDFRef ? clonedAnnotations.get(value) : undefined
+      if (mapped) dict.set(key, mapped)
+    }
+    const parentKey = PDFName.of('Parent')
+    const popupKey = PDFName.of('Popup')
+    for (const clone of clonedAnnotations.values()) {
+      const annotation = context.lookup(clone)
+      if (annotation instanceof PDFDict) {
+        remapIn(annotation, parentKey)
+        remapIn(annotation, popupKey)
+      }
+    }
+    const kidsKey = PDFName.of('Kids')
+    const visitField = (reference: PDFObject): void => {
+      const field = context.lookup(reference)
+      if (!(field instanceof PDFDict)) return
+      const kids = field.get(kidsKey)
+      if (!(kids instanceof PDFArray)) return
+      kids.asArray().forEach((kid, index) => {
+        const mapped = clonedAnnotations.get(kid)
+        if (mapped) kids.set(index, mapped)
+        else visitField(kid)
+      })
+    }
+    const acroForm = context.lookup(source.catalog.get(PDFName.of('AcroForm')))
+    const fields = acroForm instanceof PDFDict ? acroForm.get(PDFName.of('Fields')) : undefined
+    if (fields instanceof PDFArray) {
+      fields.asArray().forEach((field, index) => {
+        const mapped = clonedAnnotations.get(field)
+        if (mapped) fields.set(index, mapped)
+        else visitField(field)
+      })
+    }
+  }
   return changed
     ? { pdf: await source.save({ useObjectStreams: false }), document: { ...document, page: isolatedPages } }
     : { pdf, document }

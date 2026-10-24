@@ -31,6 +31,7 @@ const extraZhHans: Record<string, string> = {
   Help: '帮助',
   'Choose a digest export folder in Settings first.': '请先在设置中选择文摘导出文件夹。',
   'The selected folder does not contain latexmk.': '所选文件夹中没有 latexmk。',
+  'The page range %@ goes beyond this document (%d pages).': '所选页码范围 %1$@ 超出了这篇文档的页数（共 %2$d 页）。',
   'This paper has no abstract to translate.': '这篇论文没有可翻译的摘要。',
   'Enter an API key first.': '请先输入 API 密钥。',
   'Start writing…': '开始写作…',

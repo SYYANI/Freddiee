@@ -110,12 +110,20 @@
       "entitlementsInherit": "build/entitlements.mac.plist",
       "signIgnore": [
         "babeldoc/"
+      ],
+      "files": [
+        "!node_modules/onnxruntime-node/bin/napi-v6/win32/**",
+        "!node_modules/onnxruntime-node/bin/napi-v6/linux/**"
       ]
     },
     "win": {
       "icon": "public/icon.png",
       "target": [
         "nsis"
+      ],
+      "files": [
+        "!node_modules/onnxruntime-node/bin/napi-v6/darwin/**",
+        "!node_modules/onnxruntime-node/bin/napi-v6/linux/**"
       ]
     },
     "linux": {
@@ -125,6 +133,10 @@
       "target": [
         "AppImage",
         "deb"
+      ],
+      "files": [
+        "!node_modules/onnxruntime-node/bin/napi-v6/darwin/**",
+        "!node_modules/onnxruntime-node/bin/napi-v6/win32/**"
       ]
     },
     "nsis": {

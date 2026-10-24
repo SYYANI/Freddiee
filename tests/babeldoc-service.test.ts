@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Worker } from 'node:worker_threads'
@@ -155,5 +155,67 @@ describe('BabelDOC translation service', () => {
     expect(events.at(-1)?.type).toBe('finished')
     const attachment = store.attachments(paperId).find((item) => item.source === 'babeldoc')!
     expect(new Uint8Array(await readFile(store.attachmentPath(paperId, attachment.id)))).toEqual(result.pdf)
+  })
+
+  it('clamps the page range to the document and names the output after it', async () => {
+    const source = await PDFDocument.create()
+    const font = await source.embedFont(StandardFonts.Helvetica)
+    for (let page = 1; page <= 2; page += 1) {
+      source.addPage([612, 792]).drawText(`source page ${page}`, { x: 50, y: 700, size: 12, font })
+    }
+    const { store, paperId, events, service, job, worker, data } = await startTranslation('1-99', await source.save())
+    expect(data.pages).toEqual([1, 2])
+    worker.emit('message', result)
+    await job
+    expect(events.at(-1)?.type).toBe('finished')
+    expect(store.attachments(paperId).find((item) => item.source === 'babeldoc')!.filename)
+      .toBe('translations/babeldoc/translated-1-2.pdf')
+  })
+
+  it('rejects a page range entirely beyond the document before any worker starts', async () => {
+    const source = await PDFDocument.create()
+    const font = await source.embedFont(StandardFonts.Helvetica)
+    source.addPage([612, 792]).drawText('only page', { x: 50, y: 700, size: 12, font })
+    const { paperId, events, service } = await prepareTranslation(await source.save())
+    await service.translateBabeldocPDF(paperId, '50-60')
+    expect(Worker).not.toHaveBeenCalled()
+    expect(events.at(-1)).toMatchObject({ type: 'failed', message: expect.stringContaining('beyond this document') })
+    expect(service.isRunning(paperId)).toBe(false)
+  })
+
+  it('drops a layout checkpoint that fails a later run', async () => {
+    const first = await startTranslation('2-3')
+    first.worker.emit('message', { type: 'structured_document', document: { page: [], total_pages: 4 } } satisfies BabelDocWorkerEvent)
+    first.worker.emit('message', result)
+    await first.job
+    const babeldocDirectory = first.store.resolvePaperPath(first.paperId, 'translations/babeldoc')
+    const checkpoints = (name: string) => name.startsWith('layout-') && name.endsWith('.json')
+    expect((await readdir(babeldocDirectory)).some(checkpoints)).toBe(true)
+
+    const second = first.service.translateBabeldocPDF(first.paperId, '2-3')
+    await vi.waitFor(() => expect(Worker).toHaveBeenCalledTimes(2))
+    const data = vi.mocked(Worker).mock.calls[1][1]!.workerData as BabelDocWorkerData
+    expect(data.structuredDocument).toEqual({ page: [], total_pages: 4 })
+    vi.mocked(Worker).mock.results[1].value.emit('error', new Error('worker failure'))
+    await second
+    expect(first.events.at(-1)?.type).toBe('failed')
+    expect((await readdir(babeldocDirectory)).some(checkpoints)).toBe(false)
+  })
+
+  it('keeps the layout checkpoint when the run fails before the worker starts', async () => {
+    const first = await startTranslation('2-3')
+    first.worker.emit('message', { type: 'structured_document', document: { page: [], total_pages: 4 } } satisfies BabelDocWorkerEvent)
+    first.worker.emit('message', result)
+    await first.job
+    const babeldocDirectory = first.store.resolvePaperPath(first.paperId, 'translations/babeldoc')
+    const hasCheckpoint = (names: string[]): boolean => names.some((name) => name.startsWith('layout-') && name.endsWith('.json'))
+    expect(hasCheckpoint(await readdir(babeldocDirectory))).toBe(true)
+
+    // A pre-worker failure such as a missing model is unrelated to the cache.
+    await first.store.saveSettings({ pdfModelId: 'missing-model' })
+    await first.service.translateBabeldocPDF(first.paperId, '2-3')
+    expect(Worker).toHaveBeenCalledTimes(1)
+    expect(first.events.at(-1)).toMatchObject({ type: 'failed' })
+    expect(hasCheckpoint(await readdir(babeldocDirectory))).toBe(true)
   })
 })
