@@ -1,0 +1,264 @@
+[
+  {
+    "detections" : [
+      {
+        "classIndex" : 0,
+        "className" : "title",
+        "confidence" : 0.6121518,
+        "id" : 1,
+        "imageBox" : {
+          "x0" : 19.291996,
+          "x1" : 59.697994,
+          "y0" : 30.091997,
+          "y1" : 41.630978
+        },
+        "pdfBox" : {
+          "x0" : 18,
+          "x1" : 60,
+          "y0" : 137,
+          "y1" : 150
+        }
+      }
+    ],
+    "pageIndex" : 0,
+    "pdfCropBox" : {
+      "x0" : 0,
+      "x1" : 260,
+      "y0" : 0,
+      "y1" : 180
+    },
+    "pdfMediaBox" : {
+      "x0" : 0,
+      "x1" : 260,
+      "y0" : 0,
+      "y1" : 180
+    },
+    "pdfPointSize" : {
+      "height" : 180,
+      "width" : 260
+    },
+    "rotationDegrees" : 0,
+    "sourcePageNumber" : 1,
+    "sourcePixelSize" : {
+      "height" : 180,
+      "width" : 260
+    }
+  },
+  {
+    "detections" : [
+      {
+        "classIndex" : 0,
+        "className" : "title",
+        "confidence" : 0.45387617,
+        "id" : 1,
+        "imageBox" : {
+          "x0" : 39.31765,
+          "x1" : 83.689606,
+          "y0" : 69.82717,
+          "y1" : 82.12941
+        },
+        "pdfBox" : {
+          "x0" : 38,
+          "x1" : 84,
+          "y0" : 136,
+          "y1" : 151
+        }
+      },
+      {
+        "classIndex" : 1,
+        "className" : "plain text",
+        "confidence" : 0.3492051,
+        "id" : 2,
+        "imageBox" : {
+          "x0" : 39.31765,
+          "x1" : 83.689606,
+          "y0" : 69.82717,
+          "y1" : 82.12941
+        },
+        "pdfBox" : {
+          "x0" : 38,
+          "x1" : 84,
+          "y0" : 136,
+          "y1" : 151
+        }
+      }
+    ],
+    "pageIndex" : 0,
+    "pdfCropBox" : {
+      "x0" : 0,
+      "x1" : 300,
+      "y0" : 0,
+      "y1" : 220
+    },
+    "pdfMediaBox" : {
+      "x0" : 0,
+      "x1" : 300,
+      "y0" : 0,
+      "y1" : 220
+    },
+    "pdfPointSize" : {
+      "height" : 220,
+      "width" : 300
+    },
+    "rotationDegrees" : 90,
+    "sourcePageNumber" : 2,
+    "sourcePixelSize" : {
+      "height" : 220,
+      "width" : 300
+    }
+  },
+  {
+    "detections" : [
+      {
+        "classIndex" : 1,
+        "className" : "plain text",
+        "confidence" : 0.41085473,
+        "id" : 1,
+        "imageBox" : {
+          "x0" : 38.83707,
+          "x1" : 87.66898,
+          "y0" : 69.868286,
+          "y1" : 83.771034
+        },
+        "pdfBox" : {
+          "x0" : 37,
+          "x1" : 88,
+          "y0" : 155,
+          "y1" : 171
+        }
+      },
+      {
+        "classIndex" : 0,
+        "className" : "title",
+        "confidence" : 0.3988607,
+        "id" : 2,
+        "imageBox" : {
+          "x0" : 38.83707,
+          "x1" : 87.66898,
+          "y0" : 69.868286,
+          "y1" : 83.771034
+        },
+        "pdfBox" : {
+          "x0" : 37,
+          "x1" : 88,
+          "y0" : 155,
+          "y1" : 171
+        }
+      }
+    ],
+    "pageIndex" : 0,
+    "pdfCropBox" : {
+      "x0" : 20,
+      "x1" : 300,
+      "y0" : 30,
+      "y1" : 210
+    },
+    "pdfMediaBox" : {
+      "x0" : 0,
+      "x1" : 320,
+      "y0" : 0,
+      "y1" : 240
+    },
+    "pdfPointSize" : {
+      "height" : 240,
+      "width" : 320
+    },
+    "rotationDegrees" : 0,
+    "sourcePageNumber" : 3,
+    "sourcePixelSize" : {
+      "height" : 180,
+      "width" : 280
+    }
+  },
+  {
+    "detections" : [
+
+    ],
+    "pageIndex" : 0,
+    "pdfCropBox" : {
+      "x0" : 0,
+      "x1" : 200,
+      "y0" : 0,
+      "y1" : 200
+    },
+    "pdfMediaBox" : {
+      "x0" : 0,
+      "x1" : 200,
+      "y0" : 0,
+      "y1" : 200
+    },
+    "pdfPointSize" : {
+      "height" : 200,
+      "width" : 200
+    },
+    "rotationDegrees" : 0,
+    "sourcePageNumber" : 4,
+    "sourcePixelSize" : {
+      "height" : 200,
+      "width" : 200
+    }
+  },
+  {
+    "detections" : [
+      {
+        "classIndex" : 0,
+        "className" : "title",
+        "confidence" : 0.42556754,
+        "id" : 1,
+        "imageBox" : {
+          "x0" : 48.93321,
+          "x1" : 112.36365,
+          "y0" : 88.66482,
+          "y1" : 104.33784
+        },
+        "pdfBox" : {
+          "x0" : 47,
+          "x1" : 113,
+          "y0" : 154,
+          "y1" : 172
+        }
+      },
+      {
+        "classIndex" : 1,
+        "className" : "plain text",
+        "confidence" : 0.36315343,
+        "id" : 2,
+        "imageBox" : {
+          "x0" : 48.93321,
+          "x1" : 112.36365,
+          "y0" : 88.66482,
+          "y1" : 104.33784
+        },
+        "pdfBox" : {
+          "x0" : 47,
+          "x1" : 113,
+          "y0" : 154,
+          "y1" : 172
+        }
+      }
+    ],
+    "pageIndex" : 0,
+    "pdfCropBox" : {
+      "x0" : 0,
+      "x1" : 420,
+      "y0" : 0,
+      "y1" : 260
+    },
+    "pdfMediaBox" : {
+      "x0" : 0,
+      "x1" : 420,
+      "y0" : 0,
+      "y1" : 260
+    },
+    "pdfPointSize" : {
+      "height" : 260,
+      "width" : 420
+    },
+    "rotationDegrees" : 0,
+    "sourcePageNumber" : 5,
+    "sourcePixelSize" : {
+      "height" : 260,
+      "width" : 420
+    }
+  }
+]

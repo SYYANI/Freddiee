@@ -1,0 +1,37 @@
+{
+  "diagnostics" : [
+    {
+      "accepted" : true,
+      "kind" : "qualityGate",
+      "pdfParagraphIDs" : [
+
+      ],
+      "sourceBlockIDs" : [
+
+      ]
+    }
+  ],
+  "flowPDFParagraphCount" : 2,
+  "highConfidenceMatchCount" : 1,
+  "lowConfidenceMatchCount" : 0,
+  "matchedFlowPDFParagraphCount" : 1,
+  "matchedPDFCoverage" : 0.5,
+  "matchedPDFParagraphCount" : 1,
+  "matches" : [
+    {
+      "confidence" : "high",
+      "pdf" : {
+        "end" : 1,
+        "start" : 0
+      },
+      "score" : 1,
+      "source" : {
+        "end" : 1,
+        "start" : 0
+      }
+    }
+  ],
+  "mediumConfidenceMatchCount" : 0,
+  "pdfParagraphCount" : 2,
+  "structuralChangesEnabled" : true
+}

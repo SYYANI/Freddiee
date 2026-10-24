@@ -1,0 +1,26 @@
+{
+  "diagnostics" : [
+    {
+      "accepted" : false,
+      "kind" : "qualityGate",
+      "pdfParagraphIDs" : [
+
+      ],
+      "sourceBlockIDs" : [
+
+      ]
+    }
+  ],
+  "flowPDFParagraphCount" : 0,
+  "highConfidenceMatchCount" : 0,
+  "lowConfidenceMatchCount" : 0,
+  "matchedFlowPDFParagraphCount" : 0,
+  "matchedPDFCoverage" : 0,
+  "matchedPDFParagraphCount" : 0,
+  "matches" : [
+
+  ],
+  "mediumConfidenceMatchCount" : 0,
+  "pdfParagraphCount" : 1,
+  "structuralChangesEnabled" : false
+}

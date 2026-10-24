@@ -1,0 +1,906 @@
+{
+  "pages" : {
+    "0" : {
+      "glyphs" : [
+        {
+          "isOptional" : false,
+          "orientation" : 2,
+          "placement" : null,
+          "role" : 1,
+          "unicode" : 82,
+          "x" : 165,
+          "y" : 140,
+          "y2" : 147.942001
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 2,
+          "placement" : null,
+          "role" : 1,
+          "unicode" : 111,
+          "x" : 165,
+          "y" : 147.942001,
+          "y2" : 154.057999
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 2,
+          "placement" : null,
+          "role" : 1,
+          "unicode" : 116,
+          "x" : 165,
+          "y" : 154.057999,
+          "y2" : 157.115997
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 72,
+          "x" : 20,
+          "y" : 150,
+          "y2" : 150
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 101,
+          "x" : 28.6640015,
+          "y" : 150,
+          "y2" : 150
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 108,
+          "x" : 35.3360023,
+          "y" : 150,
+          "y2" : 150
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 108,
+          "x" : 38.0000038,
+          "y" : 150,
+          "y2" : 150
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 111,
+          "x" : 40.6640053,
+          "y" : 150,
+          "y2" : 150
+        },
+        {
+          "isOptional" : true,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 32,
+          "x" : 47.3360062,
+          "y" : 150,
+          "y2" : 150
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 73,
+          "x" : 50.6720047,
+          "y" : 150,
+          "y2" : 150
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 76,
+          "x" : 54.0080032,
+          "y" : 150,
+          "y2" : 150
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 67,
+          "x" : 20,
+          "y" : 125,
+          "y2" : 125
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 111,
+          "x" : 26,
+          "y" : 125,
+          "y2" : 125
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 117,
+          "x" : 32,
+          "y" : 125,
+          "y2" : 125
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 114,
+          "x" : 38,
+          "y" : 125,
+          "y2" : 125
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 105,
+          "x" : 44,
+          "y" : 125,
+          "y2" : 125
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 101,
+          "x" : 50,
+          "y" : 125,
+          "y2" : 125
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 114,
+          "x" : 56,
+          "y" : 125,
+          "y2" : 125
+        }
+      ],
+      "overlayCharacters" : [
+        {
+          "box" : {
+            "x" : 20.924,
+            "x2" : 28.723999999999997,
+            "y" : 151.716,
+            "y2" : 159.516
+          },
+          "font_id" : "SourceHanSerifCN-Regular.ttf",
+          "glyph" : 24522,
+          "size" : 7.799999999999996,
+          "unicode" : "译"
+        },
+        {
+          "box" : {
+            "x" : 28.723999999999997,
+            "x2" : 34.90939999999999,
+            "y" : 151.716,
+            "y2" : 159.516
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 43,
+          "size" : 7.799999999999996,
+          "unicode" : "H"
+        },
+        {
+          "box" : {
+            "x" : 34.90939999999999,
+            "x2" : 39.08239999999999,
+            "y" : 151.716,
+            "y2" : 159.516
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 72,
+          "size" : 7.799999999999996,
+          "unicode" : "e"
+        },
+        {
+          "box" : {
+            "x" : 39.08239999999999,
+            "x2" : 41.50039999999999,
+            "y" : 151.716,
+            "y2" : 159.516
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 79,
+          "size" : 7.799999999999996,
+          "unicode" : "l"
+        },
+        {
+          "box" : {
+            "x" : 41.50039999999999,
+            "x2" : 43.91839999999999,
+            "y" : 151.716,
+            "y2" : 159.516
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 79,
+          "size" : 7.799999999999996,
+          "unicode" : "l"
+        },
+        {
+          "box" : {
+            "x" : 43.91839999999999,
+            "x2" : 48.41899999999999,
+            "y" : 151.716,
+            "y2" : 159.516
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 82,
+          "size" : 7.799999999999996,
+          "unicode" : "o"
+        },
+        {
+          "box" : {
+            "x" : 48.41899999999999,
+            "x2" : 50.44699999999999,
+            "y" : 151.716,
+            "y2" : 159.516
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 3,
+          "size" : 7.799999999999996,
+          "unicode" : " "
+        },
+        {
+          "box" : {
+            "x" : 20.924,
+            "x2" : 23.7866,
+            "y" : 140.01600000000002,
+            "y2" : 147.816
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 44,
+          "size" : 7.799999999999996,
+          "unicode" : "I"
+        },
+        {
+          "box" : {
+            "x" : 23.7866,
+            "x2" : 28.645999999999997,
+            "y" : 140.01600000000002,
+            "y2" : 147.816
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 47,
+          "size" : 7.799999999999996,
+          "unicode" : "L"
+        },
+        {
+          "box" : {
+            "x" : 20.41,
+            "x2" : 27.409999999999997,
+            "y" : 124.57,
+            "y2" : 131.57
+          },
+          "font_id" : "SourceHanSerifCN-Regular.ttf",
+          "glyph" : 24522,
+          "size" : 6.999999999999997,
+          "unicode" : "译"
+        },
+        {
+          "box" : {
+            "x" : 27.409999999999997,
+            "x2" : 31.707999999999995,
+            "y" : 124.57,
+            "y2" : 131.57
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 38,
+          "size" : 6.999999999999997,
+          "unicode" : "C"
+        },
+        {
+          "box" : {
+            "x" : 31.707999999999995,
+            "x2" : 35.74699999999999,
+            "y" : 124.57,
+            "y2" : 131.57
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 82,
+          "size" : 6.999999999999997,
+          "unicode" : "o"
+        },
+        {
+          "box" : {
+            "x" : 35.74699999999999,
+            "x2" : 40.19199999999999,
+            "y" : 124.57,
+            "y2" : 131.57
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 88,
+          "size" : 6.999999999999997,
+          "unicode" : "u"
+        },
+        {
+          "box" : {
+            "x" : 40.19199999999999,
+            "x2" : 43.48899999999999,
+            "y" : 124.57,
+            "y2" : 131.57
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 85,
+          "size" : 6.999999999999997,
+          "unicode" : "r"
+        },
+        {
+          "box" : {
+            "x" : 43.48899999999999,
+            "x2" : 45.72899999999999,
+            "y" : 124.57,
+            "y2" : 131.57
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 76,
+          "size" : 6.999999999999997,
+          "unicode" : "i"
+        },
+        {
+          "box" : {
+            "x" : 45.72899999999999,
+            "x2" : 49.47399999999999,
+            "y" : 124.57,
+            "y2" : 131.57
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 72,
+          "size" : 6.999999999999997,
+          "unicode" : "e"
+        },
+        {
+          "box" : {
+            "x" : 49.47399999999999,
+            "x2" : 52.77099999999999,
+            "y" : 124.57,
+            "y2" : 131.57
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 85,
+          "size" : 6.999999999999997,
+          "unicode" : "r"
+        }
+      ],
+      "placements" : [
+
+      ],
+      "removedRegions" : [
+
+      ],
+      "removedTextRegions" : [
+        {
+          "x" : 20,
+          "x2" : 60.6800041,
+          "y" : 147.516,
+          "y2" : 162
+        },
+        {
+          "x" : 20,
+          "x2" : 62,
+          "y" : 124.82,
+          "y2" : 135
+        }
+      ],
+      "underlayCurves" : 0
+    },
+    "1" : {
+      "glyphs" : [
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 83,
+          "x" : 24,
+          "y" : 174,
+          "y2" : 174
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 101,
+          "x" : 31.2280006,
+          "y" : 174,
+          "y2" : 174
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 99,
+          "x" : 37,
+          "y" : 174,
+          "y2" : 174
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 111,
+          "x" : 42.7719994,
+          "y" : 174,
+          "y2" : 174
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 110,
+          "x" : 49.2719994,
+          "y" : 174,
+          "y2" : 174
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 100,
+          "x" : 55.7719994,
+          "y" : 174,
+          "y2" : 174
+        },
+        {
+          "isOptional" : true,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 32,
+          "x" : 62.2719994,
+          "y" : 174,
+          "y2" : 174
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 112,
+          "x" : 65.5220032,
+          "y" : 174,
+          "y2" : 174
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 97,
+          "x" : 72.0220032,
+          "y" : 174,
+          "y2" : 174
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 103,
+          "x" : 77.7940063,
+          "y" : 174,
+          "y2" : 174
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 101,
+          "x" : 84.2940063,
+          "y" : 174,
+          "y2" : 174
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 72,
+          "x" : 24,
+          "y" : 144,
+          "y2" : 144
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 101,
+          "x" : 30.4980011,
+          "y" : 144,
+          "y2" : 144
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 108,
+          "x" : 35.5020027,
+          "y" : 144,
+          "y2" : 144
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 118,
+          "x" : 37.5000038,
+          "y" : 144,
+          "y2" : 144
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 101,
+          "x" : 42.0000038,
+          "y" : 144,
+          "y2" : 144
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 116,
+          "x" : 47.0040054,
+          "y" : 144,
+          "y2" : 144
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 105,
+          "x" : 49.5060043,
+          "y" : 144,
+          "y2" : 144
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 99,
+          "x" : 51.5040054,
+          "y" : 144,
+          "y2" : 144
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 97,
+          "x" : 56.0040054,
+          "y" : 144,
+          "y2" : 144
+        }
+      ],
+      "overlayCharacters" : [
+        {
+          "box" : {
+            "x" : 24.546,
+            "x2" : 32.995999999999995,
+            "y" : 175.729,
+            "y2" : 184.179
+          },
+          "font_id" : "SourceHanSerifCN-Regular.ttf",
+          "glyph" : 24522,
+          "size" : 8.449999999999996,
+          "unicode" : "译"
+        },
+        {
+          "box" : {
+            "x" : 32.995999999999995,
+            "x2" : 37.59279999999999,
+            "y" : 175.729,
+            "y2" : 184.179
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 54,
+          "size" : 8.449999999999996,
+          "unicode" : "S"
+        },
+        {
+          "box" : {
+            "x" : 37.59279999999999,
+            "x2" : 42.11354999999999,
+            "y" : 175.729,
+            "y2" : 184.179
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 72,
+          "size" : 8.449999999999996,
+          "unicode" : "e"
+        },
+        {
+          "box" : {
+            "x" : 42.11354999999999,
+            "x2" : 46.270949999999985,
+            "y" : 175.729,
+            "y2" : 184.179
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 70,
+          "size" : 8.449999999999996,
+          "unicode" : "c"
+        },
+        {
+          "box" : {
+            "x" : 46.270949999999985,
+            "x2" : 51.146599999999985,
+            "y" : 175.729,
+            "y2" : 184.179
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 82,
+          "size" : 8.449999999999996,
+          "unicode" : "o"
+        },
+        {
+          "box" : {
+            "x" : 51.146599999999985,
+            "x2" : 56.59684999999998,
+            "y" : 175.729,
+            "y2" : 184.179
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 81,
+          "size" : 8.449999999999996,
+          "unicode" : "n"
+        },
+        {
+          "box" : {
+            "x" : 56.59684999999998,
+            "x2" : 61.78514999999998,
+            "y" : 175.729,
+            "y2" : 184.179
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 71,
+          "size" : 8.449999999999996,
+          "unicode" : "d"
+        },
+        {
+          "box" : {
+            "x" : 61.78514999999998,
+            "x2" : 63.982149999999976,
+            "y" : 175.729,
+            "y2" : 184.179
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 3,
+          "size" : 8.449999999999996,
+          "unicode" : " "
+        },
+        {
+          "box" : {
+            "x" : 63.982149999999976,
+            "x2" : 69.17044999999997,
+            "y" : 175.729,
+            "y2" : 184.179
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 83,
+          "size" : 8.449999999999996,
+          "unicode" : "p"
+        },
+        {
+          "box" : {
+            "x" : 69.17044999999997,
+            "x2" : 73.92779999999998,
+            "y" : 175.729,
+            "y2" : 184.179
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 68,
+          "size" : 8.449999999999996,
+          "unicode" : "a"
+        },
+        {
+          "box" : {
+            "x" : 73.92779999999998,
+            "x2" : 78.47389999999997,
+            "y" : 175.729,
+            "y2" : 184.179
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 74,
+          "size" : 8.449999999999996,
+          "unicode" : "g"
+        },
+        {
+          "box" : {
+            "x" : 78.47389999999997,
+            "x2" : 82.99464999999996,
+            "y" : 175.729,
+            "y2" : 184.179
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 72,
+          "size" : 8.449999999999996,
+          "unicode" : "e"
+        },
+        {
+          "box" : {
+            "x" : 24.693,
+            "x2" : 30.543,
+            "y" : 144.612,
+            "y2" : 150.462
+          },
+          "font_id" : "SourceHanSerifCN-Regular.ttf",
+          "glyph" : 24522,
+          "size" : 5.849999999999997,
+          "unicode" : "译"
+        },
+        {
+          "box" : {
+            "x" : 24.693,
+            "x2" : 29.33205,
+            "y" : 135.837,
+            "y2" : 141.68699999999998
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 43,
+          "size" : 5.849999999999997,
+          "unicode" : "H"
+        },
+        {
+          "box" : {
+            "x" : 29.33205,
+            "x2" : 32.4618,
+            "y" : 135.837,
+            "y2" : 141.68699999999998
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 72,
+          "size" : 5.849999999999997,
+          "unicode" : "e"
+        },
+        {
+          "box" : {
+            "x" : 32.4618,
+            "x2" : 34.275299999999994,
+            "y" : 135.837,
+            "y2" : 141.68699999999998
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 79,
+          "size" : 5.849999999999997,
+          "unicode" : "l"
+        },
+        {
+          "box" : {
+            "x" : 34.275299999999994,
+            "x2" : 37.66244999999999,
+            "y" : 135.837,
+            "y2" : 141.68699999999998
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 89,
+          "size" : 5.849999999999997,
+          "unicode" : "v"
+        },
+        {
+          "box" : {
+            "x" : 37.66244999999999,
+            "x2" : 40.792199999999994,
+            "y" : 135.837,
+            "y2" : 141.68699999999998
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 72,
+          "size" : 5.849999999999997,
+          "unicode" : "e"
+        },
+        {
+          "box" : {
+            "x" : 40.792199999999994,
+            "x2" : 42.85139999999999,
+            "y" : 135.837,
+            "y2" : 141.68699999999998
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 87,
+          "size" : 5.849999999999997,
+          "unicode" : "t"
+        },
+        {
+          "box" : {
+            "x" : 42.85139999999999,
+            "x2" : 44.72339999999999,
+            "y" : 135.837,
+            "y2" : 141.68699999999998
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 76,
+          "size" : 5.849999999999997,
+          "unicode" : "i"
+        },
+        {
+          "box" : {
+            "x" : 44.72339999999999,
+            "x2" : 47.60159999999999,
+            "y" : 135.837,
+            "y2" : 141.68699999999998
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 70,
+          "size" : 5.849999999999997,
+          "unicode" : "c"
+        },
+        {
+          "box" : {
+            "x" : 47.60159999999999,
+            "x2" : 50.89514999999999,
+            "y" : 135.837,
+            "y2" : 141.68699999999998
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 68,
+          "size" : 5.849999999999997,
+          "unicode" : "a"
+        }
+      ],
+      "placements" : [
+
+      ],
+      "removedRegions" : [
+
+      ],
+      "removedTextRegions" : [
+        {
+          "x" : 24,
+          "x2" : 90.0660095,
+          "y" : 171.166,
+          "y2" : 187
+        },
+        {
+          "x" : 24,
+          "x2" : 61.008007,
+          "y" : 143.865,
+          "y2" : 153
+        }
+      ],
+      "underlayCurves" : 0
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "0:0" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "Inline and paths",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "high",
+    "nextSourceParagraph" : null,
+    "previousSourceParagraph" : null,
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-0"
+    ],
+    "translationTemplate" : "Inline and paths"
+  }
+}

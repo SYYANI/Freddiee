@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "kind": "babeldoc-wasm-v1",
+  "emscriptenVersion": "4.0.23",
+  "mupdf": {
+    "version": "1.28.0",
+    "sourceArchiveURL": "https://mupdf.com/downloads/archive/mupdf-1.28.0-source.tar.gz",
+    "sourceArchiveSHA256": "21c7f064903154f1c3a7458bee81f130fc36f9b5147ea13328f9980e02d2dea2",
+    "patches": [
+      {
+        "file": "tools/patches/mupdf-1.28.0-sanitize-text-positioning.patch",
+        "sha256": "636fc57433ed0fe7a2ba0197803d0784a35e29ce6d6eb13d19f006a13bb4a7d9"
+      }
+    ],
+    "license": "AGPL-3.0-or-later"
+  },
+  "zstd": {
+    "version": "1.5.7",
+    "sourceArchiveURL": "https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz",
+    "sourceArchiveSHA256": "eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3",
+    "license": "BSD-3-Clause"
+  },
+  "shim": {
+    "source": "../reWriteBabelDoc/Sources/BabelDocMuPDFShim/BabelDocMuPDFShim.c",
+    "sha256": "655ac6e48d79d855c6ec2f91813f2643d69fcf7718e2231fa67a617119857e19"
+  },
+  "adapter": {
+    "file": "BabelDocKit/native/babeldoc_wasm.c",
+    "sha256": "c01c35215bc27a8fd7b527a8852e5b01779a28fdd28a4e3be699f2542e2b2612"
+  },
+  "build": {
+    "target": "make OS=wasm build=release with PDF-only document handlers; embedded base14/CJK fallback fonts kept so rendering matches the native MuPDF build",
+    "compileFlags": [
+      "-O2",
+      "-fwasm-exceptions",
+      "-sSUPPORT_LONGJMP=wasm",
+      "-DBABELDOC_MUPDF_STATIC"
+    ],
+    "xcflags": [
+      "-DFZ_ENABLE_JS=0",
+      "-DFZ_ENABLE_HTML_ENGINE=0",
+      "-DFZ_ENABLE_HTML=0",
+      "-DFZ_ENABLE_EPUB=0",
+      "-DFZ_ENABLE_FB2=0",
+      "-DFZ_ENABLE_MD=0",
+      "-DFZ_ENABLE_MOBI=0",
+      "-DFZ_ENABLE_OFFICE=0",
+      "-DFZ_ENABLE_TXT=0",
+      "-DFZ_ENABLE_XPS=0",
+      "-DFZ_ENABLE_SVG=0",
+      "-DFZ_ENABLE_DOCX_OUTPUT=0",
+      "-DFZ_ENABLE_BARCODE=0"
+    ],
+    "makeVars": {
+      "xps": "no",
+      "svg": "no",
+      "html": "no"
+    },
+    "linkFlags": [
+      "-O2",
+      "-fwasm-exceptions",
+      "-sSUPPORT_LONGJMP=wasm",
+      "-sMODULARIZE=1",
+      "-sEXPORT_NAME=BabelDocWasm",
+      "-sENVIRONMENT=node",
+      "-sALLOW_MEMORY_GROWTH=1",
+      "-sINITIAL_MEMORY=64MB",
+      "-sSTACK_SIZE=2097152"
+    ],
+    "stackSizeNote": "The frontend extraction call chain overflows Emscripten’s default 64KB stack; 2MB matches the spike-verified setting."
+  },
+  "outputs": {
+    "babeldoc.wasm": {
+      "size": 38900898,
+      "sha256": "cdb2ff32727de432a481c3941a649e42585b62a4513bdf6920227a5a5df07cdb"
+    },
+    "babeldoc.cjs": {
+      "size": 68841,
+      "sha256": "35fa245d254e5f5a389adc1281fcb874c2e67e3891d419566437c6e4850abb47"
+    }
+  }
+}

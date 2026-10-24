@@ -1,0 +1,135 @@
+{
+  "pageCharacters" : [
+    [
+
+    ]
+  ],
+  "pages" : [
+    [
+      {
+        "anchors" : [
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 86,
+            "x" : 20,
+            "y" : 145,
+            "y2" : 145
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 105,
+            "x" : 28.0040016,
+            "y" : 145,
+            "y2" : 145
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 115,
+            "x" : 30.6680012,
+            "y" : 145,
+            "y2" : 145
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 105,
+            "x" : 36.6679993,
+            "y" : 145,
+            "y2" : 145
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 98,
+            "x" : 39.3320007,
+            "y" : 145,
+            "y2" : 145
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 108,
+            "x" : 46.0040016,
+            "y" : 145,
+            "y2" : 145
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 101,
+            "x" : 48.6680031,
+            "y" : 145,
+            "y2" : 145
+          },
+          {
+            "isOptional" : true,
+            "orientation" : 0,
+            "unicode" : 32,
+            "x" : 55.340004,
+            "y" : 145,
+            "y2" : 145
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 65,
+            "x" : 58.6760025,
+            "y" : 145,
+            "y2" : 145
+          }
+        ],
+        "extent" : {
+          "x" : 20,
+          "x2" : 66.6800003,
+          "y" : 142.516,
+          "y2" : 157
+        }
+      },
+      {
+        "anchors" : [
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 99,
+            "x" : 80,
+            "y" : 110,
+            "y2" : 110
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 111,
+            "x" : 86,
+            "y" : 110,
+            "y2" : 110
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 100,
+            "x" : 92,
+            "y" : 110,
+            "y2" : 110
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 101,
+            "x" : 98,
+            "y" : 110,
+            "y2" : 110
+          }
+        ],
+        "extent" : {
+          "x" : 80,
+          "x2" : 104,
+          "y" : 109.85,
+          "y2" : 120
+        }
+      }
+    ]
+  ]
+}

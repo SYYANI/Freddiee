@@ -1,0 +1,29 @@
+{
+  "pageCharacters" : [
+    [
+
+    ]
+  ],
+  "pages" : [
+    [
+      {
+        "anchors" : [
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 65,
+            "x" : 20,
+            "y" : 80,
+            "y2" : 80
+          }
+        ],
+        "extent" : {
+          "x" : 20,
+          "x2" : 32,
+          "y" : 76,
+          "y2" : 96
+        }
+      }
+    ]
+  ]
+}

@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import * as cheerio from 'cheerio'
-import { applyTranslation, isMathOnly, outputIssue, prepareHTML, renderTranslation, userPrompt } from '../electron/main/translation'
+import { applyTranslation, isMathOnly, outputIssue, parseBabelDocPageRange, prepareHTML, renderTranslation, userPrompt } from '../electron/main/translation'
 import { applyHiddenRegions, sanitize } from '../electron/main/localizer'
 import { parseArxivAtom } from '../electron/main/importer'
 import { parseResponse } from '../electron/main/llm'
 import { assistantMessages } from '../electron/main/assistant'
+import { semanticDocumentFromParsedProject } from '../electron/main/babeldocSemanticHints'
 import { FreddieRebuildModelClient, lastRebuiltPage } from '../RebuildPDFKit'
 
 describe('HTML translation pipeline', () => {
@@ -66,6 +67,29 @@ describe('RebuildPDFKit integration', () => {
     expect(FreddieRebuildModelClient.message({ role: 'user', parts: [{ type: 'text', text: 'Page 1.' }, { type: 'jpeg', data: jpeg }] })).toEqual({
       role: 'user', content: [{ type: 'text', text: 'Page 1.' }, { type: 'image', data: jpeg, mediaType: 'image/jpeg' }]
     })
+  })
+})
+
+describe('BabelDOC integration', () => {
+  it('parses a bounded, sorted page selection', () => {
+    expect(parseBabelDocPageRange('')).toBeNull()
+    expect(parseBabelDocPageRange('5, 1-3, 3')).toEqual([1, 2, 3, 5])
+    expect(() => parseBabelDocPageRange('3-1')).toThrow()
+    expect(() => parseBabelDocPageRange('0')).toThrow()
+  })
+
+  it('derives a validated semantic sidecar from parsed LaTeX units', () => {
+    const document = semanticDocumentFromParsedProject({
+      mainFile: 'main.tex', inputs: [], environments: [], captions: [], newCommands: [], sections: [],
+      units: [
+        { id: 'section:-1', kind: 'section', source: '\\title{A Study}', shouldTranslate: false },
+        { id: 'section:1', kind: 'section', source: '\\section{Methods}\n\nWe use \\textbf{robust models} for $x$.', shouldTranslate: true }
+      ]
+    }, '2401.00001v1')
+    expect(document.sourceIdentifier).toBe('2401.00001v1')
+    expect(document.blocks.map((block) => block.kind)).toContain('documentTitle')
+    expect(document.blocks.map((block) => block.kind)).toContain('sectionHeading')
+    expect(document.blocks.some((block) => block.alignmentText.includes('robust models'))).toBe(true)
   })
 })
 

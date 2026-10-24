@@ -7,11 +7,13 @@ React renderer (sandboxed, one per window: main, Settings, Writing, About)
   │ named, typed operations through the preload bridge
   ▼
 Electron main process
-  ├─ FreddieStore        library.json (schema 3), monotonic migrations, atomic writes
+  ├─ FreddieStore        library.json (schema 6), monotonic migrations, atomic writes
   ├─ SecretStore         per-provider API keys encrypted with safeStorage
   ├─ PaperImporter       arXiv / web page / local PDF ingestion with staged progress
   ├─ localizer           Readability extraction, sanitizing, resource localization
-  ├─ TranslationService  HTML segment pipeline, LaTeX and scanned-PDF jobs, abstract translation
+  ├─ TranslationService  HTML, BabelDOC, LaTeX, scanned-PDF and abstract translation routes
+  │    └─ BabelDOC worker  MuPDF wasm + ONNX layout + IL stages; translation RPC only
+  ├─ BabelDocKit         TypeScript pipeline; wasm/glue in asar, model/fonts in extraResources
   ├─ LaTeXTransKit       port of the Swift kit: secure arXiv extraction, structured units, slot templates, latexmk
   ├─ RebuildPDFKit       scanned PDFs: Tesseract measurement, vision transcription, review, translation, XeLaTeX
   ├─ AssistantService    retrieval, prompts, streaming answers, saved conversations
@@ -33,7 +35,11 @@ The windows match native Freddie's scenes. Each is the same renderer bundle open
 4. `freddie://paper/{id}/a/{attachment}` serves registered attachments; `assets/` and `Resources/` serve localized page resources. Every path is resolved below the paper's UUID directory. `freddie://writing/{id}/images/...` serves writing images the same way. `freddie://pdfjs/` serves only allow-listed PDF.js CMap and standard-font filenames from the packaged dependency so translated CJK PDFs render correctly.
 5. Imported HTML is sanitized on import (scripts, frames, forms, event handlers, and `javascript:` URLs removed) and displayed in a `srcdoc` frame with `sandbox="allow-same-origin"` and no script permission, under the renderer's CSP plus its own. The reader script drives the page from outside.
 6. External navigation is denied in-app; HTTP(S) links open through the OS browser, and arXiv links offer an import first.
-7. Model requests are made from the main process. The only subprocesses are the TeX tools and the native-library `sqlite3`, all started without a shell and never given an API key.
+7. Model requests are made from the main process. BabelDOC's worker receives
+   PDF bytes, resource paths, non-secret settings and individual translation
+   results through a typed RPC; it never receives a provider route or API key.
+   The only subprocesses are the TeX tools and the native-library `sqlite3`, all
+   started without a shell and never given an API key.
 8. API keys remain in the main process and are encrypted by the operating system.
 9. The native-library import runs the system `sqlite3` with a read-only URI and copies files; it never writes to the native store.
 10. arXiv source extraction rejects traversal, links, special files, oversized archives, and excessive file counts. TeX subprocesses run without shell escape and with paranoid TeX input/output restrictions.
@@ -41,8 +47,8 @@ The windows match native Freddie's scenes. Each is the same renderer bundle open
 
 ## Persistence
 
-`library.json` is intentionally portable and inspectable. Writes are serialized through one queue and replace the file through a flushed temporary file and a rename. `schemaVersion` is monotonic; `migrateDatabase` brings schemas 1–2 (file names on papers, one provider in settings, writings inside the database) to schema 3 (attachments, folder memberships, item-type assignments, provider and model profiles, routes, file-based writings) and refuses a newer schema. Large documents, translation caches, annotations, and assistant conversations live beside each paper so the metadata file stays small. Imports run in `store.batch` and write once.
+`library.json` is intentionally portable and inspectable. Writes are serialized through one queue and replace the file through a flushed temporary file and a rename. `schemaVersion` is monotonic; `migrateDatabase` brings schemas 1–2 (file names on papers, one provider in settings, writings inside the database) through the later reader-control migrations to schema 6 (bundled BabelDOC page range, rendering mode, QPS and thinking mode), and refuses a newer schema. Large documents, translation caches, annotations, and assistant conversations live beside each paper so the metadata file stays small. Imports run in `store.batch` and write once.
 
 ## Long-running work
 
-Import, translation, and the assistant publish typed events. The renderer treats its snapshot as a projection and reloads it after each change. HTML translation rewrites `paper.html` after every batch and sends each finished segment to the reader, which inserts it without reloading. PDF translation is replace-at-end: only a successful run becomes the visible translated attachment. LaTeX units and scanned pages use credential-free checkpoints; changing a text route or glossary does not invalidate the more expensive cached page-image transcription.
+Import, translation, and the assistant publish typed events. The renderer treats its snapshot as a projection and reloads it after each change. HTML translation rewrites `paper.html` after every batch and sends each finished segment to the reader, which inserts it without reloading. PDF translation is replace-at-end: only a successful run becomes the visible translated attachment. BabelDOC emits helper-compatible stage events and keeps a credential-free structured-IL checkpoint keyed by PDF bytes, page selection and layout-model hash; route, glossary and thinking changes do not invalidate it. LaTeX units and scanned pages likewise use credential-free checkpoints.

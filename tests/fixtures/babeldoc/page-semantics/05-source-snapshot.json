@@ -1,0 +1,304 @@
+{
+  "pageCharacters" : [
+    [
+
+    ],
+    [
+
+    ],
+    [
+
+    ],
+    [
+
+    ],
+    [
+
+    ]
+  ],
+  "pages" : [
+    [
+      {
+        "anchors" : [
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 78,
+            "x" : 20,
+            "y" : 140,
+            "y2" : 140
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 111,
+            "x" : 28.6640015,
+            "y" : 140,
+            "y2" : 140
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 114,
+            "x" : 35.3360023,
+            "y" : 140,
+            "y2" : 140
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 109,
+            "x" : 39.3320007,
+            "y" : 140,
+            "y2" : 140
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 97,
+            "x" : 49.3280029,
+            "y" : 140,
+            "y2" : 140
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 108,
+            "x" : 56.0000038,
+            "y" : 140,
+            "y2" : 140
+          }
+        ],
+        "extent" : {
+          "x" : 20,
+          "x2" : 58.6640053,
+          "y" : 139.82,
+          "y2" : 152
+        }
+      }
+    ],
+    [
+      {
+        "anchors" : [
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 82,
+            "x" : 40,
+            "y" : 140,
+            "y2" : 140
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 111,
+            "x" : 48.6640015,
+            "y" : 140,
+            "y2" : 140
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 116,
+            "x" : 55.3360023,
+            "y" : 140,
+            "y2" : 140
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 97,
+            "x" : 58.6720047,
+            "y" : 140,
+            "y2" : 140
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 116,
+            "x" : 65.3440094,
+            "y" : 140,
+            "y2" : 140
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 101,
+            "x" : 68.6800079,
+            "y" : 140,
+            "y2" : 140
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 100,
+            "x" : 75.352005,
+            "y" : 140,
+            "y2" : 140
+          }
+        ],
+        "extent" : {
+          "x" : 40,
+          "x2" : 82.0240021,
+          "y" : 139.82,
+          "y2" : 152
+        }
+      }
+    ],
+    [
+      {
+        "anchors" : [
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 67,
+            "x" : 40,
+            "y" : 100,
+            "y2" : 100
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 114,
+            "x" : 48.6640015,
+            "y" : 100,
+            "y2" : 100
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 111,
+            "x" : 52.6600037,
+            "y" : 100,
+            "y2" : 100
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 112,
+            "x" : 59.3320007,
+            "y" : 100,
+            "y2" : 100
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 112,
+            "x" : 66.0039978,
+            "y" : 100,
+            "y2" : 100
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 101,
+            "x" : 72.6759949,
+            "y" : 100,
+            "y2" : 100
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 100,
+            "x" : 79.3479919,
+            "y" : 100,
+            "y2" : 100
+          }
+        ],
+        "extent" : {
+          "x" : 40,
+          "x2" : 86.019989,
+          "y" : 97.516,
+          "y2" : 112
+        }
+      }
+    ],
+    [
+
+    ],
+    [
+      {
+        "anchors" : [
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 87,
+            "x" : 50,
+            "y" : 160,
+            "y2" : 160
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 105,
+            "x" : 63.2159996,
+            "y" : 160,
+            "y2" : 160
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 100,
+            "x" : 67.1080017,
+            "y" : 160,
+            "y2" : 160
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 101,
+            "x" : 74.1080017,
+            "y" : 160,
+            "y2" : 160
+          },
+          {
+            "isOptional" : true,
+            "orientation" : 0,
+            "unicode" : 32,
+            "x" : 80.3240051,
+            "y" : 160,
+            "y2" : 160
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 112,
+            "x" : 83.8240051,
+            "y" : 160,
+            "y2" : 160
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 97,
+            "x" : 90.8240051,
+            "y" : 160,
+            "y2" : 160
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 103,
+            "x" : 97.0400085,
+            "y" : 160,
+            "y2" : 160
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 101,
+            "x" : 104.040009,
+            "y" : 160,
+            "y2" : 160
+          }
+        ],
+        "extent" : {
+          "x" : 50,
+          "x2" : 110.256012,
+          "y" : 156.948,
+          "y2" : 174
+        }
+      }
+    ]
+  ]
+}

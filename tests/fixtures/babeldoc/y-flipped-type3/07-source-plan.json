@@ -1,0 +1,41 @@
+{
+  "pages" : {
+    "0" : {
+      "glyphs" : [
+        {
+          "isOptional" : false,
+          "orientation" : 1,
+          "placement" : null,
+          "role" : 1,
+          "unicode" : 65,
+          "x" : 20,
+          "y" : 100,
+          "y2" : 100
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 1,
+          "unicode" : 65,
+          "x" : 60,
+          "y" : 100,
+          "y2" : 100
+        }
+      ],
+      "overlayCharacters" : [
+
+      ],
+      "placements" : [
+
+      ],
+      "removedRegions" : [
+
+      ],
+      "removedTextRegions" : [
+
+      ],
+      "underlayCurves" : 0
+    }
+  }
+}

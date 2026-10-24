@@ -321,6 +321,38 @@ function ReaderTab(): JSX.Element {
           <Switch checked={settings.assistantWebSearch} onChange={(value) => save({ assistantWebSearch: value })} />
         </FormRow>
       </FormSection>
+      <FormSection title={t('BabelDOC')}>
+        <FormRow label={t('Page range')} help={t('Leave empty to translate every page. Use comma-separated pages or ranges, for example 1-5,8.') }>
+          <TextInput value={settings.babelDocPageRange} onChange={(value) => save({ babelDocPageRange: value })} placeholder={t('All pages')} />
+        </FormRow>
+        <FormRow label={t('Rendering mode')}>
+          <MenuPicker
+            value={settings.babelDocRenderingMode}
+            onChange={(value) => save({ babelDocRenderingMode: value })}
+            options={[
+              { value: 'source-preserving', title: t('Source-preserving') },
+              { value: 'rebuild', title: t('Rebuild') }
+            ]}
+          />
+        </FormRow>
+        <FormRow label={t('BabelDOC QPS: %d', settings.babelDocQPS)} help={t('Limits how quickly paragraph translation requests start.') }>
+          <Stepper value={settings.babelDocQPS} min={1} max={20} onChange={(value) => save({ babelDocQPS: value })} />
+        </FormRow>
+        <FormRow label={t('Thinking mode')}>
+          <MenuPicker
+            value={settings.babelDocThinkingMode}
+            onChange={(value) => save({ babelDocThinkingMode: value })}
+            options={[
+              { value: 'disabled', title: t('Disabled') },
+              { value: 'enabled', title: t('Enabled') }
+            ]}
+          />
+        </FormRow>
+        <FormRow label={t('Use arXiv LaTeX structure for PDF translation')} help={t('When enabled, Freddie uses available arXiv source to improve BabelDOC structure and translation context. No TeX installation is required, and failures fall back to PDF-only analysis.')}>
+          <Switch checked={settings.babelDocSemanticHintsEnabled} onChange={(value) => save({ babelDocSemanticHintsEnabled: value })} />
+        </FormRow>
+        <FormRow stacked><FormNote>{t('The glossary in General settings is also used for BabelDOC translation.')}</FormNote></FormRow>
+      </FormSection>
     </div>
   )
 }

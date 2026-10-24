@@ -9,7 +9,15 @@ export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
     // CommonJS output needs no ESM shim; the shim's import detection misreads strings such as "Finalizing import".
-    build: { rollupOptions: { input: resolve('electron/main/index.ts'), output: { format: 'cjs', entryFileNames: 'index.cjs' } } }
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve('electron/main/index.ts'),
+          babeldocWorker: resolve('electron/main/babeldocWorker.ts')
+        },
+        output: { format: 'cjs', entryFileNames: '[name].cjs' }
+      }
+    }
   },
   preload: {
     plugins: [externalizeDepsPlugin()],

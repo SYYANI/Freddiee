@@ -1,0 +1,122 @@
+{
+  "page" : [
+    {
+      "base_operations" : {
+        "value" : "D77#BAVduT0GM$gLR26{R3K3xF)lD5FflD-Z3O@=8-A7p1Y?=40KN"
+      },
+      "cropbox" : {
+        "box" : {
+          "x" : 0,
+          "x2" : 240,
+          "y" : 0,
+          "y2" : 180
+        }
+      },
+      "mediabox" : {
+        "box" : {
+          "x" : 0,
+          "x2" : 240,
+          "y" : 0,
+          "y2" : 180
+        }
+      },
+      "page_layout" : [
+        {
+          "box" : {
+            "x" : 20,
+            "x2" : 32,
+            "y" : 76,
+            "y2" : 96
+          },
+          "class_name" : "fallback_line",
+          "conf" : 1,
+          "id" : 1
+        }
+      ],
+      "page_number" : 0,
+      "pdf_character" : [
+        {
+          "advance" : 12,
+          "box" : {
+            "x" : 20,
+            "x2" : 32,
+            "y" : 80,
+            "y2" : 90
+          },
+          "char_unicode" : "A",
+          "debug_info" : null,
+          "formula_layout_id" : null,
+          "pdf_character_id" : 65,
+          "pdf_style" : {
+            "font_id" : "T3",
+            "font_size" : 20,
+            "graphic_state" : {
+              "passthrough_per_char_instruction" : ""
+            }
+          },
+          "render_order" : 1,
+          "scale" : null,
+          "sub_render_order" : 0,
+          "vertical" : false,
+          "visual_bbox" : {
+            "box" : {
+              "x" : 20,
+              "x2" : 32,
+              "y" : 76,
+              "y2" : 96
+            }
+          },
+          "xobj_id" : 0,
+          "y_flipped" : false
+        }
+      ],
+      "pdf_curve" : [
+
+      ],
+      "pdf_figure" : [
+
+      ],
+      "pdf_font" : [
+        {
+          "ascent" : 800,
+          "bold" : 0,
+          "descent" : -200,
+          "encoding_length" : 1,
+          "font_id" : "T3",
+          "font_subtype" : "Type3",
+          "italic" : 0,
+          "monospace" : 0,
+          "name" : "unknown",
+          "pdf_font_char_bounding_box" : [
+            {
+              "char_id" : 65,
+              "x" : 0,
+              "x2" : 600,
+              "y" : -200,
+              "y2" : 800
+            }
+          ],
+          "serif" : 1,
+          "type3_em_height" : 2,
+          "type3_font_bbox" : "0 -200 600 800",
+          "type3_font_matrix" : "0.002 0 0 0.002 0 0",
+          "xref_id" : 6
+        }
+      ],
+      "pdf_form" : [
+
+      ],
+      "pdf_paragraph" : [
+
+      ],
+      "pdf_rectangle" : [
+
+      ],
+      "pdf_xobject" : [
+
+      ],
+      "unit" : "point"
+    }
+  ],
+  "total_pages" : 1
+}

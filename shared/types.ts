@@ -19,6 +19,7 @@ export type InspectorMode = 'paper' | 'writing'
 export type ReaderAppearance = 'default' | 'paper'
 export type AppLanguage = 'system' | 'en' | 'zh-Hans'
 export type TargetLanguageCode = 'EN' | 'zh-CN'
+export type BabelDocRenderingMode = 'source-preserving' | 'rebuild'
 
 export interface Paper {
   id: string
@@ -132,6 +133,13 @@ export interface AppSettings {
   targetLanguage: TargetLanguageCode
   htmlTranslationConcurrency: number
   pdfTranslationBatchSize: number
+  /** Empty means every page; otherwise a comma-separated list such as 1-5,8. */
+  babelDocPageRange: string
+  babelDocRenderingMode: BabelDocRenderingMode
+  /** Maximum translation requests started per second. */
+  babelDocQPS: number
+  babelDocThinkingMode: LLMThinkingMode
+  babelDocSemanticHintsEnabled: boolean
   translationGlossary: string
   htmlFontSize: number
   readerAppearance: ReaderAppearance
@@ -232,18 +240,41 @@ export interface NoteNavigationRequest {
   quote?: string
 }
 
-export type TranslationKind = 'html' | 'latex' | 'scan' | 'abstract'
+export type TranslationKind = 'html' | 'latex' | 'scan' | 'babeldoc' | 'abstract'
+
+export interface BabelDocTranslationDiagnostics {
+  semantic_status: 'notProvided' | 'applied' | 'pdfFallback'
+  translation_candidates: number
+  translation_completed: number
+  translation_failed: number
+  provider_failures: number
+  placeholder_validation_failures: number
+  semantic_translation_fallbacks: number
+  continuation_groups: number
+  semantic_pdf_paragraphs?: number
+  semantic_matched_pdf_paragraphs?: number
+  semantic_matched_pdf_coverage?: number
+  semantic_high_confidence?: number
+  semantic_medium_confidence?: number
+  semantic_low_confidence?: number
+  semantic_structural_changes_enabled?: boolean
+  semantic_elapsed_ms?: number
+}
 
 export interface TranslationEvent {
   paperId: string
   kind: TranslationKind
-  type: 'status' | 'progress' | 'segment' | 'prepared' | 'finished' | 'failed' | 'cancelled'
+  type: 'status' | 'progress' | 'progress_start' | 'progress_update' | 'progress_end' | 'translation_diagnostics' | 'segment' | 'prepared' | 'finished' | 'failed' | 'cancelled'
   message?: string
   completed?: number
   total?: number
   summary?: string
   segmentId?: string
   translatedHTML?: string
+  stage?: string
+  stageProgress?: number
+  overallProgress?: number
+  diagnostics?: BabelDocTranslationDiagnostics
   /** Set when a run stopped because no usable model is configured. */
   needsSetup?: boolean
   logPath?: string
@@ -425,6 +456,7 @@ export interface FreddieAPI {
     translateHTML(paperId: string): Promise<void>
     translateLatex(paperId: string): Promise<void>
     translateScannedPDF(paperId: string, lastPage?: number): Promise<void>
+    translateBabeldocPDF(paperId: string, pageRange?: string): Promise<void>
     cancel(paperId: string): Promise<void>
     translateAbstract(paperId: string): Promise<string>
     onEvent(listener: (event: TranslationEvent) => void): () => void

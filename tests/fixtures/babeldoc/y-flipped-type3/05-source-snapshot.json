@@ -1,0 +1,47 @@
+{
+  "pageCharacters" : [
+    [
+
+    ]
+  ],
+  "pages" : [
+    [
+      {
+        "anchors" : [
+          {
+            "isOptional" : false,
+            "orientation" : 1,
+            "unicode" : 65,
+            "x" : 20,
+            "y" : 100,
+            "y2" : 100
+          }
+        ],
+        "extent" : {
+          "x" : 20,
+          "x2" : 32,
+          "y" : 80,
+          "y2" : 100
+        }
+      },
+      {
+        "anchors" : [
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 65,
+            "x" : 60,
+            "y" : 100,
+            "y2" : 100
+          }
+        ],
+        "extent" : {
+          "x" : 60,
+          "x2" : 72,
+          "y" : 100,
+          "y2" : 120
+        }
+      }
+    ]
+  ]
+}

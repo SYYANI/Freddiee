@@ -1,0 +1,233 @@
+{
+  "page" : [
+    {
+      "base_operations" : {
+        "value" : "D77#BAW9tp0FZGYLR26{R8b%?E-)Z4F)d?l1^_J^ewG6SW0?&nUb3<U"
+      },
+      "cropbox" : {
+        "box" : {
+          "x" : 0,
+          "x2" : 240,
+          "y" : 0,
+          "y2" : 180
+        }
+      },
+      "mediabox" : {
+        "box" : {
+          "x" : 0,
+          "x2" : 240,
+          "y" : 0,
+          "y2" : 180
+        }
+      },
+      "page_layout" : [
+        {
+          "box" : {
+            "x" : 60,
+            "x2" : 72,
+            "y" : 100,
+            "y2" : 104
+          },
+          "class_name" : "fallback_line",
+          "conf" : 1,
+          "id" : 1
+        },
+        {
+          "box" : {
+            "x" : 20,
+            "x2" : 32,
+            "y" : 96,
+            "y2" : 100
+          },
+          "class_name" : "fallback_line",
+          "conf" : 1,
+          "id" : 2
+        }
+      ],
+      "page_number" : 0,
+      "pdf_character" : [
+
+      ],
+      "pdf_curve" : [
+
+      ],
+      "pdf_figure" : [
+
+      ],
+      "pdf_font" : [
+        {
+          "ascent" : 800,
+          "bold" : 0,
+          "descent" : -200,
+          "encoding_length" : 1,
+          "font_id" : "T3",
+          "font_subtype" : "Type3",
+          "italic" : 0,
+          "monospace" : 0,
+          "name" : "unknown",
+          "pdf_font_char_bounding_box" : [
+            {
+              "char_id" : 65,
+              "x" : 0,
+              "x2" : 600,
+              "y" : 0,
+              "y2" : 200
+            }
+          ],
+          "serif" : 1,
+          "type3_em_height" : 1,
+          "type3_font_bbox" : "0 -200 600 800",
+          "type3_font_matrix" : "0.001 0 0 0.001 0 0",
+          "xref_id" : 6
+        }
+      ],
+      "pdf_form" : [
+
+      ],
+      "pdf_paragraph" : [
+        {
+          "box" : {
+            "x" : 20,
+            "x2" : 32,
+            "y" : 96,
+            "y2" : 100
+          },
+          "debug_id" : "swift0",
+          "first_line_indent" : false,
+          "layout_id" : 2,
+          "layout_label" : "fallback_line",
+          "optimal_scale" : 1,
+          "pdf_paragraph_composition" : [
+            {
+              "pdf_character" : {
+                "advance" : 12,
+                "box" : {
+                  "x" : 20,
+                  "x2" : 32,
+                  "y" : 80,
+                  "y2" : 100
+                },
+                "char_unicode" : "A",
+                "debug_info" : null,
+                "formula_layout_id" : null,
+                "pdf_character_id" : 65,
+                "pdf_style" : {
+                  "font_id" : "T3",
+                  "font_size" : 20,
+                  "graphic_state" : {
+                    "passthrough_per_char_instruction" : ""
+                  }
+                },
+                "render_order" : 1,
+                "scale" : null,
+                "sub_render_order" : 0,
+                "vertical" : false,
+                "visual_bbox" : {
+                  "box" : {
+                    "x" : 20,
+                    "x2" : 32,
+                    "y" : 96,
+                    "y2" : 100
+                  }
+                },
+                "xobj_id" : 0,
+                "y_flipped" : true
+              },
+              "pdf_formula" : null,
+              "pdf_line" : null,
+              "pdf_same_style_characters" : null,
+              "pdf_same_style_unicode_characters" : null
+            }
+          ],
+          "pdf_style" : {
+            "font_id" : "T3",
+            "font_size" : 20,
+            "graphic_state" : {
+              "passthrough_per_char_instruction" : ""
+            }
+          },
+          "render_order" : 1,
+          "scale" : 1,
+          "unicode" : "A",
+          "vertical" : false,
+          "xobj_id" : 0
+        },
+        {
+          "box" : {
+            "x" : 60,
+            "x2" : 72,
+            "y" : 100,
+            "y2" : 104
+          },
+          "debug_id" : "swift1",
+          "first_line_indent" : false,
+          "layout_id" : 1,
+          "layout_label" : "fallback_line",
+          "optimal_scale" : 1,
+          "pdf_paragraph_composition" : [
+            {
+              "pdf_character" : {
+                "advance" : 12,
+                "box" : {
+                  "x" : 60,
+                  "x2" : 72,
+                  "y" : 100,
+                  "y2" : 120
+                },
+                "char_unicode" : "A",
+                "debug_info" : null,
+                "formula_layout_id" : null,
+                "pdf_character_id" : 65,
+                "pdf_style" : {
+                  "font_id" : "T3",
+                  "font_size" : 20,
+                  "graphic_state" : {
+                    "passthrough_per_char_instruction" : ""
+                  }
+                },
+                "render_order" : 2,
+                "scale" : null,
+                "sub_render_order" : 0,
+                "vertical" : false,
+                "visual_bbox" : {
+                  "box" : {
+                    "x" : 60,
+                    "x2" : 72,
+                    "y" : 100,
+                    "y2" : 104
+                  }
+                },
+                "xobj_id" : 0,
+                "y_flipped" : false
+              },
+              "pdf_formula" : null,
+              "pdf_line" : null,
+              "pdf_same_style_characters" : null,
+              "pdf_same_style_unicode_characters" : null
+            }
+          ],
+          "pdf_style" : {
+            "font_id" : "T3",
+            "font_size" : 20,
+            "graphic_state" : {
+              "passthrough_per_char_instruction" : ""
+            }
+          },
+          "render_order" : 2,
+          "scale" : 1,
+          "unicode" : "A",
+          "vertical" : false,
+          "xobj_id" : 0
+        }
+      ],
+      "pdf_rectangle" : [
+
+      ],
+      "pdf_xobject" : [
+
+      ],
+      "unit" : "point"
+    }
+  ],
+  "total_pages" : 1
+}

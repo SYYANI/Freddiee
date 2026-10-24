@@ -93,6 +93,19 @@ describe('FreddieStore', () => {
 })
 
 describe('migrateDatabase', () => {
+  it('adds BabelDOC settings when migrating schema 5', () => {
+    const { database } = migrateDatabase({ schemaVersion: 5, settings: { htmlFontSize: 19 } })
+    expect(database.schemaVersion).toBe(schemaVersion)
+    expect(database.settings).toMatchObject({
+      htmlFontSize: 19,
+      babelDocPageRange: '',
+      babelDocRenderingMode: 'source-preserving',
+      babelDocQPS: 3,
+      babelDocThinkingMode: 'disabled',
+      babelDocSemanticHintsEnabled: true
+    })
+  })
+
   it('keeps the PDF hand tool disabled when migrating schema 4', () => {
     const { database } = migrateDatabase({ schemaVersion: 4, settings: { showPDFZoomControls: true, pdfHandToolEnabled: true } })
     expect(database.schemaVersion).toBe(schemaVersion)
@@ -143,7 +156,7 @@ describe('migrateDatabase', () => {
 
   it('drops settings for removed translation controls', () => {
     const { database } = migrateDatabase({ schemaVersion, settings: { babelDocQPS: 8, babelDocCommand: 'babeldoc', babelDocArguments: ['--openai'], useArxivLatexStructure: true, latexTranslationEnabled: true, htmlFontSize: 19 } })
-    expect(database.settings).not.toHaveProperty('babelDocQPS')
+    expect(database.settings.babelDocQPS).toBe(8)
     expect(database.settings).not.toHaveProperty('babelDocCommand')
     expect(database.settings).not.toHaveProperty('babelDocArguments')
     expect(database.settings).not.toHaveProperty('useArxivLatexStructure')

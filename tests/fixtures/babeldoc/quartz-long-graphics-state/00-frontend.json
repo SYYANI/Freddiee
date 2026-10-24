@@ -1,0 +1,158 @@
+{
+  "page" : [
+    {
+      "base_operations" : {
+        "value" : "D77#BVCn!h0|4^G5g3rAI)F06AkoTC0aB<)obUg?B`cNd&pB-eO`=y<-zLs+v_Qr{B)8L$d=st>C};R(7*}KHm`kg`allrfT#$ONoyy-|3ji$}ewG6S1G0XLAh3kh@*E+k$dUoLP&Sk~"
+      },
+      "cropbox" : {
+        "box" : {
+          "x" : 0,
+          "x2" : 240,
+          "y" : 0,
+          "y2" : 180
+        }
+      },
+      "mediabox" : {
+        "box" : {
+          "x" : 0,
+          "x2" : 240,
+          "y" : 0,
+          "y2" : 180
+        }
+      },
+      "page_layout" : [
+
+      ],
+      "page_number" : 0,
+      "pdf_character" : [
+
+      ],
+      "pdf_curve" : [
+        {
+          "box" : {
+            "x" : 20,
+            "x2" : 220,
+            "y" : 60,
+            "y2" : 120
+          },
+          "ctm" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "debug_info" : "a",
+          "evenodd" : false,
+          "fill_background" : true,
+          "graphic_state" : {
+            "passthrough_per_char_instruction" : "0 g 0 G 0 0 m 240 0 l 240 180 l 0 180 l h W n /Cs1 cs /Cs1 CS /RelativeColorimetric ri /Gs1 gs 0.200000 0.200000 0.200000 sc /RelativeColorimetric ri /Gs1 gs 0.200000 0.200000 0.200000 sc /RelativeColorimetric ri /Gs1 gs 0.200000 0.200000 0.200000 sc /RelativeColorimetric ri /Gs1 gs 0.200000 0.200000 0.200000 sc /RelativeColorimetric ri /Gs1 gs 0.200000 0.200000 0.200000 sc /RelativeColorimetric ri /Gs1 gs 0.200000 0.200000 0.200000 sc 0.952941 0.956863 0.956863 sc"
+          },
+          "passthrough_paint" : null,
+          "pdf_original_path" : [
+            {
+              "pdf_path" : {
+                "has_xy" : true,
+                "op" : "m",
+                "x" : 20,
+                "y" : 60
+              }
+            },
+            {
+              "pdf_path" : {
+                "has_xy" : true,
+                "op" : "l",
+                "x" : 220,
+                "y" : 60
+              }
+            },
+            {
+              "pdf_path" : {
+                "has_xy" : true,
+                "op" : "l",
+                "x" : 220,
+                "y" : 120
+              }
+            },
+            {
+              "pdf_path" : {
+                "has_xy" : true,
+                "op" : "l",
+                "x" : 20,
+                "y" : 120
+              }
+            },
+            {
+              "pdf_path" : {
+                "has_xy" : false,
+                "op" : "h",
+                "x" : 0,
+                "y" : 0
+              }
+            }
+          ],
+          "pdf_original_path_primitive" : null,
+          "pdf_path" : [
+            {
+              "has_xy" : true,
+              "op" : "m",
+              "x" : 20,
+              "y" : 60
+            },
+            {
+              "has_xy" : true,
+              "op" : "l",
+              "x" : 220,
+              "y" : 60
+            },
+            {
+              "has_xy" : true,
+              "op" : "l",
+              "x" : 220,
+              "y" : 120
+            },
+            {
+              "has_xy" : true,
+              "op" : "l",
+              "x" : 20,
+              "y" : 120
+            },
+            {
+              "has_xy" : false,
+              "op" : "h",
+              "x" : null,
+              "y" : null
+            }
+          ],
+          "relocation_transform" : [
+
+          ],
+          "render_order" : 1,
+          "stroke_path" : false,
+          "xobj_id" : 0
+        }
+      ],
+      "pdf_figure" : [
+
+      ],
+      "pdf_font" : [
+
+      ],
+      "pdf_form" : [
+
+      ],
+      "pdf_paragraph" : [
+
+      ],
+      "pdf_rectangle" : [
+
+      ],
+      "pdf_xobject" : [
+
+      ],
+      "unit" : "point"
+    }
+  ],
+  "total_pages" : 1
+}

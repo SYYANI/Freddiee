@@ -1,0 +1,47 @@
+[
+  {
+    "detections" : [
+      {
+        "classIndex" : 0,
+        "className" : "title",
+        "confidence" : 0.57549673,
+        "id" : 1,
+        "imageBox" : {
+          "x0" : 19.016312,
+          "x1" : 68.42099,
+          "y0" : 24.755705,
+          "y1" : 36.764656
+        },
+        "pdfBox" : {
+          "x0" : 18,
+          "x1" : 69,
+          "y0" : 142,
+          "y1" : 156
+        }
+      }
+    ],
+    "pageIndex" : 0,
+    "pdfCropBox" : {
+      "x0" : 0,
+      "x1" : 240,
+      "y0" : 0,
+      "y1" : 180
+    },
+    "pdfMediaBox" : {
+      "x0" : 0,
+      "x1" : 240,
+      "y0" : 0,
+      "y1" : 180
+    },
+    "pdfPointSize" : {
+      "height" : 180,
+      "width" : 240
+    },
+    "rotationDegrees" : 0,
+    "sourcePageNumber" : 1,
+    "sourcePixelSize" : {
+      "height" : 180,
+      "width" : 240
+    }
+  }
+]

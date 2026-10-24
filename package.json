@@ -16,17 +16,19 @@
     "bump_version": "node scripts/bump_version.mjs",
     "sync:rebuild": "node scripts/sync-rebuild-pdf.mjs",
     "sync:latex": "node scripts/sync-latex-trans.mjs",
-    "package": "npm run build && electron-builder",
-    "package:mac": "npm run build && electron-builder --mac",
-    "package:mac:arm64": "node scripts/install-native-targets.mjs darwin arm64 && npm run build && electron-builder --mac --arm64",
-    "package:mac:x64": "node scripts/install-native-targets.mjs darwin x64 && npm run build && electron-builder --mac --x64",
-    "package:win": "node scripts/install-native-targets.mjs win32 x64 && npm run build && electron-builder --win --x64",
-    "package:win:arm64": "node scripts/install-native-targets.mjs win32 arm64 && npm run build && electron-builder --win --arm64",
-    "package:win:x64": "node scripts/install-native-targets.mjs win32 x64 && npm run build && electron-builder --win --x64",
-    "package:linux": "npm run build && electron-builder --linux",
-    "package:linux:arm64": "node scripts/install-native-targets.mjs linux arm64 && npm run build && electron-builder --linux --arm64",
-    "package:linux:x64": "node scripts/install-native-targets.mjs linux x64 && npm run build && electron-builder --linux --x64",
-    "postinstall": "node scripts/patch-dev-electron-name.mjs"
+    "sync:babeldoc": "node scripts/sync-babeldoc.mjs",
+    "build:babeldoc-wasm": "node scripts/build-babeldoc-wasm.mjs",
+    "package": "node scripts/verify-babeldoc-runtime.mjs && npm run build && electron-builder",
+    "package:mac": "node scripts/verify-babeldoc-runtime.mjs && npm run build && electron-builder --mac",
+    "package:mac:arm64": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs darwin arm64 && npm run build && electron-builder --mac --arm64",
+    "package:mac:x64": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs darwin x64 && npm run build && electron-builder --mac --x64",
+    "package:win": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs win32 x64 && npm run build && electron-builder --win --x64",
+    "package:win:arm64": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs win32 arm64 && npm run build && electron-builder --win --arm64",
+    "package:win:x64": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs win32 x64 && npm run build && electron-builder --win --x64",
+    "package:linux": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs linux x64 && npm run build && electron-builder --linux",
+    "package:linux:arm64": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs linux arm64 && npm run build && electron-builder --linux --arm64",
+    "package:linux:x64": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs linux x64 && npm run build && electron-builder --linux --x64",
+    "postinstall": "node scripts/patch-dev-electron-name.mjs && node scripts/patch-osx-sign-isbinaryfile.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",
@@ -44,6 +46,7 @@
     "katex": "^0.18.10",
     "koffi": "^3.3.3",
     "lucide-react": "^0.468.0",
+    "onnxruntime-node": "1.23.2",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.4.299",
     "react": "^18.3.1",
@@ -80,8 +83,16 @@
     "files": [
       "out/**/*",
       "package.json",
+      "BabelDocKit/resources/**",
       "!node_modules/@tesseract.js-data/eng/4.0.0/**",
       "!node_modules/tesseract.js-core/*-lstm.{js,wasm,wasm.js}"
+    ],
+    "extraResources": [
+      {
+        "from": "BabelDocKit/runtime",
+        "to": "babeldoc",
+        "filter": ["**/*", "!UPSTREAM.json", "!.DS_Store"]
+      }
     ],
     "mac": {
       "identity": "-",
@@ -92,7 +103,10 @@
       ],
       "hardenedRuntime": true,
       "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist"
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "signIgnore": [
+        "babeldoc/"
+      ]
     },
     "win": {
       "icon": "public/icon.png",
@@ -132,7 +146,8 @@
       "node_modules/webidl-conversions/**",
       "node_modules/regenerator-runtime/**",
       "node_modules/wasm-feature-detect/**",
-      "node_modules/zlibjs/**"
+      "node_modules/zlibjs/**",
+      "node_modules/onnxruntime-node/**"
     ]
   }
 }

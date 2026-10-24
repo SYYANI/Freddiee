@@ -1,0 +1,324 @@
+{
+  "0:10" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "Formats and Operations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "high",
+    "nextSourceParagraph" : "Special Quantities . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24",
+    "previousSourceParagraph" : "The IEEE Standard . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17",
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-10"
+    ],
+    "translationTemplate" : "Formats and Operations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18"
+  },
+  "0:11" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "Special Quantities . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "high",
+    "nextSourceParagraph" : "NaNs . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25",
+    "previousSourceParagraph" : "Formats and Operations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18",
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-11"
+    ],
+    "translationTemplate" : "Special Quantities . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24"
+  },
+  "0:12" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "NaNs . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "medium",
+    "nextSourceParagraph" : "Exceptions, Flags and Trap Handlers . . . . . . . . . . . . . . . . . . 32",
+    "previousSourceParagraph" : "Special Quantities . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24",
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-12"
+    ],
+    "translationTemplate" : null
+  },
+  "0:13" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "Exceptions, Flags and Trap Handlers . . . . . . . . . . . . . . . . . . 32",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "high",
+    "nextSourceParagraph" : "Systems Aspects . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37",
+    "previousSourceParagraph" : "NaNs . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25",
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-13"
+    ],
+    "translationTemplate" : "Exceptions, Flags and Trap Handlers . . . . . . . . . . . . . . . . . . 32"
+  },
+  "0:14" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "Systems Aspects . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "high",
+    "nextSourceParagraph" : "Instruction Sets. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38",
+    "previousSourceParagraph" : "Exceptions, Flags and Trap Handlers . . . . . . . . . . . . . . . . . . 32",
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-14"
+    ],
+    "translationTemplate" : "Systems Aspects . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37"
+  },
+  "0:15" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "Instruction Sets. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "high",
+    "nextSourceParagraph" : "Languages and Compilers . . . . . . . . . . . . . . . . . . . . . . . . . . . 40",
+    "previousSourceParagraph" : "Systems Aspects . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37",
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-15"
+    ],
+    "translationTemplate" : "Instruction Sets. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38"
+  },
+  "0:16" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "Languages and Compilers . . . . . . . . . . . . . . . . . . . . . . . . . . . 40",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "high",
+    "nextSourceParagraph" : null,
+    "previousSourceParagraph" : "Instruction Sets. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38",
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-16"
+    ],
+    "translationTemplate" : "Languages and Compilers . . . . . . . . . . . . . . . . . . . . . . . . . . . 40"
+  },
+  "0:3" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "medium",
+    "nextSourceParagraph" : "Rounding Error . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2",
+    "previousSourceParagraph" : null,
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-3"
+    ],
+    "translationTemplate" : null
+  },
+  "0:4" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "Rounding Error . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "high",
+    "nextSourceParagraph" : "Floating-point Formats . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3",
+    "previousSourceParagraph" : "Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2",
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-4"
+    ],
+    "translationTemplate" : "Rounding Error . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2"
+  },
+  "0:5" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "Floating-point Formats . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "high",
+    "nextSourceParagraph" : "Relative Error and Ulps . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5",
+    "previousSourceParagraph" : "Rounding Error . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2",
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-5"
+    ],
+    "translationTemplate" : "Floating-point Formats . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3"
+  },
+  "0:6" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "Relative Error and Ulps . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "high",
+    "nextSourceParagraph" : "Guard Digits . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6",
+    "previousSourceParagraph" : "Floating-point Formats . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3",
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-6"
+    ],
+    "translationTemplate" : "Relative Error and Ulps . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5"
+  },
+  "0:7" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "Guard Digits . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "high",
+    "nextSourceParagraph" : "Cancellation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8",
+    "previousSourceParagraph" : "Relative Error and Ulps . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5",
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-7"
+    ],
+    "translationTemplate" : "Guard Digits . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6"
+  },
+  "0:8" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "Cancellation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "medium",
+    "nextSourceParagraph" : "The IEEE Standard . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17",
+    "previousSourceParagraph" : "Guard Digits . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6",
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-8"
+    ],
+    "translationTemplate" : null
+  },
+  "0:9" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "The IEEE Standard . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "high",
+    "nextSourceParagraph" : "Formats and Operations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18",
+    "previousSourceParagraph" : "Cancellation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8",
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-9"
+    ],
+    "translationTemplate" : "The IEEE Standard . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17"
+  }
+}

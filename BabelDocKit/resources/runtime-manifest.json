@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "kind": "babeldoc-runtime-v1",
+  "layoutModel": {
+    "file": "models/doclayout_yolo_docstructbench_imgsz1024.onnx",
+    "size": 75324598,
+    "sha256": "fece9af02f618b603ff7921ccec6861d13e7e1f9830e091dfb7e8ad9311e5b21",
+    "sha3_256": "60be061226930524958b5465c8c04af3d7c03bcb0beb66454f5da9f792e3cf2a",
+    "url": "https://huggingface.co/wybxc/DocLayout-YOLO-DocStructBench-onnx/resolve/main/doclayout_yolo_docstructbench_imgsz1024.onnx?download=true",
+    "huggingFaceRepository": "wybxc/DocLayout-YOLO-DocStructBench-onnx",
+    "convertedFrom": "juliozhao/DocLayout-YOLO-DocStructBench",
+    "license": "apache-2.0",
+    "licenseSource": "HuggingFace repository tags (conversion and source checkpoints)",
+    "note": "sha3_256 matches the checksum upstream BabelDOC pins for this asset (babeldoc/assets/embedding_assets_metadata.py)."
+  },
+  "fonts": {
+    "source": "reWriteBabelDoc Vendor/Fonts/manifest.json; fallback HuggingFace dataset awwaawwa/BabelDOC-Assets revision 5f1a97ad776b502f1d967bfd9cc88860761e34fd",
+    "files": [
+      {
+        "file": "fonts/GoNotoKurrent-Bold.ttf",
+        "sha256": "6f5ab7b16acedeac76625f75159d9d303be85b291d47376760a1c9f87802853e",
+        "size": 15303772,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/GoNotoKurrent-Bold.ttf"
+      },
+      {
+        "file": "fonts/GoNotoKurrent-Regular.ttf",
+        "sha256": "2f2cee5fbb2403df352ca2005247f6c4faa70f3086ebd31b6c62308b5f2f9865",
+        "size": 15515760,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/GoNotoKurrent-Regular.ttf"
+      },
+      {
+        "file": "fonts/LXGWWenKaiGB-Regular.1.520.ttf",
+        "sha256": "252cde5857f7ce57ce76f7e2e1d2e91c1f912f1f4c13c7e4fb295b5fdf5923ed",
+        "size": 24903712,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/LXGWWenKaiGB-Regular.1.520.ttf"
+      },
+      {
+        "file": "fonts/NotoSans-Bold.ttf",
+        "sha256": "379bda1de5ceb6c81a6e0b7f8346d36e12b3202757fcba90a42dc5a7f8d5df38",
+        "size": 630964,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/NotoSans-Bold.ttf"
+      },
+      {
+        "file": "fonts/NotoSans-BoldItalic.ttf",
+        "sha256": "7c53c6334c7f7847201ba6ed93e4e00088b2ffae613aef69fb581153f347cac2",
+        "size": 644340,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/NotoSans-BoldItalic.ttf"
+      },
+      {
+        "file": "fonts/NotoSans-Italic.ttf",
+        "sha256": "feb3e57888ce3acb604f270c278cfb304c674306518771619ddbdefca42a066b",
+        "size": 642344,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/NotoSans-Italic.ttf"
+      },
+      {
+        "file": "fonts/NotoSans-Regular.ttf",
+        "sha256": "fe8c022f48d8dd29f17b744d16f9346f4357e16f7d4f7be58b000ae7c291b614",
+        "size": 629024,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/NotoSans-Regular.ttf"
+      },
+      {
+        "file": "fonts/NotoSerif-Bold.ttf",
+        "sha256": "2015eba9ca7ca5cf7320bd5e6740439f84b55eefad7208e63b9b6d32e8c82410",
+        "size": 506864,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/NotoSerif-Bold.ttf"
+      },
+      {
+        "file": "fonts/NotoSerif-BoldItalic.ttf",
+        "sha256": "c49e9f86cc43e05e8e5e8da53a7e00568fac08e2afb93b0d7979a2ea94fd6171",
+        "size": 535724,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/NotoSerif-BoldItalic.ttf"
+      },
+      {
+        "file": "fonts/NotoSerif-Italic.ttf",
+        "sha256": "be429bb62448b615f62cf7817d6a801fbc209e6cd2c11ffa15801f6d7dfac7cf",
+        "size": 535340,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/NotoSerif-Italic.ttf"
+      },
+      {
+        "file": "fonts/NotoSerif-Regular.ttf",
+        "sha256": "76b746ed54a2f83fa41db9a85a43b4b39900dbdb8ae40ec3d93950b0b00c4bd7",
+        "size": 504932,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/NotoSerif-Regular.ttf"
+      },
+      {
+        "file": "fonts/SourceHanSansCN-Bold.ttf",
+        "sha256": "2dcaecc0dcba896fdc48e32617633123d91fa80c7eb9f7ae7c836da70e45ce88",
+        "size": 10174460,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/SourceHanSansCN-Bold.ttf"
+      },
+      {
+        "file": "fonts/SourceHanSansCN-Regular.ttf",
+        "sha256": "dd4ae04ab7d33f43202750cf755b2ba47a2122ba41412954e562da459337bbf6",
+        "size": 10397552,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/SourceHanSansCN-Regular.ttf"
+      },
+      {
+        "file": "fonts/SourceHanSerifCN-Bold.ttf",
+        "sha256": "fafd6dc09a0ba3be1ac224aec3ff0befab97964c4ffba6b16f789702106577aa",
+        "size": 14134156,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/SourceHanSerifCN-Bold.ttf"
+      },
+      {
+        "file": "fonts/SourceHanSerifCN-Regular.ttf",
+        "sha256": "8ba5ec09db04b1d1599edeff3fb5627ca11eaaf85e339e5c32684cb94e806993",
+        "size": 14047768,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/SourceHanSerifCN-Regular.ttf"
+      },
+      {
+        "file": "fonts/licenses/GoNoto-UNLICENSE.txt",
+        "sha256": "93b59296492209e4b1a1e573d302eef2f85ac830644c1482f9f80a7c75b0a8ec",
+        "size": 6285,
+        "sourceURL": "https://raw.githubusercontent.com/satbyy/go-noto-universal/0f4be64616e29390e3063970ed7f6afe77356d39/UNLICENSE.txt"
+      },
+      {
+        "file": "fonts/licenses/LXGWWenKaiGB-OFL-1.1.txt",
+        "sha256": "c94bd77679a51e99722b6824984ef17ec122a97e1c4427f86760f8400c917f95",
+        "size": 4450,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/LXGWWenKaiGBOFL.txt?download=true"
+      },
+      {
+        "file": "fonts/licenses/Noto-OFL-1.1.txt",
+        "sha256": "0dab92d0544f7b233403f14b84a663bdbfa746982eda629e7f4f9ffe1b036feb",
+        "size": 4377,
+        "sourceURL": "https://raw.githubusercontent.com/notofonts/noto-fonts/ffebf8c1ee449e544955a7e813c54f9b73848eac/LICENSE"
+      },
+      {
+        "file": "fonts/licenses/SourceHanTrueType-OFL-1.1.txt",
+        "sha256": "dbaa78e2fdeef95b4f94cfb86bc53cb07b2abb4bb104cf361dde00724243dc35",
+        "size": 4430,
+        "sourceURL": "https://huggingface.co/datasets/awwaawwa/BabelDOC-Assets/resolve/5f1a97ad776b502f1d967bfd9cc88860761e34fd/fonts/SourceHanTrueTypeLICENSE.txt?download=true"
+      }
+    ]
+  }
+}

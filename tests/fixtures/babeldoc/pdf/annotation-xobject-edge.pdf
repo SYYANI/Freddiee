@@ -1,0 +1,122 @@
+%PDF-1.7
+%µ¶
+% Written by MuPDF 1.29.0
+
+1 0 obj
+<</Type/Catalog/Pages 2 0 R/Info<</Producer(MuPDF 1.29.0)>>>>
+endobj
+
+2 0 obj
+<</Type/Pages/Count 1/Kids[4 0 R]>>
+endobj
+
+3 0 obj
+<</Font<</helv 5 0 R>>/XObject<</fzFrm0 10 0 R>>>>
+endobj
+
+4 0 obj
+<</Type/Page/MediaBox[0 0 240 180]/Rotate 0/Resources 3 0 R/Parent 2 0 R/Contents[6 0 R 11 0 R]/Annots[12 0 R 13 0 R]>>
+endobj
+
+5 0 obj
+<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>
+endobj
+
+6 0 obj
+<</Length 76>>
+stream
+
+q
+BT
+1 0 0 1 20 146 Tm
+/helv 12 Tf [<416e6e6f746174656420666f726d>]TJ
+ET
+Q
+
+endstream
+endobj
+
+7 0 obj
+<</Font<</helv 8 0 R>>>>
+endobj
+
+8 0 obj
+<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>
+endobj
+
+9 0 obj
+<</Type/XObject/Subtype/Form/BBox[0 0 80 50]/Matrix[1 0 0 1 0 0]/Resources 7 0 R/Length 82>>
+stream
+
+q
+BT
+1 0 0 1 8 22 Tm
+/helv 16 Tf [<584f>]TJ
+ET
+Q
+ 
+q
+6 8 64 34 re
+h
+0 0 1 RG S
+Q
+
+endstream
+endobj
+
+10 0 obj
+<</Type/XObject/Subtype/Form/BBox[0 0 80 50]/Matrix[1.125 0 0 1.125 120 51.875]/Resources<</XObject<</fullpage 9 0 R>>>>/Length 12>>
+stream
+/fullpage Do
+endstream
+endobj
+
+11 0 obj
+<</Length 16>>
+stream
+ q /fzFrm0 Do Q 
+endstream
+endobj
+
+12 0 obj
+<</A<</S/URI/URI(https://example.com/stale-link)>>/Rect[20 142 105 160]/BS<</W 0>>/Subtype/Link/NM(fitz-L0)>>
+endobj
+
+13 0 obj
+<</Type/Annot/Subtype/Square/Rect[19 111 106 136]/RD[1 1 1 1]/BS<</Type/Border/W 1>>/C[1 0 0]/P 4 0 R/F 4/AP<</N 14 0 R>>/NM(fitz-A0)/Contents(stage2 annotation rectangle)>>
+endobj
+
+14 0 obj
+<</Type/XObject/Subtype/Form/BBox[19 111 106 136]/Matrix[1 0 0 1 0 0]/Length 31>>
+stream
+1 w
+1 0 0 RG
+20 112 85 23 re
+S
+
+endstream
+endobj
+
+xref
+0 15
+0000000000 65535 f 
+0000000042 00000 n 
+0000000120 00000 n 
+0000000172 00000 n 
+0000000239 00000 n 
+0000000375 00000 n 
+0000000464 00000 n 
+0000000589 00000 n 
+0000000630 00000 n 
+0000000719 00000 n 
+0000000928 00000 n 
+0000001108 00000 n 
+0000001174 00000 n 
+0000001301 00000 n 
+0000001492 00000 n 
+
+trailer
+<</Size 15/Root 1 0 R/ID[<C3A224C29EC295C284C2963DC3B2C2AE><F7E55C19065DFDC12E616E58974DDFE2>]>>
+startxref
+1640
+%%EOF

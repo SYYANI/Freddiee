@@ -384,7 +384,7 @@ function parseArxivAbsPage(html: string, identifier: ArxivIdentifier): ArxivMeta
  * Lightweight identification from the Info dictionary and the first pages' text. PDF text is
  * never treated as a stable full-text structure.
  */
-export async function readPDFMetadata(data: Uint8Array): Promise<{ title?: string; authors: string[]; arxiv?: ArxivIdentifier; doi?: string; pageCount: number }> {
+export async function readPDFMetadata(data: Uint8Array): Promise<{ title?: string; authors: string[]; arxiv?: ArxivIdentifier; doi?: string; pageCount: number; hasText: boolean }> {
   try {
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
     const loadingTask = pdfjs.getDocument({ data: data.slice(), useSystemFonts: false, standardFontDataUrl: standardFontDataURL() })
@@ -392,9 +392,13 @@ export async function readPDFMetadata(data: Uint8Array): Promise<{ title?: strin
     const { info } = await document.getMetadata().catch(() => ({ info: {} as Record<string, unknown> }))
     const infoRecord = info as Record<string, unknown>
     const pages: string[] = []
-    for (let pageNumber = 1; pageNumber <= Math.min(3, document.numPages); pageNumber += 1) {
+    let hasText = false
+    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
       const content = await (await document.getPage(pageNumber)).getTextContent()
-      pages.push(content.items.map((item) => ('str' in item ? item.str : '')).join(' '))
+      const text = content.items.map((item) => ('str' in item ? item.str : '')).join(' ')
+      if (/\S/u.test(text)) hasText = true
+      if (pageNumber <= 3) pages.push(text)
+      if (hasText && pageNumber >= 3) break
     }
     const strings = Object.values(infoRecord).filter((value): value is string => typeof value === 'string')
     const searchable = [...pages, ...strings].join('\n')
@@ -405,12 +409,13 @@ export async function readPDFMetadata(data: Uint8Array): Promise<{ title?: strin
       authors: author ? [author] : [],
       arxiv: extractArxivIdentifier(searchable),
       doi: extractDOI(searchable),
-      pageCount: document.numPages
+      pageCount: document.numPages,
+      hasText
     }
     await loadingTask.destroy()
     return result
   } catch {
-    return { authors: [], pageCount: 0 }
+    return { authors: [], pageCount: 0, hasText: false }
   }
 }
 

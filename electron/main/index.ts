@@ -91,7 +91,7 @@ app.whenReady().then(async () => {
   translations = new TranslationService(store, secrets, (event) => {
     broadcast('translation:event', event)
     if (event.type === 'finished' || event.type === 'failed' || event.type === 'cancelled') void refreshTranslatedIds()
-  }, () => translator)
+  }, () => translator, () => app.getAppPath())
   assistant = new AssistantService(store, secrets, (event) => windows.main?.webContents.send('assistant:event', event), () => translator)
   void refreshTranslatedIds()
 
@@ -499,7 +499,7 @@ function registerIpc(): void {
   })
   handle('library:page-count', async (_event, paperId: string, attachmentId: string) => {
     const metadata = await readPDFMetadata(new Uint8Array(await readFile(store.attachmentPath(requireUUID(paperId), requireUUID(attachmentId)))))
-    return { pageCount: metadata.pageCount, hasText: true }
+    return { pageCount: metadata.pageCount, hasText: metadata.hasText }
   })
 
   // Folders
@@ -633,6 +633,11 @@ function registerIpc(): void {
     }
     const last = Number.isInteger(lastPage) && lastPage! > 0 ? lastPage : undefined
     void translations.translateScannedPDF(id, status.xelatexPath, last)
+  })
+  handle('translation:babeldoc', (_event, paperId: string, pageRange?: string) => {
+    const id = requireUUID(paperId)
+    if (translations.isRunning(id)) throw new Error(translator('Translation in Progress'))
+    void translations.translateBabeldocPDF(id, typeof pageRange === 'string' ? pageRange : undefined)
   })
   handle('translation:cancel', (_event, paperId: string) => translations.cancel(requireUUID(paperId)))
   handle('translation:abstract', (_event, paperId: string) => translations.translateAbstract(requireUUID(paperId)))
@@ -794,6 +799,11 @@ function sanitizeSettings(patch: Partial<AppSettings>): Partial<AppSettings> {
   assign('targetLanguage', (value) => ['EN', 'zh-CN'].includes(value as string))
   assign('htmlTranslationConcurrency', integerIn(1, 16))
   assign('pdfTranslationBatchSize', integerIn(1, 50))
+  assign('babelDocPageRange', isString)
+  assign('babelDocRenderingMode', (value) => value === 'source-preserving' || value === 'rebuild')
+  assign('babelDocQPS', (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0.1 && value <= 20)
+  assign('babelDocThinkingMode', (value) => value === 'enabled' || value === 'disabled')
+  assign('babelDocSemanticHintsEnabled', isBoolean)
   assign('translationGlossary', isString)
   assign('htmlFontSize', integerIn(13, 28))
   assign('readerAppearance', (value) => value === 'default' || value === 'paper')

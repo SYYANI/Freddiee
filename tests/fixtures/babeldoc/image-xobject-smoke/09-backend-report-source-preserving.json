@@ -1,0 +1,39 @@
+{
+  "pages" : [
+    {
+      "adoptedGlyphCount" : 0,
+      "fallbackReason" : null,
+      "glyphCount" : 18,
+      "layerCount" : 0,
+      "matchedRequiredGlyphCount" : 14,
+      "misplacedGlyphCount" : 0,
+      "outcome" : "source-preserved",
+      "pageNumber" : 0,
+      "placedGlyphCount" : 0,
+      "placedGraphicCount" : 0,
+      "placementCount" : 0,
+      "removedGlyphCount" : 15,
+      "removedGraphicCount" : 0,
+      "requiredGlyphCount" : 14,
+      "unmatchedPlacedGlyphCount" : 0
+    },
+    {
+      "adoptedGlyphCount" : 0,
+      "fallbackReason" : null,
+      "glyphCount" : 20,
+      "layerCount" : 0,
+      "matchedRequiredGlyphCount" : 19,
+      "misplacedGlyphCount" : 0,
+      "outcome" : "source-preserved",
+      "pageNumber" : 1,
+      "placedGlyphCount" : 0,
+      "placedGraphicCount" : 0,
+      "placementCount" : 0,
+      "removedGlyphCount" : 20,
+      "removedGraphicCount" : 0,
+      "requiredGlyphCount" : 19,
+      "unmatchedPlacedGlyphCount" : 0
+    }
+  ],
+  "renderingMode" : "source-preserving"
+}

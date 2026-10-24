@@ -1,16 +1,32 @@
-import { createHash } from 'node:crypto'
-import { readFile } from 'node:fs/promises'
+import { createHash, randomUUID } from 'node:crypto'
+import { readFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
+import { Worker } from 'node:worker_threads'
 import * as cheerio from 'cheerio'
 import type { CheerioAPI } from 'cheerio'
 import type { Element } from 'domhandler'
-import type { TranslationEvent } from '../../shared/types'
+import type { BabelDocTranslationDiagnostics, TranslationEvent } from '../../shared/types'
 import type { Translator } from '../../shared/i18n'
 import { firstAttachment } from '../../shared/library'
 import { atomicWriteFile } from './files'
 import { complete, requestFor, resolveRoute, RouteError, type ResolvedRoute } from './llm'
 import { runLatexTranslation } from '../../LaTeXTransKit'
 import { runScannedTranslation } from '../../RebuildPDFKit'
+import {
+  defaultSystemPrompt as babelDocSystemPrompt,
+  stageBridgeNames,
+  userPromptSections,
+  verifyBabelDocRuntime,
+  babeldocRuntimeDirectory,
+  runtimeManifest,
+  layoutModelPath as babelDocLayoutModelPath,
+  fontDirectory as babelDocFontDirectory,
+  type BabelDocPipelineDiagnostics,
+  type BabelDocProgress,
+  type ILTranslationContext
+} from '../../BabelDocKit'
+import type { BabelDocWorkerEvent, BabelDocWorkerRequest } from './babeldocWorkerProtocol'
+import { prepareBabelDocSemanticHints } from './babeldocSemanticHints'
 import type { FreddieStore } from './store'
 import type { SecretStore } from './secrets'
 
@@ -268,7 +284,7 @@ interface CacheEntry {
 
 interface RunningJob {
   controller: AbortController
-  kind: 'html' | 'latex' | 'scan'
+  kind: 'html' | 'latex' | 'scan' | 'babeldoc'
 }
 
 export class TranslationService {
@@ -278,7 +294,8 @@ export class TranslationService {
     private readonly store: FreddieStore,
     private readonly secrets: SecretStore,
     private readonly emit: (event: TranslationEvent) => void,
-    private readonly translator: () => Translator
+    private readonly translator: () => Translator,
+    private readonly appPath: () => string = () => process.cwd()
   ) {}
 
   isRunning(paperId: string): boolean {
@@ -292,14 +309,14 @@ export class TranslationService {
     job.controller.abort(new DOMException('Translation cancelled', 'AbortError'))
   }
 
-  private begin(paperId: string, kind: 'html' | 'latex' | 'scan'): AbortController {
+  private begin(paperId: string, kind: 'html' | 'latex' | 'scan' | 'babeldoc'): AbortController {
     if (this.jobs.has(paperId)) throw new Error(this.translator()('Translation in Progress'))
     const controller = new AbortController()
     this.jobs.set(paperId, { controller, kind })
     return controller
   }
 
-  private fail(paperId: string, kind: 'html' | 'latex' | 'scan', error: unknown, signal: AbortSignal, logPath?: string): void {
+  private fail(paperId: string, kind: 'html' | 'latex' | 'scan' | 'babeldoc', error: unknown, signal: AbortSignal, logPath?: string): void {
     const t = this.translator()
     if (signal.aborted) {
       this.emit({ paperId, kind, type: 'cancelled', message: t('Translation cancelled.') })
@@ -461,4 +478,274 @@ export class TranslationService {
       this.jobs.delete(paperId)
     }
   }
+
+  async translateBabeldocPDF(paperId: string, pageRange?: string): Promise<void> {
+    const t = this.translator()
+    const controller = this.begin(paperId, 'babeldoc')
+    const { signal } = controller
+    try {
+      const settings = this.store.database.settings
+      if (settings.targetLanguage !== 'zh-CN') {
+        throw new Error(t('BabelDOC currently supports Simplified Chinese only.'))
+      }
+      const source = firstAttachment(this.store.attachments(paperId), 'pdf')
+      if (!source) throw new Error(t('No PDF attachment is available for this paper.'))
+      const runtimeDirectory = babeldocRuntimeDirectory()
+      verifyBabelDocRuntime(runtimeDirectory)
+      const bytes = new Uint8Array(await readFile(this.store.attachmentPath(paperId, source.id)))
+      const pages = parseBabelDocPageRange(pageRange ?? settings.babelDocPageRange)
+      const layoutIdentity = createHash('sha256')
+        .update(bytes)
+        .update(JSON.stringify({ pages, model: runtimeManifest.layoutModel.sha256 }))
+        .digest('hex')
+        .slice(0, 24)
+      const layoutCachePath = this.store.resolvePaperPath(paperId, `translations/babeldoc/layout-${layoutIdentity}.json`)
+      let structuredDocument: import('../../BabelDocKit').ILDocument | undefined
+      try {
+        const cached = JSON.parse(await readFile(layoutCachePath, 'utf8')) as import('../../BabelDocKit').ILDocument
+        if (cached && typeof cached === 'object' && Array.isArray(cached.page)) structuredDocument = cached
+      } catch {
+        // Layout checkpoints are optional and are rebuilt if absent or corrupt.
+      }
+      const route = await resolveRoute('pdf', this.store, this.secrets, t)
+      const paper = this.store.paper(paperId)
+      const glossary = normalizedGlossary(settings.translationGlossary)
+      this.emit({ paperId, kind: 'babeldoc', type: 'status', message: t('Preparing BabelDOC translation...') })
+      const semanticHints = settings.babelDocSemanticHintsEnabled && paper.arxivId
+        ? await prepareBabelDocSemanticHints({
+            paperDirectory: this.store.paperDirectory(paperId),
+            arxivIdentifier: paper.arxivId,
+            arxivVersion: paper.arxivVersion,
+            signal,
+            t,
+            onStatus: (message) => this.emit({ paperId, kind: 'babeldoc', type: 'status', message })
+          })
+        : null
+
+      const result = await runBabelDocWorker({
+        appPath: this.appPath(),
+        pdf: bytes,
+        pages,
+        configuration: {
+          layoutModelPath: babelDocLayoutModelPath(runtimeDirectory),
+          targetLanguage: settings.targetLanguage,
+          targetFontDirectory: babelDocFontDirectory(runtimeDirectory),
+          onlyIncludeTranslatedPages: pages !== null,
+          documentTitle: paper.title,
+          glossary,
+          semanticHints,
+          renderingMode: settings.babelDocRenderingMode
+        },
+        maximumConcurrentTranslations: Math.max(1, Math.min(16, Math.ceil(settings.babelDocQPS))),
+        structuredDocument
+      }, route, settings.babelDocQPS, settings.babelDocThinkingMode, signal, (progress) => {
+        this.emitBabelDocProgress(paperId, progress)
+      }, async (document) => {
+        await atomicWriteFile(layoutCachePath, `${JSON.stringify(document)}\n`)
+      })
+      signal.throwIfAborted()
+
+      const relativePath = 'translations/babeldoc/translated.pdf'
+      const outputPath = this.store.resolvePaperPath(paperId, relativePath)
+      await atomicWriteFile(outputPath, result.pdf)
+      signal.throwIfAborted()
+      const existing = this.store.attachments(paperId)
+        .filter((item) => item.kind === 'translatedPDF' && item.source === 'babeldoc')
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
+      const oldPath = existing && existing.filename !== relativePath
+        ? this.store.resolvePaperPath(paperId, existing.filename)
+        : undefined
+      const createdAt = new Date().toISOString()
+      if (existing) {
+        await this.store.updateAttachment(paperId, existing.id, {
+          filename: relativePath, translatedLastPage: undefined, createdAt
+        })
+      } else {
+        await this.store.addAttachment({
+          id: randomUUID(), paperId, kind: 'translatedPDF', source: 'babeldoc',
+          filename: relativePath, createdAt
+        })
+      }
+      if (oldPath) await rm(oldPath, { force: true }).catch(() => undefined)
+
+      const diagnostics = babelDocDiagnostics(result.diagnostics)
+      this.emit({ paperId, kind: 'babeldoc', type: 'translation_diagnostics', diagnostics })
+      const failed = diagnostics.translation_failed
+      this.emit({
+        paperId,
+        kind: 'babeldoc',
+        type: 'finished',
+        message: failed > 0
+          ? t('PDF translation completed with warnings: %d paragraphs kept their source text.', failed)
+          : t('PDF translation completed.')
+      })
+    } catch (error) {
+      this.fail(paperId, 'babeldoc', error, signal)
+    } finally {
+      this.lastBabelDocStage.delete(paperId)
+      this.jobs.delete(paperId)
+    }
+  }
+
+  private lastBabelDocStage = new Map<string, string>()
+
+  private emitBabelDocProgress(paperId: string, progress: BabelDocProgress): void {
+    const stage = stageBridgeNames[progress.stage]
+    const previous = this.lastBabelDocStage.get(paperId)
+    if (previous !== stage) {
+      if (previous) this.emit({ paperId, kind: 'babeldoc', type: 'progress_end', stage: previous })
+      this.lastBabelDocStage.set(paperId, stage)
+      this.emit({ paperId, kind: 'babeldoc', type: 'progress_start', stage })
+    }
+    const stageProgress = progress.stageTotal > 0 ? progress.stageCompleted / progress.stageTotal * 100 : 100
+    this.emit({
+      paperId, kind: 'babeldoc', type: 'progress_update', stage,
+      completed: progress.stageCompleted, total: progress.stageTotal,
+      summary: `${progress.stageCompleted}/${progress.stageTotal}`,
+      stageProgress, overallProgress: progress.overallProgress,
+      message: this.translator()('Translating PDF...')
+    })
+    if (progress.stage === 'backend' && progress.stageCompleted >= progress.stageTotal) {
+      this.emit({ paperId, kind: 'babeldoc', type: 'progress_end', stage })
+      this.lastBabelDocStage.delete(paperId)
+    }
+  }
+}
+
+export function parseBabelDocPageRange(value: string): number[] | null {
+  const source = value.trim()
+  if (!source) return null
+  const pages = new Set<number>()
+  for (const rawPart of source.split(',')) {
+    const part = rawPart.trim()
+    const range = /^(\d+)\s*-\s*(\d+)$/.exec(part)
+    if (range) {
+      const start = Number(range[1])
+      const end = Number(range[2])
+      if (start < 1 || end < start || end - start > 10_000) throw new Error(`Invalid BabelDOC page range: ${part}`)
+      for (let page = start; page <= end; page += 1) pages.add(page)
+      continue
+    }
+    if (!/^\d+$/.test(part) || Number(part) < 1) throw new Error(`Invalid BabelDOC page range: ${part || source}`)
+    pages.add(Number(part))
+  }
+  return [...pages].sort((a, b) => a - b)
+}
+
+function babelDocDiagnostics(value: BabelDocPipelineDiagnostics): BabelDocTranslationDiagnostics {
+  const translation = value.translationReport
+  const semantic = value.semanticEnrichmentReport
+  return {
+    semantic_status: value.semanticHintStatus,
+    translation_candidates: translation.candidateCount,
+    translation_completed: translation.translatedCount,
+    translation_failed: translation.failedCount,
+    provider_failures: translation.providerFailureCount,
+    placeholder_validation_failures: translation.placeholderValidationFailureCount,
+    semantic_translation_fallbacks: translation.semanticFallbackCount,
+    continuation_groups: translation.continuationGroupCount,
+    semantic_pdf_paragraphs: semantic?.pdfParagraphCount,
+    semantic_matched_pdf_paragraphs: semantic?.matchedPDFParagraphCount,
+    semantic_matched_pdf_coverage: semantic?.matchedPDFCoverage,
+    semantic_high_confidence: semantic?.highConfidenceMatchCount,
+    semantic_medium_confidence: semantic?.mediumConfidenceMatchCount,
+    semantic_low_confidence: semantic?.lowConfidenceMatchCount,
+    semantic_structural_changes_enabled: semantic?.structuralChangesEnabled,
+    semantic_elapsed_ms: semantic?.elapsedMilliseconds
+  }
+}
+
+async function runBabelDocWorker(
+  data: import('./babeldocWorkerProtocol').BabelDocWorkerData,
+  route: ResolvedRoute,
+  qps: number,
+  thinkingMode: 'enabled' | 'disabled',
+  signal: AbortSignal,
+  onProgress: (progress: BabelDocProgress) => void,
+  onStructuredDocument: (document: import('../../BabelDocKit').ILDocument) => Promise<void>
+): Promise<{ pdf: Uint8Array; diagnostics: BabelDocPipelineDiagnostics }> {
+  const worker = new Worker(join(__dirname, 'babeldocWorker.cjs'), {
+    workerData: data,
+    transferList: [data.pdf.buffer as ArrayBuffer]
+  })
+  let lastRequestAt = 0
+  let schedule = Promise.resolve()
+  let checkpointWrite = Promise.resolve()
+  const pace = async (): Promise<void> => {
+    const previous = schedule
+    let release: () => void = () => undefined
+    schedule = new Promise<void>((resolve) => { release = resolve })
+    await previous
+    try {
+      signal.throwIfAborted()
+      const interval = 1000 / Math.max(0.1, qps)
+      const wait = Math.max(0, lastRequestAt + interval - Date.now())
+      if (wait > 0) await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(resolve, wait)
+        signal.addEventListener('abort', () => { clearTimeout(timer); reject(signal.reason) }, { once: true })
+      })
+      lastRequestAt = Date.now()
+    } finally {
+      release()
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    let settled = false
+    const finish = (action: () => void): void => {
+      if (settled) return
+      settled = true
+      signal.removeEventListener('abort', abort)
+      action()
+    }
+    const abort = (): void => {
+      void worker.terminate()
+      finish(() => reject(signal.reason ?? new DOMException('Translation cancelled', 'AbortError')))
+    }
+    signal.addEventListener('abort', abort, { once: true })
+    worker.on('message', (message: BabelDocWorkerEvent) => {
+      if (message.type === 'progress') {
+        onProgress(message.progress)
+        return
+      }
+      if (message.type === 'structured_document') {
+        checkpointWrite = checkpointWrite.then(() => onStructuredDocument(message.document))
+        return
+      }
+      if (message.type === 'translate') {
+        void (async () => {
+          try {
+            await pace()
+            const response = await complete(requestFor({ ...route, thinkingMode }, [
+              { role: 'system', content: babelDocSystemPrompt(data.configuration.targetLanguage) },
+              { role: 'user', content: userPromptSections(message.text, message.context as ILTranslationContext) }
+            ], { defaultTemperature: 0.2, signal }))
+            worker.postMessage({ type: 'translation_result', id: message.id, text: response.text } satisfies BabelDocWorkerRequest)
+          } catch (error) {
+            worker.postMessage({
+              type: 'translation_error', id: message.id,
+              message: error instanceof Error ? error.message : String(error)
+            } satisfies BabelDocWorkerRequest)
+          }
+        })()
+        return
+      }
+      if (message.type === 'result') {
+        void checkpointWrite.then(() => {
+          void worker.terminate()
+          finish(() => resolve({ pdf: message.pdf, diagnostics: message.diagnostics }))
+        }).catch((error) => {
+          void worker.terminate()
+          finish(() => reject(error))
+        })
+        return
+      }
+      void worker.terminate()
+      finish(() => reject(new Error(message.message)))
+    })
+    worker.on('error', (error) => finish(() => reject(error)))
+    worker.on('exit', (code) => {
+      if (!settled) finish(() => reject(new Error(`BabelDOC worker stopped with exit code ${code}.`)))
+    })
+  })
 }

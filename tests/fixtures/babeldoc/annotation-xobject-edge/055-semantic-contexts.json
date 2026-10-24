@@ -1,0 +1,25 @@
+{
+  "0:0" : {
+    "associatedLayoutID" : null,
+    "atoms" : 0,
+    "completeSourceText" : "Annotated form",
+    "continuationGroupID" : null,
+    "environment" : null,
+    "fragmentCount" : 1,
+    "fragmentIndex" : 0,
+    "matchConfidence" : "medium",
+    "nextSourceParagraph" : null,
+    "previousSourceParagraph" : null,
+    "role" : "paragraph",
+    "sectionPath" : [
+      {
+        "level" : 1,
+        "title" : "Introduction"
+      }
+    ],
+    "sourceBlockIDs" : [
+      "mock-0-0"
+    ],
+    "translationTemplate" : null
+  }
+}

@@ -11,3 +11,6 @@ RebuildPDFKit/bin/
 !.env.example
 RebuildPDFKit/.build/*
 scripts/latex-trans-parity/.build/
+scripts/babeldoc-parity/.build/
+BabelDocKit/.build/
+BabelDocKit/runtime/

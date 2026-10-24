@@ -1,0 +1,101 @@
+[
+  {
+    "detections" : [
+      {
+        "classIndex" : 1,
+        "className" : "plain text",
+        "confidence" : 0.8312128,
+        "id" : 1,
+        "imageBox" : {
+          "x0" : 220.73264,
+          "x1" : 561.9438,
+          "y0" : 393.36325,
+          "y1" : 705.2451
+        },
+        "pdfBox" : {
+          "x0" : 219,
+          "x1" : 562,
+          "y0" : 85,
+          "y1" : 399
+        }
+      },
+      {
+        "classIndex" : 2,
+        "className" : "abandon",
+        "confidence" : 0.81146175,
+        "id" : 2,
+        "imageBox" : {
+          "x0" : 548.24335,
+          "x1" : 559.17163,
+          "y0" : 747.34814,
+          "y1" : 757.76886
+        },
+        "pdfBox" : {
+          "x0" : 547,
+          "x1" : 560,
+          "y0" : 33,
+          "y1" : 45
+        }
+      },
+      {
+        "classIndex" : 2,
+        "className" : "abandon",
+        "confidence" : 0.53794503,
+        "id" : 3,
+        "imageBox" : {
+          "x0" : 197.85873,
+          "x1" : 273.17944,
+          "y0" : 339.20096,
+          "y1" : 358.17456
+        },
+        "pdfBox" : {
+          "x0" : 196,
+          "x1" : 274,
+          "y0" : 432,
+          "y1" : 453
+        }
+      },
+      {
+        "classIndex" : 0,
+        "className" : "title",
+        "confidence" : 0.46815094,
+        "id" : 4,
+        "imageBox" : {
+          "x0" : 197.85873,
+          "x1" : 273.17944,
+          "y0" : 339.20096,
+          "y1" : 358.17456
+        },
+        "pdfBox" : {
+          "x0" : 196,
+          "x1" : 274,
+          "y0" : 432,
+          "y1" : 453
+        }
+      }
+    ],
+    "pageIndex" : 0,
+    "pdfCropBox" : {
+      "x0" : 0,
+      "x1" : 612,
+      "y0" : 0,
+      "y1" : 792
+    },
+    "pdfMediaBox" : {
+      "x0" : 0,
+      "x1" : 612,
+      "y0" : 0,
+      "y1" : 792
+    },
+    "pdfPointSize" : {
+      "height" : 792,
+      "width" : 612
+    },
+    "rotationDegrees" : 0,
+    "sourcePageNumber" : 1,
+    "sourcePixelSize" : {
+      "height" : 792,
+      "width" : 612
+    }
+  }
+]

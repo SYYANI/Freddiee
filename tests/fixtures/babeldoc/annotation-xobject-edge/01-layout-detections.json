@@ -1,0 +1,65 @@
+[
+  {
+    "detections" : [
+      {
+        "classIndex" : 0,
+        "className" : "title",
+        "confidence" : 0.6841923,
+        "id" : 1,
+        "imageBox" : {
+          "x0" : 18.98328,
+          "x1" : 103.13486,
+          "y0" : 23.836046,
+          "y1" : 36.28491
+        },
+        "pdfBox" : {
+          "x0" : 17,
+          "x1" : 104,
+          "y0" : 142,
+          "y1" : 157
+        }
+      },
+      {
+        "classIndex" : 3,
+        "className" : "figure",
+        "confidence" : 0.61705095,
+        "id" : 2,
+        "imageBox" : {
+          "x0" : 125.25901,
+          "x1" : 200.51527,
+          "y0" : 79.28656,
+          "y1" : 120.501076
+        },
+        "pdfBox" : {
+          "x0" : 124,
+          "x1" : 201,
+          "y0" : 58,
+          "y1" : 101
+        }
+      }
+    ],
+    "pageIndex" : 0,
+    "pdfCropBox" : {
+      "x0" : 0,
+      "x1" : 240,
+      "y0" : 0,
+      "y1" : 180
+    },
+    "pdfMediaBox" : {
+      "x0" : 0,
+      "x1" : 240,
+      "y0" : 0,
+      "y1" : 180
+    },
+    "pdfPointSize" : {
+      "height" : 180,
+      "width" : 240
+    },
+    "rotationDegrees" : 0,
+    "sourcePageNumber" : 1,
+    "sourcePixelSize" : {
+      "height" : 180,
+      "width" : 240
+    }
+  }
+]

@@ -25,7 +25,7 @@ interface TranslationRun {
   outcome?: CapsulePhase
   needsSetup?: boolean
   logPath?: string
-  kind?: 'html' | 'latex' | 'scan'
+  kind?: 'html' | 'latex' | 'scan' | 'babeldoc'
 }
 
 const annotationColors: Array<{ id: string; title: string; color: string }> = [
@@ -84,6 +84,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   const [runs, setRuns] = useState<Record<string, TranslationRun>>({})
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [originalPageCount, setOriginalPageCount] = useState<number>()
+  const [pdfHasText, setPdfHasText] = useState<boolean>()
   const [findVisible, setFindVisible] = useState(false)
   const [findQuery, setFindQuery] = useState('')
   const [committedQuery, setCommittedQuery] = useState('')
@@ -173,10 +174,14 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
 
   useEffect(() => {
     setOriginalPageCount(undefined)
+    setPdfHasText(undefined)
     if (!paper || !pdf) return
     let cancelled = false
     void window.freddie.library.pageCount(paper.id, pdf.id).then((result) => {
-      if (!cancelled) setOriginalPageCount(result.pageCount)
+      if (!cancelled) {
+        setOriginalPageCount(result.pageCount)
+        setPdfHasText(result.hasText)
+      }
     }).catch(() => undefined)
     return () => {
       cancelled = true
@@ -196,6 +201,8 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
       let next: TranslationRun = { ...previous, kind: event.kind === 'abstract' ? previous.kind : event.kind }
       if (event.type === 'status') next = { ...next, working: true, message: event.message, cancelling: event.message === t('Cancelling translation...') || previous.cancelling }
       if (event.type === 'progress') next = { ...next, working: true, message: event.message, completed: event.completed, total: event.total, summary: event.summary }
+      if (event.type === 'progress_start') next = { ...next, working: true, message: event.message ?? t('Translating PDF...') }
+      if (event.type === 'progress_update') next = { ...next, working: true, message: event.message, completed: event.completed, total: event.total, summary: event.summary }
       if (event.type === 'finished') next = { working: false, cancelling: false, message: event.message, outcome: { kind: 'completed' }, kind: next.kind }
       if (event.type === 'cancelled') next = { working: false, cancelling: false, message: event.message, outcome: { kind: 'cancelled' }, kind: next.kind }
       if (event.type === 'failed') next = { working: false, cancelling: false, message: event.message, needsSetup: event.needsSetup, logPath: event.logPath, kind: next.kind }
@@ -220,7 +227,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
       setStatusMessage(plain ? null : event.message ?? null)
       // Show the saved page, including segments that arrived while it was reloading.
       if (event.kind === 'html') setHtmlReload((value) => value + 1)
-      if (event.kind === 'latex' || event.kind === 'scan') {
+      if (event.kind === 'latex' || event.kind === 'scan' || event.kind === 'babeldoc') {
         setPdfReload((value) => value + 1)
         setReaderMode('bilingualPDF')
         setLastPDFMode('bilingualPDF')
@@ -419,6 +426,18 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
     }
   }
 
+  const startBabeldoc = async (): Promise<void> => {
+    if (!paper) return
+    setStatusMessage(null)
+    setRuns((current) => ({ ...current, [paper.id]: { working: true, cancelling: false, message: t('Preparing BabelDOC translation...'), kind: 'babeldoc' } }))
+    try {
+      await window.freddie.translation.translateBabeldocPDF(paper.id)
+    } catch (error) {
+      setRuns((current) => ({ ...current, [paper.id]: { working: false, cancelling: false } }))
+      setStatusMessage(errorText(error))
+    }
+  }
+
   const batch = settings.pdfTranslationBatchSize
   const continuePDF = (lastPage?: number): void => {
     if (!continuable || !translated?.translatedLastPage || !originalPageCount) return
@@ -468,14 +487,23 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
 
   const showTranslateMenu = async (anchor: HTMLElement): Promise<void> => {
     const choice = await popupMenu([
+      { id: 'pdf', label: t('Translate PDF'), enabled: Boolean(pdf) && pdfHasText !== undefined },
+      { type: 'separator' },
       { id: 'html', label: t('Translate HTML'), enabled: Boolean(html) },
       { id: 'latex', label: t('Translate arXiv LaTeX'), enabled: Boolean(paper?.arxivId) },
+      { id: 'babeldoc', label: t('Translate Born-Digital PDF with BabelDOC'), enabled: Boolean(pdf) && pdfHasText === true },
       continuable
         ? { id: 'more', label: t('Translate More PDF Pages'), enabled: Boolean(pdf) }
         : { id: 'scan', label: t('Translate Scanned PDF…'), enabled: Boolean(pdf) }
     ], anchor)
+    if (choice === 'pdf') {
+      if (pdfHasText === false) void translateScan()
+      else if (paper?.arxivId) void startLatex()
+      else void startBabeldoc()
+    }
     if (choice === 'html') void translateHTML()
     if (choice === 'latex') void startLatex()
+    if (choice === 'babeldoc') void startBabeldoc()
     if (choice === 'scan') void translateScan()
     if (choice === 'more') continuePDF()
   }

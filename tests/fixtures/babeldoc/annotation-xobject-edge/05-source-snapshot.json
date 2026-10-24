@@ -1,0 +1,159 @@
+{
+  "pageCharacters" : [
+    [
+
+    ]
+  ],
+  "pages" : [
+    [
+      {
+        "anchors" : [
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 65,
+            "x" : 20,
+            "y" : 146,
+            "y2" : 146
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 110,
+            "x" : 28.0040016,
+            "y" : 146,
+            "y2" : 146
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 110,
+            "x" : 34.6760025,
+            "y" : 146,
+            "y2" : 146
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 111,
+            "x" : 41.3480034,
+            "y" : 146,
+            "y2" : 146
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 116,
+            "x" : 48.0200043,
+            "y" : 146,
+            "y2" : 146
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 97,
+            "x" : 51.3560028,
+            "y" : 146,
+            "y2" : 146
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 116,
+            "x" : 58.0280037,
+            "y" : 146,
+            "y2" : 146
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 101,
+            "x" : 61.364006,
+            "y" : 146,
+            "y2" : 146
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 100,
+            "x" : 68.0360107,
+            "y" : 146,
+            "y2" : 146
+          },
+          {
+            "isOptional" : true,
+            "orientation" : 0,
+            "unicode" : 32,
+            "x" : 74.7080078,
+            "y" : 146,
+            "y2" : 146
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 102,
+            "x" : 78.0440063,
+            "y" : 146,
+            "y2" : 146
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 111,
+            "x" : 81.3800049,
+            "y" : 146,
+            "y2" : 146
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 114,
+            "x" : 88.052002,
+            "y" : 146,
+            "y2" : 146
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 109,
+            "x" : 92.0480042,
+            "y" : 146,
+            "y2" : 146
+          }
+        ],
+        "extent" : {
+          "x" : 20,
+          "x2" : 102.044006,
+          "y" : 143.516,
+          "y2" : 158
+        }
+      },
+      {
+        "anchors" : [
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 88,
+            "x" : 129,
+            "y" : 76.625,
+            "y2" : 76.625
+          },
+          {
+            "isOptional" : false,
+            "orientation" : 0,
+            "unicode" : 79,
+            "x" : 141.005997,
+            "y" : 76.625,
+            "y2" : 76.625
+          }
+        ],
+        "extent" : {
+          "x" : 129,
+          "x2" : 155.009995,
+          "y" : 76.283,
+          "y2" : 94.625
+        }
+      }
+    ]
+  ]
+}

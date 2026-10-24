@@ -45,7 +45,7 @@ Freddie keeps its library below the platform application-data directory in `Fred
 
 ```text
 Freddie/
-  library.json                 papers, attachments, notes, folders, settings (schemaVersion 3)
+  library.json                 papers, attachments, notes, folders, settings (schemaVersion 6)
   secrets.json                 API keys encrypted per provider with the OS credential store
   Library/{paper id}/
     paper.pdf, paper.html      originals
@@ -61,7 +61,13 @@ User-authored data and translation outputs are written through a temporary file 
 
 ## PDF translation
 
-The Electron app has no BabelDOC dependency. PDFs are translated in-process by `RebuildPDFKit` (page images, Tesseract, a vision model and XeLaTeX) or, for arXiv papers with source, by `LaTeXTransKit`. Translated PDFs made by BabelDOC in native Freddie or in earlier versions of this app stay readable.
+Born-digital PDFs without an arXiv source are translated by the bundled
+`BabelDocKit`: MuPDF runs as committed WebAssembly, DocLayout-YOLO runs through
+`onnxruntime-node`, and CPU-heavy stages execute in a worker thread. Model
+requests remain in the Electron main process so API keys never enter the
+worker. PDFs without an extractable text layer use `RebuildPDFKit` (page
+images, Tesseract, a vision model and XeLaTeX); arXiv papers use
+`LaTeXTransKit`.
 
 ## Architecture
 

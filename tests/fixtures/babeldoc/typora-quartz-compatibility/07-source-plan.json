@@ -1,0 +1,275 @@
+{
+  "pages" : {
+    "0" : {
+      "glyphs" : [
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 1,
+          "unicode" : 99,
+          "x" : 80,
+          "y" : 110,
+          "y2" : 110
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 1,
+          "unicode" : 111,
+          "x" : 86,
+          "y" : 110,
+          "y2" : 110
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 1,
+          "unicode" : 100,
+          "x" : 92,
+          "y" : 110,
+          "y2" : 110
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 1,
+          "unicode" : 101,
+          "x" : 98,
+          "y" : 110,
+          "y2" : 110
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 86,
+          "x" : 20,
+          "y" : 145,
+          "y2" : 145
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 105,
+          "x" : 28.0040016,
+          "y" : 145,
+          "y2" : 145
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 115,
+          "x" : 30.6680012,
+          "y" : 145,
+          "y2" : 145
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 105,
+          "x" : 36.6679993,
+          "y" : 145,
+          "y2" : 145
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 98,
+          "x" : 39.3320007,
+          "y" : 145,
+          "y2" : 145
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 108,
+          "x" : 46.0040016,
+          "y" : 145,
+          "y2" : 145
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 101,
+          "x" : 48.6680031,
+          "y" : 145,
+          "y2" : 145
+        },
+        {
+          "isOptional" : true,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 32,
+          "x" : 55.340004,
+          "y" : 145,
+          "y2" : 145
+        },
+        {
+          "isOptional" : false,
+          "orientation" : 0,
+          "placement" : null,
+          "role" : 0,
+          "unicode" : 65,
+          "x" : 58.6760025,
+          "y" : 145,
+          "y2" : 145
+        }
+      ],
+      "overlayCharacters" : [
+        {
+          "box" : {
+            "x" : 20.24,
+            "x2" : 28.039999999999996,
+            "y" : 146.716,
+            "y2" : 154.516
+          },
+          "font_id" : "SourceHanSerifCN-Regular.ttf",
+          "glyph" : 24522,
+          "size" : 7.799999999999996,
+          "unicode" : "译"
+        },
+        {
+          "box" : {
+            "x" : 28.039999999999996,
+            "x2" : 33.30499999999999,
+            "y" : 146.716,
+            "y2" : 154.516
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 57,
+          "size" : 7.799999999999996,
+          "unicode" : "V"
+        },
+        {
+          "box" : {
+            "x" : 33.30499999999999,
+            "x2" : 35.80099999999999,
+            "y" : 146.716,
+            "y2" : 154.516
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 76,
+          "size" : 7.799999999999996,
+          "unicode" : "i"
+        },
+        {
+          "box" : {
+            "x" : 35.80099999999999,
+            "x2" : 39.31879999999999,
+            "y" : 146.716,
+            "y2" : 154.516
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 86,
+          "size" : 7.799999999999996,
+          "unicode" : "s"
+        },
+        {
+          "box" : {
+            "x" : 39.31879999999999,
+            "x2" : 41.81479999999999,
+            "y" : 146.716,
+            "y2" : 154.516
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 76,
+          "size" : 7.799999999999996,
+          "unicode" : "i"
+        },
+        {
+          "box" : {
+            "x" : 41.81479999999999,
+            "x2" : 46.603999999999985,
+            "y" : 146.716,
+            "y2" : 154.516
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 69,
+          "size" : 7.799999999999996,
+          "unicode" : "b"
+        },
+        {
+          "box" : {
+            "x" : 46.603999999999985,
+            "x2" : 49.021999999999984,
+            "y" : 146.716,
+            "y2" : 154.516
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 79,
+          "size" : 7.799999999999996,
+          "unicode" : "l"
+        },
+        {
+          "box" : {
+            "x" : 49.021999999999984,
+            "x2" : 53.19499999999998,
+            "y" : 146.716,
+            "y2" : 154.516
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 72,
+          "size" : 7.799999999999996,
+          "unicode" : "e"
+        },
+        {
+          "box" : {
+            "x" : 53.19499999999998,
+            "x2" : 55.22299999999998,
+            "y" : 146.716,
+            "y2" : 154.516
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 3,
+          "size" : 7.799999999999996,
+          "unicode" : " "
+        },
+        {
+          "box" : {
+            "x" : 55.22299999999998,
+            "x2" : 60.72199999999997,
+            "y" : 146.716,
+            "y2" : 154.516
+          },
+          "font_id" : "NotoSerif-Regular.ttf",
+          "glyph" : 36,
+          "size" : 7.799999999999996,
+          "unicode" : "A"
+        }
+      ],
+      "placements" : [
+
+      ],
+      "removedRegions" : [
+
+      ],
+      "removedTextRegions" : [
+        {
+          "x" : 20,
+          "x2" : 66.6800003,
+          "y" : 142.516,
+          "y2" : 157
+        }
+      ],
+      "underlayCurves" : 0
+    }
+  }
+}

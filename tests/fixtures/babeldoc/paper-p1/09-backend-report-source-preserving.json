@@ -1,0 +1,22 @@
+{
+  "pages" : [
+    {
+      "adoptedGlyphCount" : 0,
+      "fallbackReason" : null,
+      "glyphCount" : 1341,
+      "layerCount" : 1,
+      "matchedRequiredGlyphCount" : 298,
+      "misplacedGlyphCount" : 0,
+      "outcome" : "source-preserved",
+      "pageNumber" : 0,
+      "placedGlyphCount" : 8,
+      "placedGraphicCount" : 0,
+      "placementCount" : 8,
+      "removedGlyphCount" : 353,
+      "removedGraphicCount" : 0,
+      "requiredGlyphCount" : 298,
+      "unmatchedPlacedGlyphCount" : 0
+    }
+  ],
+  "renderingMode" : "source-preserving"
+}

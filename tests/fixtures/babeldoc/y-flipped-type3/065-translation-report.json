@@ -1,0 +1,12 @@
+{
+  "candidateCount" : 0,
+  "continuationGroupCount" : 0,
+  "failedCount" : 0,
+  "failedParagraphAddresses" : [
+
+  ],
+  "placeholderValidationFailureCount" : 0,
+  "providerFailureCount" : 0,
+  "semanticFallbackCount" : 0,
+  "translatedCount" : 0
+}

@@ -74,6 +74,7 @@ const api: FreddieAPI = {
     translateHTML: (paperId) => invoke('translation:html', paperId),
     translateLatex: (paperId) => invoke('translation:latex', paperId),
     translateScannedPDF: (paperId, lastPage) => invoke('translation:scan', paperId, lastPage),
+    translateBabeldocPDF: (paperId, pageRange) => invoke('translation:babeldoc', paperId, pageRange),
     cancel: (paperId) => invoke('translation:cancel', paperId),
     translateAbstract: (paperId) => invoke('translation:abstract', paperId),
     onEvent: (listener) => subscribe('translation:event', listener),

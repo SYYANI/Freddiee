@@ -1,0 +1,57 @@
+%PDF-1.7
+%µ¶
+% Written by MuPDF 1.29.0
+
+1 0 obj
+<</Type/Catalog/Pages 2 0 R/Info<</Producer(MuPDF 1.29.0)>>>>
+endobj
+
+2 0 obj
+<</Type/Pages/Count 1/Kids[4 0 R]>>
+endobj
+
+3 0 obj
+<<>>
+endobj
+
+4 0 obj
+<</Type/Page/MediaBox[0 0 240 180]/Rotate 0/Resources<</Font<</T3 6 0 R>>>>/Parent 2 0 R/Contents 7 0 R>>
+endobj
+
+5 0 obj
+<</Length 45>>
+stream
+600 0 0 -200 600 800 d1
+0 -200 600 1000 re f
+
+endstream
+endobj
+
+6 0 obj
+<</Type/Font/Subtype/Type3/Name/T3/FontBBox[0 -200 600 800]/FontMatrix[.002 0 0 .002 0 0]/CharProcs<</A 5 0 R>>/Encoding<</Type/Encoding/Differences[65/A]>>/FirstChar 65/LastChar 65/Widths[600]/Resources<<>>>>
+endobj
+
+7 0 obj
+<</Length 41>>
+stream
+BT /T3 10 Tf 1 0 0 1 20 80 Tm <41> Tj ET
+
+endstream
+endobj
+
+xref
+0 8
+0000000000 65535 f 
+0000000042 00000 n 
+0000000120 00000 n 
+0000000172 00000 n 
+0000000193 00000 n 
+0000000315 00000 n 
+0000000409 00000 n 
+0000000635 00000 n 
+
+trailer
+<</Size 8/Root 1 0 R/ID[<C2AF6DC2B3C286216FC2A2C3B31B0111><046EB14AE376A202DB0A63A914862443>]>>
+startxref
+725
+%%EOF
