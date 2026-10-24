@@ -108,7 +108,10 @@ keeps provider credentials and HTTP requests in the main process. Translation
 text crosses a typed request/response bridge one paragraph at a time. A
 structured-IL checkpoint is keyed by the source PDF, selected pages and layout
 model, while the final PDF is atomically installed as a `babeldoc` attachment
-only after a successful run.
+only after a successful run. A page selection limits which pages are translated;
+unselected pages stay in the output so the bilingual reader keeps matching page
+indices. Checkpoint write failures are logged and translation continues without
+the optional cache.
 
 Stages 5-8 (`babeldoc-stage4-parity.test.ts` and
 `babeldoc-translation-parity.test.ts`): StylesAndFormulas, semantic-hint

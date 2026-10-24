@@ -530,7 +530,8 @@ export class TranslationService {
           layoutModelPath: babelDocLayoutModelPath(runtimeDirectory),
           targetLanguage: settings.targetLanguage,
           targetFontDirectory: babelDocFontDirectory(runtimeDirectory),
-          onlyIncludeTranslatedPages: pages !== null,
+          // The bilingual reader synchronizes by physical page index.
+          onlyIncludeTranslatedPages: false,
           documentTitle: paper.title,
           glossary,
           semanticHints,
@@ -615,6 +616,8 @@ export class TranslationService {
 export function parseBabelDocPageRange(value: string): number[] | null {
   const source = value.trim()
   if (!source) return null
+  // Page indices cross the wasm boundary as signed 32-bit integers.
+  const validPage = (page: number): boolean => Number.isSafeInteger(page) && page >= 1 && page <= 0x7fffffff
   const pages = new Set<number>()
   for (const rawPart of source.split(',')) {
     const part = rawPart.trim()
@@ -622,11 +625,11 @@ export function parseBabelDocPageRange(value: string): number[] | null {
     if (range) {
       const start = Number(range[1])
       const end = Number(range[2])
-      if (start < 1 || end < start || end - start > 10_000) throw new Error(`Invalid BabelDOC page range: ${part}`)
+      if (!validPage(start) || !validPage(end) || end < start || end - start > 10_000) throw new Error(`Invalid BabelDOC page range: ${part}`)
       for (let page = start; page <= end; page += 1) pages.add(page)
       continue
     }
-    if (!/^\d+$/.test(part) || Number(part) < 1) throw new Error(`Invalid BabelDOC page range: ${part || source}`)
+    if (!/^\d+$/.test(part) || !validPage(Number(part))) throw new Error(`Invalid BabelDOC page range: ${part || source}`)
     pages.add(Number(part))
   }
   return [...pages].sort((a, b) => a - b)
@@ -710,6 +713,10 @@ async function runBabelDocWorker(
       }
       if (message.type === 'structured_document') {
         checkpointWrite = checkpointWrite.then(() => onStructuredDocument(message.document))
+          .catch((error) => {
+            // Checkpoints are optional; handle failures before translation completes.
+            console.warn('Unable to save BabelDOC layout checkpoint; continuing translation.', error)
+          })
         return
       }
       if (message.type === 'translate') {

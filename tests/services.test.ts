@@ -78,6 +78,18 @@ describe('BabelDOC integration', () => {
     expect(() => parseBabelDocPageRange('0')).toThrow()
   })
 
+  it('rejects unsafe or overflowing page numbers before expanding ranges', () => {
+    for (const value of [
+      '9007199254740992', '9007199254740992-9007199254740992',
+      '1-9007199254740992', '2147483648', '2147483647-2147483648',
+      '9'.repeat(400), `${'9'.repeat(400)}-${'9'.repeat(400)}`,
+      '1-10002', '1,,2'
+    ]) {
+      expect(() => parseBabelDocPageRange(value), value).toThrow(/Invalid BabelDOC page range/)
+    }
+    expect(parseBabelDocPageRange('2147483646-2147483647')).toEqual([2147483646, 2147483647])
+  })
+
   it('derives a validated semantic sidecar from parsed LaTeX units', () => {
     const document = semanticDocumentFromParsedProject({
       mainFile: 'main.tex', inputs: [], environments: [], captions: [], newCommands: [], sections: [],
