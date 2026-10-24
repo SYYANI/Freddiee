@@ -1,2 +1,6 @@
 # LaTeXTransKit parity fixtures are compared byte for byte, including their line endings.
 tests/fixtures/latex-trans/** -text
+# BabelDOC wasm products and the pinned adapter source are hash-verified against
+# wasm-manifest.json, so git must never rewrite their line endings.
+BabelDocKit/resources/wasm/** -text
+BabelDocKit/native/babeldoc_wasm.c -text

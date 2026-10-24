@@ -64,7 +64,9 @@ export function loadBabelDocWasm(appPath: string = process.cwd()): BabelDocWasmB
     if (bytes.length !== pinned.size || sha256 !== pinned.sha256) {
       throw new BabelDocWasmError(
         `BabelDocKit/resources/wasm/${name} does not match wasm-manifest.json ` +
-        `(expected ${pinned.size} bytes, sha256 ${pinned.sha256}).`
+        `(expected ${pinned.size} bytes, sha256 ${pinned.sha256}). On Windows this ` +
+        'usually means git checked the file out with CRLF line endings; restore it ' +
+        'with `git checkout -- BabelDocKit/resources/wasm`.'
       )
     }
   }
