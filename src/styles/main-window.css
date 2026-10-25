@@ -414,6 +414,8 @@ html[data-appearance="paper"] .reader-pane {
 }
 
 .reader-toolbar {
+  container-name: reader-toolbar;
+  container-type: inline-size;
   position: fixed;
   top: 0;
   left: var(--reader-left);
@@ -455,6 +457,38 @@ html[data-platform="linux"] .reader-toolbar {
   align-items: center;
   gap: 12px;
   min-width: 0;
+}
+
+/* Keep the inspector toggle independent from controls that compact on narrow readers. */
+.reader-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.reader-inspector-toggle {
+  flex: none;
+}
+
+@container reader-toolbar (max-width: 860px) {
+  .window-title,
+  .reader-view-tools {
+    display: none;
+  }
+
+  .toolbar-trailing,
+  .reader-controls {
+    gap: 6px;
+  }
+
+  .reader-controls .segment {
+    padding-inline: 8px;
+  }
+
+  .reader-controls .icon-button {
+    min-width: 30px;
+  }
 }
 
 .reader-body {

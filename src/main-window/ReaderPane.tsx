@@ -746,7 +746,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
         <div className="window-title">{titleBarTitle}</div>
         <div className="toolbar-trailing no-drag">
           {paper && (
-            <>
+            <div className="reader-controls">
               <SegmentedPicker
                 label={t('Reader')}
                 title={t('Switch between HTML and PDF reading')}
@@ -764,12 +764,12 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
                 options={[{ value: 'original', title: t('Original') }, { value: 'bilingual', title: t('Bilingual') }, { value: 'translated', title: t('Translated') }]}
               />
               {readerMode === 'html' ? (
-                <ToolbarGroup>
+                <ToolbarGroup className="reader-view-tools">
                   <IconButton icon="textformat.size" text={language === 'zh-Hans' ? '大小' : 'Aa'} indicator label={t('HTML Font Size: %d', fontSize)} onClick={(event) => void showToolsMenu(event.currentTarget)} />
                 </ToolbarGroup>
               ) : null}
               {readerMode !== 'html' && settings.showPDFZoomControls ? (
-                <ToolbarGroup>
+                <ToolbarGroup className="reader-view-tools">
                   <IconButton icon="minus" size={18} label={t('Zoom Out')} onMouseEnter={() => setZoomPreview(true)} onMouseLeave={() => setZoomPreview(false)} onClick={() => (readerMode === 'bilingualPDF' ? dualRef.current?.active() : pdfRef.current)?.zoomOut()} />
                   <IconButton icon="plus" size={18} label={t('Zoom In')} onMouseEnter={() => setZoomPreview(true)} onMouseLeave={() => setZoomPreview(false)} onClick={() => (readerMode === 'bilingualPDF' ? dualRef.current?.active() : pdfRef.current)?.zoomIn()} />
                 </ToolbarGroup>
@@ -792,9 +792,9 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
                 <IconButton icon="translate" size={19} label={translateHelp} disabled={isWorking || regionEditing || !hasTranslatableContent} onClick={(event) => void showTranslateMenu(event.currentTarget)} />
                 <IconButton icon="square.and.arrow.up" size={18} label={exportingPDF ? t('Exporting PDF…') : t('Share Paper')} onClick={(event) => void showShareMenu(event.currentTarget)} />
               </ToolbarGroup>
-            </>
+            </div>
           )}
-          <ToolbarGroup className="circle">
+          <ToolbarGroup className="reader-inspector-toggle circle">
             <IconButton icon="sidebar.trailing" size={19} label={props.inspectorCollapsed ? t('Show Inspector') : t('Hide Inspector')} onClick={props.onToggleInspector} />
           </ToolbarGroup>
         </div>

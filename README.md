@@ -20,7 +20,7 @@ Native Swift version: [SYYANI/Freddie](https://github.com/SYYANI/Freddie)
 
 ## Screenshot
 
-![Freddie's native Swift interface showing side-by-side bilingual PDF reading](docs/images/freddie-swift-bilingual-pdf.png)
+<img width="1624" height="977" alt="Image" src="https://github.com/user-attachments/assets/7accab12-26e2-4916-a317-23b205a1d4f1" />
 
 *The native Swift version of Freddie. The cross-platform app follows the same library, reader, and inspector layout.*
 
