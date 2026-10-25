@@ -218,10 +218,6 @@ html[data-appearance="paper"] .sidebar {
   outline: none;
 }
 
-.sidebar-section + .sidebar-section {
-  margin-top: 14px;
-}
-
 .section-header {
   position: relative;
   display: flex;
