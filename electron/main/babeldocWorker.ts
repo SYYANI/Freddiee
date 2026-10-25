@@ -16,8 +16,16 @@ process.env.FREDDIE_APP_PATH = data.appPath
 
 let requestID = 0
 const pending = new Map<number, { resolve: (text: string) => void; reject: (error: Error) => void }>()
+const cancellation = new AbortController()
 
 port.on('message', (message: BabelDocWorkerRequest) => {
+  if (message.type === 'cancel') {
+    const reason = new DOMException('Translation cancelled', 'AbortError')
+    cancellation.abort(reason)
+    for (const request of pending.values()) request.reject(reason)
+    pending.clear()
+    return
+  }
   const request = pending.get(message.id)
   if (!request) return
   pending.delete(message.id)
@@ -30,6 +38,7 @@ const translator: AsyncILTextTranslator = {
   formulaPlaceholder: (id) => `[BABELDOC_FORMULA_${id}]`,
   translate: async (text) => translator.translateWithContext!(text, {}),
   async translateWithContext(text: string, context: ILTranslationContext): Promise<string> {
+    cancellation.signal.throwIfAborted()
     const id = ++requestID
     const translated = await new Promise<string>((resolve, reject) => {
       pending.set(id, { resolve, reject })
@@ -43,8 +52,9 @@ const translator: AsyncILTextTranslator = {
 
 void (async () => {
   try {
-    const pipeline = createPipeline(data.pdf, data.pages, data.configuration)
+    const pipeline = createPipeline(data.pdf, data.pages, data.configuration, cancellation.signal)
     const onProgress = (progress: Parameters<NonNullable<Parameters<typeof pipeline.translatePDF>[1]>>[0]): void => {
+      cancellation.signal.throwIfAborted()
       port.postMessage({ type: 'progress', progress } satisfies BabelDocWorkerEvent)
     }
     let result
@@ -64,6 +74,10 @@ void (async () => {
       [pdf.buffer as ArrayBuffer]
     )
   } catch (error) {
+    if (cancellation.signal.aborted) {
+      port.postMessage({ type: 'cancelled' } satisfies BabelDocWorkerEvent)
+      return
+    }
     const value = error instanceof Error ? error : new Error(String(error))
     port.postMessage({ type: 'error', message: value.message, stack: value.stack } satisfies BabelDocWorkerEvent)
   }

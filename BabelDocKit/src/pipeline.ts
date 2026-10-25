@@ -106,9 +106,11 @@ export interface PipelineStages {
 export function createPipeline(
   pdf: Uint8Array,
   pages: number[] | null,
-  configuration: BabelDocPipelineConfiguration
+  configuration: BabelDocPipelineConfiguration,
+  signal?: AbortSignal
 ): PipelineStages {
   const report = (onProgress: ((progress: BabelDocProgress) => void) | undefined, stage: BabelDocStage, completed: number, total: number): void => {
+    signal?.throwIfAborted()
     if (!onProgress) return
     const stageIndex = stageOrder.indexOf(stage)
     const fraction = total > 0 ? completed / total : 1
@@ -141,6 +143,7 @@ export function createPipeline(
     const pageResults: PageLayoutResult[] = []
     report(onProgress, 'layout', 0, selectedPages.length)
     for (const [index, pageNumber] of selectedPages.entries()) {
+      signal?.throwIfAborted()
       const loaded = await loadPDFPages(pdf, pageNumber, wasm)
       const page = loaded.pages[0]
       if (!page) throw new Error(`PDF page ${pageNumber} unavailable.`)
@@ -156,6 +159,7 @@ export function createPipeline(
 
     report(onProgress, 'styles', 0, 1)
     for (const page of document.page ?? []) {
+      signal?.throwIfAborted()
       StylesAndFormulas.processPage(page, {
         skipFormulaOffsetCalculation: false,
         ocrWorkaround: false,
@@ -207,7 +211,8 @@ export function createPipeline(
     }
     const translationReport = await ILTranslator.processAsync(
       workingDocument, translator, translationConfiguration,
-      (completed, total) => report(onProgress, 'translation', completed, total))
+      (completed, total) => report(onProgress, 'translation', completed, total),
+      signal)
 
     report(onProgress, 'typesetting', 0, 1)
     const failedAddresses = new Set(translationReport.failedParagraphAddresses)

@@ -124,6 +124,20 @@ app.on('window-all-closed', () => {
   if (!isMac) app.quit()
 })
 
+// Every quit path (closing the last window, Cmd+Q, the menu) passes through
+// here. A BabelDOC worker torn down inside onnxruntime aborts the process, so
+// cancel running translations and let them unwind before quitting for real.
+let translationsStopped = false
+let stoppingTranslations: Promise<void> | undefined
+app.on('before-quit', (event) => {
+  if (translationsStopped || !translations?.hasRunningJobs()) return
+  event.preventDefault()
+  stoppingTranslations ??= translations.shutdown().finally(() => {
+    translationsStopped = true
+    app.quit()
+  })
+})
+
 // MARK: Appearance and language
 
 function systemDarkMode(): boolean {

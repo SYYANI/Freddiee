@@ -312,11 +312,42 @@ export class TranslationService {
     job.controller.abort(new DOMException('Translation cancelled', 'AbortError'))
   }
 
+  hasRunningJobs(): boolean {
+    return this.jobs.size > 0
+  }
+
+  /**
+   * Cancels every running job and resolves once all of them have unwound, or
+   * after `timeoutMs`. Quitting with a BabelDOC worker still inside
+   * onnxruntime destroys its environment mid-call and aborts the process, so
+   * the app waits for workers to stop on their own first.
+   */
+  async shutdown(timeoutMs = babelDocCancelTimeoutMs + 5_000): Promise<void> {
+    if (this.jobs.size === 0) return
+    await new Promise<void>((resolve) => {
+      const done = (): void => {
+        clearTimeout(timer)
+        this.idleWaiters.delete(done)
+        resolve()
+      }
+      const timer = setTimeout(done, timeoutMs)
+      this.idleWaiters.add(done)
+      for (const paperId of [...this.jobs.keys()]) this.cancel(paperId)
+    })
+  }
+
+  private readonly idleWaiters = new Set<() => void>()
+
   private begin(paperId: string, kind: 'html' | 'latex' | 'scan' | 'babeldoc'): AbortController {
     if (this.jobs.has(paperId)) throw new Error(this.translator()('Translation in Progress'))
     const controller = new AbortController()
     this.jobs.set(paperId, { controller, kind })
     return controller
+  }
+
+  private end(paperId: string): void {
+    this.jobs.delete(paperId)
+    if (this.jobs.size === 0) for (const notify of [...this.idleWaiters]) notify()
   }
 
   private fail(paperId: string, kind: 'html' | 'latex' | 'scan' | 'babeldoc', error: unknown, signal: AbortSignal, logPath?: string): void {
@@ -438,7 +469,7 @@ export class TranslationService {
     } catch (error) {
       this.fail(paperId, 'html', error, signal)
     } finally {
-      this.jobs.delete(paperId)
+      this.end(paperId)
     }
   }
 
@@ -466,7 +497,7 @@ export class TranslationService {
       const logPath = error && typeof error === 'object' && 'logPath' in error && typeof error.logPath === 'string' ? error.logPath : undefined
       this.fail(paperId, 'latex', error, controller.signal, logPath)
     } finally {
-      this.jobs.delete(paperId)
+      this.end(paperId)
     }
   }
 
@@ -478,7 +509,7 @@ export class TranslationService {
     } catch (error) {
       this.fail(paperId, 'scan', error, controller.signal)
     } finally {
-      this.jobs.delete(paperId)
+      this.end(paperId)
     }
   }
 
@@ -653,7 +684,7 @@ export class TranslationService {
       this.fail(paperId, 'babeldoc', error, signal)
     } finally {
       this.lastBabelDocStage.delete(paperId)
-      this.jobs.delete(paperId)
+      this.end(paperId)
     }
   }
 
@@ -697,6 +728,13 @@ export class TranslationService {
 
 /** A runaway range string must not build an unbounded page set. */
 export const maximumBabelDocSelectedPages = 10_000
+
+/**
+ * How long a cancelled BabelDOC worker may take to reach a safe stopping point
+ * before it is terminated anyway. One layout inference finishes well within
+ * this, so the fallback only interrupts JS/WASM stages, where termination is safe.
+ */
+export const babelDocCancelTimeoutMs = 15_000
 
 export function parseBabelDocPageRange(value: string): number[] | null {
   const source = value.trim()
@@ -839,15 +877,29 @@ async function runBabelDocWorker(
 
   return new Promise((resolve, reject) => {
     let settled = false
+    let cancelWatchdog: NodeJS.Timeout | undefined
     const finish = (action: () => void): void => {
       if (settled) return
       settled = true
+      clearTimeout(cancelWatchdog)
       signal.removeEventListener('abort', abort)
       action()
     }
+    const cancelled = (): unknown => signal.reason ?? new DOMException('Translation cancelled', 'AbortError')
     const abort = (): void => {
-      void worker.terminate()
-      finish(() => reject(signal.reason ?? new DOMException('Translation cancelled', 'AbortError')))
+      // onnxruntime may still be executing a native session.run() callback.
+      // Terminating the Node worker in that state can make N-API throw into a
+      // destroyed environment and abort the entire Electron process. Ask the
+      // worker to stop at the next safe pipeline boundary; it acknowledges only
+      // after the active native operation has unwound.
+      worker.postMessage({ type: 'cancel' } satisfies BabelDocWorkerRequest)
+      // A long JS/WASM stage has no checkpoint to stop at; do not leave the
+      // job stuck in "Cancelling" until it finishes.
+      cancelWatchdog = setTimeout(() => {
+        console.warn(`BabelDOC worker did not stop within ${babelDocCancelTimeoutMs} ms of cancellation; terminating it.`)
+        void worker.terminate()
+        finish(() => reject(cancelled()))
+      }, babelDocCancelTimeoutMs)
     }
     signal.addEventListener('abort', abort, { once: true })
     worker.on('message', (message: BabelDocWorkerEvent) => {
@@ -871,20 +923,36 @@ async function runBabelDocWorker(
               { role: 'system', content: babelDocSystemPrompt(data.configuration.targetLanguage) },
               { role: 'user', content: userPromptSections(message.text, message.context as ILTranslationContext) }
             ], { defaultTemperature: 0.2, signal }))
-            worker.postMessage({ type: 'translation_result', id: message.id, text: response.text } satisfies BabelDocWorkerRequest)
+            if (!signal.aborted && !settled) {
+              worker.postMessage({ type: 'translation_result', id: message.id, text: response.text } satisfies BabelDocWorkerRequest)
+            }
           } catch (error) {
-            worker.postMessage({
-              type: 'translation_error', id: message.id,
-              message: error instanceof Error ? error.message : String(error)
-            } satisfies BabelDocWorkerRequest)
+            if (!signal.aborted && !settled) {
+              worker.postMessage({
+                type: 'translation_error', id: message.id,
+                message: error instanceof Error ? error.message : String(error)
+              } satisfies BabelDocWorkerRequest)
+            }
           }
         })()
+        return
+      }
+      if (message.type === 'cancelled') {
+        // Like a result, let an in-flight checkpoint finish before the job ends.
+        void checkpointWrite.then(() => {
+          void worker.terminate()
+          finish(() => reject(cancelled()))
+        })
         return
       }
       if (message.type === 'result') {
         void checkpointWrite.then(() => {
           void worker.terminate()
-          finish(() => resolve({ pdf: message.pdf, diagnostics: message.diagnostics }))
+          if (signal.aborted) {
+            finish(() => reject(cancelled()))
+          } else {
+            finish(() => resolve({ pdf: message.pdf, diagnostics: message.diagnostics }))
+          }
         }).catch((error) => {
           void worker.terminate()
           finish(() => reject(error))

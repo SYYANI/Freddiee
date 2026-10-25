@@ -10,7 +10,7 @@ import type { BabelDocWorkerData, BabelDocWorkerEvent } from '../electron/main/b
 import * as files from '../electron/main/files'
 import type { SecretStore } from '../electron/main/secrets'
 import { builtInProviders, FreddieStore } from '../electron/main/store'
-import { TranslationService } from '../electron/main/translation'
+import { babelDocCancelTimeoutMs, TranslationService } from '../electron/main/translation'
 import { createTranslator } from '../shared/i18n'
 import type { TranslationEvent } from '../shared/types'
 
@@ -132,13 +132,95 @@ describe('BabelDOC translation service', () => {
     expect(store.attachments(paperId).some((item) => item.kind === 'translatedPDF')).toBe(false)
   })
 
-  it('terminates an active worker when cancelled', async () => {
+  it('cooperatively cancels an active worker before terminating it', async () => {
     const { paperId, events, service, worker, job } = await startTranslation()
     service.cancel(paperId)
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'cancel' })
+    expect(worker.terminate).not.toHaveBeenCalled()
+    worker.emit('message', { type: 'cancelled' } satisfies BabelDocWorkerEvent)
     await job
     expect(worker.terminate).toHaveBeenCalledOnce()
     expect(service.isRunning(paperId)).toBe(false)
     expect(events.at(-1)?.type).toBe('cancelled')
+  })
+
+  it('discards a result that arrives after cancellation', async () => {
+    const { store, paperId, events, service, worker, job } = await startTranslation()
+    service.cancel(paperId)
+    worker.emit('message', result)
+    await job
+    expect(worker.terminate).toHaveBeenCalledOnce()
+    expect(events.at(-1)?.type).toBe('cancelled')
+    expect(store.attachments(paperId).some((item) => item.kind === 'translatedPDF')).toBe(false)
+  })
+
+  it('does not answer translation requests raised after cancellation', async () => {
+    const { paperId, service, worker, job } = await startTranslation()
+    service.cancel(paperId)
+    worker.emit('message', { type: 'translate', id: 1, text: 'Source paragraph.', context: {} } satisfies BabelDocWorkerEvent)
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(vi.mocked(worker.postMessage).mock.calls).toEqual([[{ type: 'cancel' }]])
+    worker.emit('message', { type: 'cancelled' } satisfies BabelDocWorkerEvent)
+    await job
+  })
+
+  it('terminates a worker that does not acknowledge cancellation in time', async () => {
+    const { paperId, events, service, worker, job } = await startTranslation()
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      service.cancel(paperId)
+      await vi.advanceTimersByTimeAsync(babelDocCancelTimeoutMs - 1)
+      expect(worker.terminate).not.toHaveBeenCalled()
+      expect(service.isRunning(paperId)).toBe(true)
+      await vi.advanceTimersByTimeAsync(1)
+      await job
+    } finally {
+      vi.useRealTimers()
+    }
+    expect(worker.terminate).toHaveBeenCalledOnce()
+    expect(warning).toHaveBeenCalledWith(expect.stringContaining('did not stop'))
+    expect(service.isRunning(paperId)).toBe(false)
+    expect(events.at(-1)?.type).toBe('cancelled')
+  })
+
+  it('lets an in-flight checkpoint finish before ending a cancelled job', async () => {
+    const { paperId, service, worker, job } = await startTranslation()
+    let finishWrite: () => void = () => undefined
+    vi.spyOn(files, 'atomicWriteFile').mockImplementationOnce(() => new Promise<void>((resolve) => { finishWrite = resolve }))
+    worker.emit('message', { type: 'structured_document', document: { page: [] } } satisfies BabelDocWorkerEvent)
+    service.cancel(paperId)
+    worker.emit('message', { type: 'cancelled' } satisfies BabelDocWorkerEvent)
+    await vi.waitFor(() => expect(files.atomicWriteFile).toHaveBeenCalledOnce())
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(worker.terminate).not.toHaveBeenCalled()
+    expect(service.isRunning(paperId)).toBe(true)
+    finishWrite()
+    await job
+    expect(worker.terminate).toHaveBeenCalledOnce()
+  })
+
+  it('cancels running workers on shutdown and waits for them to stop', async () => {
+    const { paperId, events, service, worker, job } = await startTranslation()
+    let stopped = false
+    const shutdown = service.shutdown().then(() => { stopped = true })
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'cancel' })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(stopped).toBe(false)
+    worker.emit('message', { type: 'cancelled' } satisfies BabelDocWorkerEvent)
+    await shutdown
+    await job
+    expect(service.hasRunningJobs()).toBe(false)
+    expect(service.isRunning(paperId)).toBe(false)
+    expect(events.at(-1)?.type).toBe('cancelled')
+  })
+
+  it('stops waiting for shutdown after its timeout', async () => {
+    const { service, worker, job } = await startTranslation()
+    await service.shutdown(10)
+    expect(service.hasRunningJobs()).toBe(true)
+    worker.emit('message', { type: 'cancelled' } satisfies BabelDocWorkerEvent)
+    await job
   })
 
   it.each(['2-3', '2,4'])('keeps all physical pages for the bilingual reader when selecting %s', async (pageRange) => {
