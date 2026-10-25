@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import type { ImportProgress, InspectorMode, Note, NoteNavigationRequest, NoteSelectionContext, Paper } from '../../shared/types'
+import type { ImportProgress, InspectorMode, NativeLibraryImportEvent, NativeLibraryImportResult, Note, NoteNavigationRequest, NoteSelectionContext, Paper } from '../../shared/types'
 import { emptyFilter, filterGrouping, groupLibrary, isFilterActive, matchesFilter, orderedPaperIds, resolveItemTypes, type LibraryFilter } from '../../shared/library'
 import { citationFromSelection, citationLabel, escapeInlineMarkdown, inlineCitationMarkdown, parseCitation, quoteCitationMarkdown } from '../../shared/writing'
 import { normalizeArxivIdentifier, arxivQueryId } from '../../shared/identifiers'
@@ -40,6 +40,13 @@ interface ArxivLinkImport {
   error?: string
 }
 
+interface NativeLibraryImportState {
+  progress?: ImportProgress
+  importing: boolean
+  result?: NativeLibraryImportResult
+  error?: string
+}
+
 export function MainWindow(): JSX.Element {
   const { snapshot, t } = useApp()
   const settings = snapshot.settings
@@ -59,6 +66,7 @@ export function MainWindow(): JSX.Element {
   const [dropActive, setDropActive] = useState(false)
   const [dropImporting, setDropImporting] = useState(false)
   const [arxivImport, setArxivImport] = useState<ArxivLinkImport | null>(null)
+  const [nativeImport, setNativeImport] = useState<NativeLibraryImportState | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout>>()
 
   const papers = snapshot.papers
@@ -294,6 +302,18 @@ export function MainWindow(): JSX.Element {
     setArxivImport((current) => (current && current.operationId === progress.operationId ? { ...current, progress } : current))
   }), [])
 
+  useEffect(() => window.freddie.library.onNativeImportEvent((event: NativeLibraryImportEvent) => {
+    if (event.type === 'started' || event.type === 'progress') {
+      setNativeImport({ progress: event.progress, importing: true })
+      return
+    }
+    if (event.type === 'finished') {
+      setNativeImport({ progress: event.progress, importing: false, result: event.result })
+      return
+    }
+    setNativeImport((current) => ({ progress: current?.progress, importing: false, error: event.message }))
+  }), [])
+
   // MARK: Menu commands
 
   useEffect(() => window.freddie.shell.onMenuAction((action) => {
@@ -499,6 +519,23 @@ export function MainWindow(): JSX.Element {
             )}
             <div className="sheet-buttons">
               <Button disabled={arxivImport.importing} onClick={() => setArxivImport(null)}>{t('Close')}</Button>
+            </div>
+          </div>
+        </Sheet>
+      )}
+      {nativeImport && (
+        <Sheet width={480} label={t('Importing Library from Freddie')} onCancel={nativeImport.importing ? undefined : () => setNativeImport(null)}>
+          <div className="native-library-import">
+            <h1>{nativeImport.error ? t('Unable to Import Library') : nativeImport.result ? t('Import Complete') : t('Importing Library from Freddie')}</h1>
+            {nativeImport.progress && <ImportProgressView progress={nativeImport.progress} />}
+            {nativeImport.result && (
+              <div className="secondary">
+                {t('Imported %lld papers, %lld notes and %lld writings.', nativeImport.result.papers, nativeImport.result.notes, nativeImport.result.writings)}
+              </div>
+            )}
+            {nativeImport.error && <div className="import-error selectable">{nativeImport.error}</div>}
+            <div className="sheet-buttons">
+              <Button disabled={nativeImport.importing} onClick={() => setNativeImport(null)}>{t('Close')}</Button>
             </div>
           </div>
         </Sheet>

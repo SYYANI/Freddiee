@@ -712,17 +712,41 @@ export class TranslationService {
       this.emit({ paperId, kind: 'babeldoc', type: 'progress_start', stage })
     }
     const stageProgress = progress.stageTotal > 0 ? progress.stageCompleted / progress.stageTotal * 100 : 100
+    const overallProgress = Math.min(Math.max(progress.overallProgress, 0), 100)
+    const stageCompleted = progress.stageTotal > 0
+      ? Math.min(Math.max(progress.stageCompleted, 0), progress.stageTotal)
+      : progress.stageCompleted
+    const stageMessage = this.translator()(babelDocStageStatusKey(progress.stage))
+    const summary = progress.stageTotal > 0
+      ? `${stageMessage} ${stageCompleted}/${progress.stageTotal}`
+      : stageMessage
     this.emit({
       paperId, kind: 'babeldoc', type: 'progress_update', stage,
-      completed: progress.stageCompleted, total: progress.stageTotal,
-      summary: `${progress.stageCompleted}/${progress.stageTotal}`,
-      stageProgress, overallProgress: progress.overallProgress,
-      message: this.translator()('Translating PDF...')
+      // Match read-paper: the capsule is driven by the whole-pipeline percentage,
+      // while its label keeps the useful count for the current stage. Using the
+      // stage fraction here makes the bar jump back to zero on every stage change.
+      completed: overallProgress, total: 100,
+      summary,
+      stageProgress, overallProgress,
+      message: summary
     })
     if (progress.stage === 'backend' && progress.stageCompleted >= progress.stageTotal) {
       this.emit({ paperId, kind: 'babeldoc', type: 'progress_end', stage })
       this.lastBabelDocStage.delete(paperId)
     }
+  }
+}
+
+function babelDocStageStatusKey(stage: BabelDocProgress['stage']): string {
+  switch (stage) {
+    case 'frontend': return 'Preparing PDF structure'
+    case 'layout': return 'Analyzing layout'
+    case 'paragraph': return 'Grouping paragraphs'
+    case 'styles': return 'Preserving styles and formulas'
+    case 'semantic': return 'Applying LaTeX structure'
+    case 'translation': return 'Translating text blocks'
+    case 'typesetting': return 'Applying translated layout'
+    case 'backend': return 'Generating translated PDF'
   }
 }
 

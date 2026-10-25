@@ -739,7 +739,8 @@ html[data-appearance="paper"] .pane-title {
 /* MARK: Add paper sheet */
 
 .add-paper,
-.arxiv-import {
+.arxiv-import,
+.native-library-import {
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -747,7 +748,8 @@ html[data-appearance="paper"] .pane-title {
 }
 
 .add-paper h1,
-.arxiv-import h1 {
+.arxiv-import h1,
+.native-library-import h1 {
   font-size: 17px;
   font-weight: 700;
 }

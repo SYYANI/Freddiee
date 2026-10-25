@@ -121,6 +121,33 @@ async function fourPageSource(): Promise<Uint8Array> {
 }
 
 describe('BabelDOC translation service', () => {
+  it('drives progress with the whole pipeline while preserving stage counts', async () => {
+    const { events, worker, job } = await startTranslation()
+    worker.emit('message', {
+      type: 'progress',
+      progress: { stage: 'layout', stageCompleted: 7, stageTotal: 10, overallProgress: 24.5 }
+    } satisfies BabelDocWorkerEvent)
+    worker.emit('message', {
+      type: 'progress',
+      progress: { stage: 'translation', stageCompleted: 0, stageTotal: 4, overallProgress: 62.5 }
+    } satisfies BabelDocWorkerEvent)
+
+    const updates = events.filter((event) => event.type === 'progress_update')
+    expect(updates).toEqual([
+      expect.objectContaining({
+        completed: 24.5, total: 100, overallProgress: 24.5, stageProgress: 70,
+        summary: 'Analyzing layout 7/10', message: 'Analyzing layout 7/10'
+      }),
+      expect.objectContaining({
+        completed: 62.5, total: 100, overallProgress: 62.5, stageProgress: 0,
+        summary: 'Translating text blocks 0/4', message: 'Translating text blocks 0/4'
+      })
+    ])
+
+    worker.emit('message', result)
+    await job
+  })
+
   it('cancels during preparation without starting a worker or saving an output', async () => {
     const { store, paperId, events, service } = await prepareTranslation()
     const job = service.translateBabeldocPDF(paperId)

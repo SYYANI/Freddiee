@@ -102,6 +102,7 @@ describe('localization', () => {
   it('uses the native catalog for Simplified Chinese', () => {
     const zh = createTranslator('zh-Hans')
     expect(zh('Add Paper')).toBe('添加论文')
+    expect(zh('Importing Library from Freddie')).toBe('正在从 Freddie 导入资料库')
     expect(zh('Step %d of %d', 2, 5)).toBe('第 2/5 步')
     expect(zh('A string the catalog does not have')).toBe('A string the catalog does not have')
     expect(resolveLanguage('system', 'zh-CN')).toBe('zh-Hans')

@@ -217,6 +217,18 @@ export interface ImportProgress {
   detail?: string
 }
 
+export interface NativeLibraryImportResult {
+  papers: number
+  notes: number
+  writings: number
+}
+
+export type NativeLibraryImportEvent =
+  | { type: 'started'; progress: ImportProgress }
+  | { type: 'progress'; progress: ImportProgress }
+  | { type: 'finished'; progress: ImportProgress; result: NativeLibraryImportResult }
+  | { type: 'failed'; message: string }
+
 export type ImportRequest =
   | { type: 'arxiv'; value: string; includeHTML: boolean; operationId: string }
   | { type: 'web'; url: string; operationId: string }
@@ -418,6 +430,7 @@ export interface FreddieAPI {
     importPaper(request: ImportRequest): Promise<Paper | null>
     cancelImport(operationId: string): Promise<void>
     onImportProgress(listener: (progress: ImportProgress) => void): () => void
+    onNativeImportEvent(listener: (event: NativeLibraryImportEvent) => void): () => void
     updatePaper(id: string, patch: Partial<Pick<Paper, 'title' | 'authors' | 'isFavorite' | 'tags' | 'abstract'>>): Promise<void>
     deletePaper(id: string): Promise<void>
     setItemType(paperId: string, itemType: string | null): Promise<void>

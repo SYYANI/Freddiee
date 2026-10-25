@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url'
 import type {
   AppSettings,
   ImportRequest,
+  ImportProgress,
   LibrarySnapshot,
   MenuAction,
   MenuItemSpec,
@@ -21,7 +22,8 @@ import type {
   WritingCommand,
   AssistantConversation,
   AssistantRequest,
-  Paper
+  Paper,
+  NativeLibraryImportEvent
 } from '../../shared/types'
 import { createTranslator, resolveLanguage, type Translator } from '../../shared/i18n'
 import { firstAttachment, resolveItemTypes } from '../../shared/library'
@@ -37,7 +39,7 @@ import { builtInProviders, FreddieStore } from './store'
 import { TranslationService, translationDisplayCSS } from './translation'
 import { latestLatexSourcePath } from '../../LaTeXTransKit'
 import { WritingStore } from './writings'
-import { importNativeLibrary, nativeLibraryExists } from './nativeLibrary'
+import { importNativeLibrary, nativeLibraryExists, type NativeImportStage, type NativeImportUpdate } from './nativeLibrary'
 import { applyLiquidGlass, applyUnifiedToolbar, supportsLiquidGlass } from './windowChrome'
 import { applyHiddenRegions, readableProseColorCSS, readableProseLayoutCSS } from './localizer'
 import { detectLatexToolchainStatus } from './latexToolchain'
@@ -69,6 +71,7 @@ let annotations: AnnotationStore
 let translator: Translator = createTranslator('en')
 let htmlTranslatedPaperIds: string[] = []
 let hasNativeLibrary = false
+let nativeImportRunning = false
 
 const windows: { main?: Window; settings?: Window; writing?: Window; about?: Window } = {}
 
@@ -929,7 +932,35 @@ async function latexStatus() {
 
 // MARK: Native library import
 
+const nativeImportStepLabels: Record<NativeImportStage, string> = {
+  reading: 'Reading library data…',
+  folders: 'Importing folders…',
+  papers: 'Copying papers…',
+  notes: 'Importing notes…',
+  organizing: 'Organizing library…',
+  translations: 'Importing translations…',
+  writings: 'Copying writings…',
+  finalizing: 'Finalizing import'
+}
+
+function nativeImportProgress(update: NativeImportUpdate): ImportProgress {
+  return {
+    operationId: 'native-library',
+    stepLabel: translator(nativeImportStepLabels[update.stage]),
+    fraction: update.fraction,
+    title: update.item ?? translator('Freddie for macOS library'),
+    detail: update.current !== undefined && update.total !== undefined && update.total > 0
+      ? translator('%lld of %lld', update.current, update.total)
+      : undefined
+  }
+}
+
+function emitNativeImportEvent(event: NativeLibraryImportEvent): void {
+  broadcast('native-import:event', event)
+}
+
 async function runNativeImport(confirm: boolean): Promise<void> {
+  if (nativeImportRunning) return
   const owner = windows.main
   if (confirm && owner) {
     const { response } = await dialog.showMessageBox(owner, {
@@ -942,19 +973,26 @@ async function runNativeImport(confirm: boolean): Promise<void> {
     })
     if (response !== 0) return
   }
+  nativeImportRunning = true
+  const initialProgress = nativeImportProgress({ stage: 'reading', fraction: 0, current: 0, total: 8 })
+  emitNativeImportEvent({ type: 'started', progress: initialProgress })
+  if (owner && !owner.isDestroyed()) owner.setProgressBar(0)
   try {
-    const result = await store.batch(() => importNativeLibrary(store, store.writingsRoot))
+    const result = await store.batch(() => importNativeLibrary(store, store.writingsRoot, (update) => {
+      const progress = nativeImportProgress(update)
+      emitNativeImportEvent({ type: 'progress', progress })
+      if (owner && !owner.isDestroyed()) owner.setProgressBar(progress.fraction)
+    }))
     await refreshTranslatedIds()
-    if (owner && confirm) {
-      await dialog.showMessageBox(owner, {
-        type: 'info',
-        message: translator('Import Complete'),
-        detail: translator('Imported %lld papers, %lld notes and %lld writings.', result.papers, result.notes, result.writings),
-        buttons: [translator('OK')]
-      })
-    }
+    const progress = nativeImportProgress({ stage: 'finalizing', fraction: 1 })
+    emitNativeImportEvent({ type: 'finished', progress, result })
   } catch (error) {
-    if (owner) dialog.showErrorBox(translator('Unable to Import Paper'), errorMessage(error))
+    const message = errorMessage(error)
+    emitNativeImportEvent({ type: 'failed', message })
+    if (!confirm || !owner || owner.isDestroyed()) dialog.showErrorBox(translator('Unable to Import Library'), message)
+  } finally {
+    nativeImportRunning = false
+    if (owner && !owner.isDestroyed()) owner.setProgressBar(-1)
   }
 }
 

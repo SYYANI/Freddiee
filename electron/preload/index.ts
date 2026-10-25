@@ -34,6 +34,7 @@ const api: FreddieAPI = {
     importPaper: (request) => invoke('library:import', request),
     cancelImport: (operationId) => invoke('library:cancel-import', operationId),
     onImportProgress: (listener) => subscribe('import:progress', listener),
+    onNativeImportEvent: (listener) => subscribe('native-import:event', listener),
     updatePaper: (id, patch) => invoke('library:update-paper', id, patch),
     deletePaper: (id) => invoke('library:delete-paper', id),
     setItemType: (paperId, itemType) => invoke('library:set-item-type', paperId, itemType),
