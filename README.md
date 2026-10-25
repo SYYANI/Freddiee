@@ -12,7 +12,7 @@ Freddie is a local-first paper reader for macOS, Windows, and Linux. This reposi
 - **Notes and annotations**: notes anchored to PDF pages or HTML passages, Markdown previews, highlight / underline / strike-out / ink / text-note PDF annotations with undo, and annotated-PDF export.
 - **Writing**: Markdown writings in the inspector or their own window, with live syntax, inline images and math, citations of passages (`readpaper://` links compatible with native Freddie), Quote in Writing, word counts, and rename / trash.
 - **Export**: copy link, copy digest, export digest Markdown with a template, export HTML as PDF.
-- **Settings**: General (quick setup, language, target language, glossary, performance), Reader (typography, appearance, translation routes), LaTeX (toolchain detection), Digest, Providers, and Models, using the OpenAI Responses, Chat Completions, or Anthropic Messages API.
+- **Settings**: General (quick setup, language, target language, glossary, performance), Reader (typography, appearance, translation routes), LaTeX (opt-in arXiv source translation and toolchain detection), Digest, Providers, and Models, using the OpenAI Responses, Chat Completions, or Anthropic Messages API.
 - **Moving from the Mac app**: on macOS, *File → Import Library from Freddie for macOS…* copies papers, attachments, translations, notes, folders, item types, reading positions, and writings from the native app's library. The native library is opened read-only and not changed; API keys stay in the Keychain and must be entered again.
 - **Interface**: English and Simplified Chinese (the native string catalog is reused), Default and Paper Tone appearances, macOS vibrancy and Windows acrylic window materials.
 
@@ -43,7 +43,7 @@ Freddie keeps its library below the platform application-data directory in `Fred
 
 ```text
 Freddie/
-  library.json                 papers, attachments, notes, folders, settings (schemaVersion 6)
+  library.json                 papers, attachments, notes, folders, settings (schemaVersion 7)
   secrets.json                 API keys encrypted per provider with the OS credential store
   Library/{paper id}/
     paper.pdf, paper.html      originals

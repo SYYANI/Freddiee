@@ -373,6 +373,16 @@ function LatexTab(): JSX.Element {
 
   return (
     <div className="settings-form">
+      <FormSection title={t('LaTeX Translation')}>
+        <FormRow label={t('Enable arXiv LaTeX translation')} help={t("When enabled, Translate arXiv LaTeX appears in the reader's Translate menu. It downloads the paper source, translates its semantic units, and uses the selected external TeX distribution to compile the translated PDF.")}>
+          <Switch checked={settings.latexTranslationEnabled} onChange={(value) => save({ latexTranslationEnabled: value })} />
+        </FormRow>
+        {settings.latexTranslationEnabled && status && !status.healthy && (
+          <FormRow stacked><FormNote error>{window.freddie.platform === 'darwin'
+            ? t('LaTeX translation is enabled, but the selected toolchain is not ready. Install MacTeX or choose a directory that contains latexmk and a PDF engine.')
+            : t('LaTeX translation is enabled, but the selected toolchain is not ready. Install TeX Live or MiKTeX, or choose a directory that contains latexmk and a PDF engine.')}</FormNote></FormRow>
+        )}
+      </FormSection>
       <FormSection title={t('TeX Distribution')}>
         <FormRow stacked><span>{t('Install a TeX distribution for your platform: MacTeX on macOS and TeX Live on Windows or Linux. It is installed and maintained separately from Freddie.')}</span></FormRow>
         <FormRow>

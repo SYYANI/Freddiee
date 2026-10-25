@@ -47,7 +47,7 @@ The windows match native Freddie's scenes. Each is the same renderer bundle open
 
 ## Persistence
 
-`library.json` is intentionally portable and inspectable. Writes are serialized through one queue and replace the file through a flushed temporary file and a rename. `schemaVersion` is monotonic; `migrateDatabase` brings schemas 1–2 (file names on papers, one provider in settings, writings inside the database) through the later reader-control migrations to schema 6 (bundled BabelDOC page range, rendering mode, QPS and thinking mode), and refuses a newer schema. Large documents, translation caches, annotations, and assistant conversations live beside each paper so the metadata file stays small. Imports run in `store.batch` and write once.
+`library.json` is intentionally portable and inspectable. Writes are serialized through one queue and replace the file through a flushed temporary file and a rename. `schemaVersion` is monotonic; `migrateDatabase` brings schemas 1–2 (file names on papers, one provider in settings, writings inside the database) through the later reader-control migrations, schema 6 (bundled BabelDOC page range, rendering mode, QPS and thinking mode), and schema 7 (the opt-in arXiv LaTeX translation route), and refuses a newer schema. Large documents, translation caches, annotations, and assistant conversations live beside each paper so the metadata file stays small. Imports run in `store.batch` and write once.
 
 ## Long-running work
 

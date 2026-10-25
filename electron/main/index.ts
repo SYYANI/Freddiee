@@ -632,6 +632,7 @@ function registerIpc(): void {
   handle('translation:latex', async (_event, paperId: string) => {
     const id = requireUUID(paperId)
     if (translations.isRunning(id)) throw new Error(translator('Translation in Progress'))
+    if (!store.database.settings.latexTranslationEnabled) throw new Error(translator('Turn on arXiv LaTeX translation in Settings > LaTeX first.'))
     const status = await latexStatus()
     if (!status.latexmkPath) throw new Error(translator('PDF compilation requires a TeX distribution that includes latexmk.'))
     void translations.translateLatex(id, status.latexmkPath)
@@ -823,6 +824,7 @@ function sanitizeSettings(patch: Partial<AppSettings>): Partial<AppSettings> {
   assign('readerAppearance', (value) => value === 'default' || value === 'paper')
   assign('showPDFZoomControls', isBoolean)
   assign('pdfHandToolEnabled', isBoolean)
+  assign('latexTranslationEnabled', isBoolean)
   for (const key of ['htmlModelId', 'pdfModelId', 'scannedPageModelId', 'assistantModelId', 'lastOpenedPaperId', 'currentWritingId'] as const) assign(key, optionalUUID)
   assign('assistantWebSearch', isBoolean)
   assign('inspectorCollapsed', isBoolean)

@@ -372,7 +372,7 @@ export function MainWindow(): JSX.Element {
   const inspectorOpen = !settings.inspectorCollapsed
   const style = {
     '--sidebar-width': `${sidebarWidth}px`,
-    '--inspector-width': `${inspectorOpen ? inspectorWidth : 0}px`
+    '--inspector-width': `${inspectorWidth}px`
   } as CSSProperties
 
   return (
@@ -428,26 +428,24 @@ export function MainWindow(): JSX.Element {
         />
       </main>
       {inspectorOpen && <div className="column-resizer inspector-resizer" onPointerDown={(event) => beginResize(event, 'inspector')} />}
-      {inspectorOpen && (
-        <Inspector
-          paper={selectedPaper}
-          itemTypes={itemTypes}
-          notes={notes}
-          mode={settings.inspectorMode}
-          onMode={setInspectorMode}
-          selection={selection}
-          focusedNoteId={focusedNoteId}
-          onFocusHandled={() => setFocusedNoteId(null)}
-          onCreateNote={() => void createNote(false)}
-          onOpenNoteAnchor={openNoteAnchor}
-          onOpenWriting={(id) => {
-            void window.freddie.writings.select(id)
-            void showWritingPane()
-          }}
-          onCreateWritingAbout={(paper) => void createWritingAbout(paper)}
-          onOpenCitation={openCitation}
-        />
-      )}
+      <Inspector
+        paper={selectedPaper}
+        itemTypes={itemTypes}
+        notes={notes}
+        mode={settings.inspectorMode}
+        onMode={setInspectorMode}
+        selection={selection}
+        focusedNoteId={inspectorOpen ? focusedNoteId : null}
+        onFocusHandled={() => setFocusedNoteId(null)}
+        onCreateNote={() => void createNote(false)}
+        onOpenNoteAnchor={openNoteAnchor}
+        onOpenWriting={(id) => {
+          void window.freddie.writings.select(id)
+          void showWritingPane()
+        }}
+        onCreateWritingAbout={(paper) => void createWritingAbout(paper)}
+        onOpenCitation={openCitation}
+      />
       {/* Rendered after the reader and sidebar drag regions so its no-drag area takes precedence. */}
       <div className="window-leading-toolbar no-drag">
         <ToolbarGroup className="circle">

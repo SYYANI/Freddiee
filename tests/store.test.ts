@@ -93,8 +93,15 @@ describe('FreddieStore', () => {
 })
 
 describe('migrateDatabase', () => {
+  it('adds the disabled arXiv LaTeX route when migrating schema 6', () => {
+    const { database } = migrateDatabase({ schemaVersion: 6, settings: { htmlFontSize: 19, latexTranslationEnabled: true } })
+    expect(database.schemaVersion).toBe(schemaVersion)
+    expect(database.settings.htmlFontSize).toBe(19)
+    expect(database.settings.latexTranslationEnabled).toBe(false)
+  })
+
   it('adds BabelDOC settings when migrating schema 5', () => {
-    const { database } = migrateDatabase({ schemaVersion: 5, settings: { htmlFontSize: 19 } })
+    const { database } = migrateDatabase({ schemaVersion: 5, settings: { htmlFontSize: 19, latexTranslationEnabled: true } })
     expect(database.schemaVersion).toBe(schemaVersion)
     expect(database.settings).toMatchObject({
       htmlFontSize: 19,
@@ -102,7 +109,8 @@ describe('migrateDatabase', () => {
       babelDocRenderingMode: 'source-preserving',
       babelDocQPS: 3,
       babelDocThinkingMode: 'disabled',
-      babelDocSemanticHintsEnabled: true
+      babelDocSemanticHintsEnabled: true,
+      latexTranslationEnabled: false
     })
   })
 
@@ -154,13 +162,13 @@ describe('migrateDatabase', () => {
     expect(result.legacyWritings[0]).toMatchObject({ markdown: '# Draft' })
   })
 
-  it('drops settings for removed translation controls', () => {
+  it('drops obsolete translation controls and keeps the current LaTeX opt-in', () => {
     const { database } = migrateDatabase({ schemaVersion, settings: { babelDocQPS: 8, babelDocCommand: 'babeldoc', babelDocArguments: ['--openai'], useArxivLatexStructure: true, latexTranslationEnabled: true, htmlFontSize: 19 } })
     expect(database.settings.babelDocQPS).toBe(8)
     expect(database.settings).not.toHaveProperty('babelDocCommand')
     expect(database.settings).not.toHaveProperty('babelDocArguments')
     expect(database.settings).not.toHaveProperty('useArxivLatexStructure')
-    expect(database.settings).not.toHaveProperty('latexTranslationEnabled')
+    expect(database.settings.latexTranslationEnabled).toBe(true)
     expect(database.settings.htmlFontSize).toBe(19)
   })
 

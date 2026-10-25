@@ -10,6 +10,14 @@
   flex-direction: column;
   background: var(--inspector-bg);
   border-left: 0.5px solid var(--separator);
+  transition: transform var(--sidebar-transition), visibility 0s;
+}
+
+.inspector-hidden .inspector {
+  transform: translateX(100%);
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform var(--sidebar-transition), visibility 0s 0.28s;
 }
 
 .inspector.appearance-paper {

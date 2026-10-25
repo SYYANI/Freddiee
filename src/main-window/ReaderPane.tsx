@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Attachment, AssistantSource, Note, NoteNavigationRequest, NoteSelectionContext, Paper, ReaderMode, TranslationDisplayMode, TranslationEvent } from '../../shared/types'
-import { firstAttachment, isPartialTranslation, latestAttachment, resolvedReaderMode } from '../../shared/library'
+import { firstAttachment, isCompleteTranslation, isPartialTranslation, latestAttachment, resolvedReaderMode } from '../../shared/library'
 import { sourceMetadata } from '../../shared/digest'
 import { useApp } from '../app/context'
 import { alertError, errorText, messageBox, popupMenu } from '../app/native'
@@ -14,6 +14,7 @@ import { FindBar } from '../overlays/FindBar'
 import { TranslationCapsule, type CapsulePhase } from '../overlays/TranslationCapsule'
 import { SelectionAssistant } from '../overlays/SelectionAssistant'
 import { HtmlSidenotes } from './HtmlSidenotes'
+import { translationMenuEntries } from './translationMenu'
 
 interface TranslationRun {
   working: boolean
@@ -189,6 +190,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   }, [paper?.id, pdf?.id])
 
   const partial = isPartialTranslation(translated, originalPageCount)
+  const fullPDFTranslationComplete = isCompleteTranslation(translated, originalPageCount)
   // A page rebuild and a BabelDOC batch both continue where they stopped; other partial translations stay as they are.
   const continuable = partial && (translated?.source === 'scanRebuild' || translated?.source === 'babeldoc')
   const nearEdge = partial && translated?.translatedLastPage !== undefined && pageIndex >= Math.max(0, translated.translatedLastPage - 2)
@@ -524,28 +526,20 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   }
 
   const showTranslateMenu = async (anchor: HTMLElement): Promise<void> => {
-    const choice = await popupMenu([
-      { id: 'pdf', label: t('Translate PDF'), enabled: Boolean(pdf) && pdfHasText !== undefined },
-      { type: 'separator' },
-      { id: 'html', label: t('Translate HTML'), enabled: Boolean(html) },
-      { id: 'latex', label: t('Translate arXiv LaTeX'), enabled: Boolean(paper?.arxivId) },
-      { id: 'babeldoc', label: t('Translate Born-Digital PDF with BabelDOC'), enabled: Boolean(pdf) && pdfHasText === true },
-      continuable
-        ? { id: 'more', label: t('Translate More PDF Pages'), enabled: Boolean(pdf) }
-        : { id: 'scan', label: t('Translate Scanned PDF…'), enabled: Boolean(pdf) }
-    ], anchor)
-    if (choice === 'pdf') {
-      if (pdfHasText === false) void translateScan()
-      // The LaTeX path needs a local TeX distribution; without one, a
-      // born-digital arXiv PDF still translates through BabelDOC.
-      else if (paper?.arxivId && (await window.freddie.settings.latexStatus()).latexmkPath) void startLatex()
-      else void translateBabeldoc()
-    }
+    const choice = await popupMenu(translationMenuEntries({
+      hasHTML: Boolean(html),
+      hasPDF: Boolean(pdf),
+      pdfHasText,
+      isPartialPDFTranslation: partial,
+      isFullPDFTranslationComplete: fullPDFTranslationComplete,
+      translatedSource: translated?.source,
+      latexTranslationEnabled: settings.latexTranslationEnabled,
+      hasArxivID: Boolean(paper?.arxivId)
+    }).map((item) => ({ ...item, label: t(item.label) })), anchor)
     if (choice === 'html') void translateHTML()
     if (choice === 'latex') void startLatex()
-    if (choice === 'babeldoc') void translateBabeldoc()
+    if (choice === 'pdf') void translateBabeldoc()
     if (choice === 'scan') void translateScan()
-    if (choice === 'more') continuePDF()
   }
 
   const showScanSourceMenu = async (anchor: HTMLElement): Promise<void> => {
@@ -603,8 +597,8 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
     }
   }
 
-  const hasTranslatableContent = Boolean(html || pdf)
-  const translateHelp = isWorking ? t('Translation in Progress') : html && pdf ? t('Translate HTML or PDF') : html ? t('Translate HTML') : pdf ? t('Translate PDF') : t('Translation Unavailable')
+  const hasTranslatableContent = Boolean(html || pdf || (settings.latexTranslationEnabled && paper?.arxivId))
+  const translateHelp = isWorking ? t('Translation in Progress') : html && pdf ? t('Translate HTML or PDF') : html ? t('Translate HTML') : pdf ? t('Translate PDF') : hasTranslatableContent ? t('Translate arXiv LaTeX') : t('Translation Unavailable')
   const findAvailable = readerMode === 'html' ? Boolean(html) : readerMode === 'pdf' ? Boolean(sourcePDF) : Boolean(translated)
 
   // MARK: Setup notice

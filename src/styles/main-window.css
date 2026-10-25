@@ -5,6 +5,7 @@
   --leading-toolbar-left: 102px;
   --leading-toolbar-width: 130px;
   --reader-left: var(--sidebar-width);
+  --reader-right: var(--inspector-width);
   position: relative;
   width: 100%;
   height: 100%;
@@ -12,6 +13,10 @@
 
 .main-window.sidebar-hidden {
   --reader-left: 0px;
+}
+
+.main-window.inspector-hidden {
+  --reader-right: 0px;
 }
 
 /* Without traffic lights the leading buttons start at the window edge; the caption buttons sit on the right. */
@@ -26,9 +31,9 @@ html[data-platform="linux"] .main-window {
   top: 0;
   bottom: 0;
   left: var(--reader-left);
-  right: var(--inspector-width);
+  right: var(--reader-right);
   min-width: 0;
-  transition: left var(--sidebar-transition);
+  transition: left var(--sidebar-transition), right var(--sidebar-transition);
 }
 
 .column-resizer {

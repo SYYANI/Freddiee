@@ -30,9 +30,9 @@
 
 - arXiv LaTeX translation lives in the top-level `LaTeXTransKit/` package, a TypeScript port of the Swift `LaTeXTransKit` and of native Freddie's `LaTeXTranslationService`, checked against fixtures and real arXiv sources recorded from the Swift kit. Checkpoints and workspaces are keyed as in native Freddie; see `LaTeXTransKit/README.md`.
 - Scanned-PDF translation lives in the top-level `RebuildPDFKit/` package, a TypeScript port of the Swift `RebuildPDFKit` checked against its Python-computed parity fixtures. Tesseract (tesseract.js) stands in for Apple Vision and PDF.js for CoreGraphics, so it runs on every platform; see `RebuildPDFKit/README.md`.
-- Born-digital PDF translation lives in `BabelDocKit/`. The reader routes PDFs
-  with no text layer to `RebuildPDFKit`, arXiv papers to `LaTeXTransKit`, and
-  other text PDFs to the worker-backed BabelDOC pipeline.
+- Born-digital PDF translation lives in `BabelDocKit/`. The reader offers the
+  worker-backed BabelDOC route for PDFs with a text layer, `RebuildPDFKit` for
+  scans, and the opt-in `LaTeXTransKit` route for arXiv papers.
 
 ## Not yet ported
 

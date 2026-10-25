@@ -154,6 +154,8 @@ export interface AppSettings {
   scannedPageModelId?: string
   assistantModelId?: string
   assistantWebSearch: boolean
+  /** Shows the optional arXiv LaTeX source translation route in the reader. */
+  latexTranslationEnabled: boolean
   inspectorCollapsed: boolean
   inspectorMode: InspectorMode
   lastOpenedPaperId?: string

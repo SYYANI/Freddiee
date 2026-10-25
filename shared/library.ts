@@ -228,3 +228,10 @@ export function isPartialTranslation(attachment: Attachment | undefined, origina
   if (!attachment?.translatedLastPage || !originalPageCount) return false
   return attachment.translatedLastPage < originalPageCount
 }
+
+/** A translation counts as complete unless its recorded last page falls short of a known page count, as in native Freddie. */
+export function isCompleteTranslation(attachment: Attachment | undefined, originalPageCount: number | undefined): boolean {
+  if (!attachment) return false
+  if (attachment.translatedLastPage === undefined || originalPageCount === undefined) return true
+  return attachment.translatedLastPage >= originalPageCount
+}
