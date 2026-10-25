@@ -16,6 +16,12 @@ Freddie is a local-first paper reader for macOS, Windows, and Linux. This reposi
 - **Moving from the Mac app**: on macOS, *File → Import Library from Freddie for macOS…* copies papers, attachments, translations, notes, folders, item types, reading positions, and writings from the native app's library. The native library is opened read-only and not changed; API keys stay in the Keychain and must be entered again.
 - **Interface**: English and Simplified Chinese (the native string catalog is reused), Default and Paper Tone appearances, macOS vibrancy and Windows acrylic window materials.
 
+## Screenshot
+
+![Freddie's native Swift interface showing side-by-side bilingual PDF reading](docs/images/freddie-swift-bilingual-pdf.png)
+
+*The native Swift version of Freddie. The cross-platform app follows the same library, reader, and inspector layout.*
+
 ## Develop
 
 Requirements: Node.js 22.19+ or 24+, npm 11+.
