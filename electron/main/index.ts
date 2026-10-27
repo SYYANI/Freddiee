@@ -43,6 +43,7 @@ import { latestLatexSourcePath } from '../../LaTeXTransKit'
 import { WritingStore } from './writings'
 import { importNativeLibrary, nativeLibraryExists, type NativeImportStage, type NativeImportUpdate } from './nativeLibrary'
 import { applyLiquidGlass, applyUnifiedToolbar, supportsLiquidGlass } from './windowChrome'
+import { applyWindowsBackdrop } from './windowsBackdrop'
 import { applyHiddenRegions, readableProseColorCSS, readableProseLayoutCSS } from './localizer'
 import { detectLatexToolchainStatus } from './latexToolchain'
 import { AuthorExtractionService } from './authorExtraction'
@@ -79,6 +80,7 @@ let hasNativeLibrary = false
 let nativeImportRunning = false
 
 const windows: { main?: Window; settings?: Window; writing?: Window; about?: Window } = {}
+const windowsWithBackdrop = new WeakSet<Window>()
 
 app.whenReady().then(async () => {
   // Packaged builds take the icon from the bundle; unpackaged runs would otherwise show Electron's.
@@ -196,6 +198,9 @@ function baseWindowOptions(route: WindowRoute, material: WindowMaterial): Browse
     show: false,
     backgroundColor: process.platform === 'linux' ? '#f3f3f3' : '#00000000',
     titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
+    // Seed Electron's translucent compositor at construction, also on Win10.
+    // The legacy native call alone cannot change an already opaque surface.
+    ...(isWindows ? { backgroundMaterial: 'acrylic' as const } : {}),
     ...(isMac ? {
       transparent: true,
       ...(!useLiquidGlass ? {
@@ -225,7 +230,10 @@ function loadRoute(window: Window, route: WindowRoute): void {
 }
 
 function hardenWindow(window: Window): void {
-  if (isWindows) window.setBackgroundMaterial('acrylic')
+  if (isWindows) {
+    if (applyWindowsBackdrop(window)) windowsWithBackdrop.add(window)
+    else window.setBackgroundColor('#e9ecef')
+  }
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//i.test(url)) void shell.openExternal(url)
     return { action: 'deny' }
@@ -369,7 +377,7 @@ function requireUUID(value: unknown): string {
   return value
 }
 
-async function snapshot(): Promise<LibrarySnapshot> {
+async function snapshot(window?: Window): Promise<LibrarySnapshot> {
   const database = store.database
   const configured = await secrets.configuredProviderIds()
   const builtIn = new Set(builtInProviders.map((provider) => provider.id))
@@ -395,6 +403,7 @@ async function snapshot(): Promise<LibrarySnapshot> {
     writingError,
     htmlTranslatedPaperIds,
     platform: process.platform,
+    windowBackdrop: window ? windowsWithBackdrop.has(window) : false,
     systemDarkMode: systemDarkMode()
   })
 }
@@ -430,7 +439,7 @@ async function testCompletion(baseURL: string, apiStyle: ProviderProfile['apiSty
 
 function registerIpc(): void {
   // Library
-  handle('library:snapshot', () => snapshot())
+  handle('library:snapshot', (event) => snapshot(windowFor(event.sender)))
   handle('library:import', async (event, request: ImportRequest) => {
     try {
       if (request.type === 'arxiv') {

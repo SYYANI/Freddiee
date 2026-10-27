@@ -39,7 +39,8 @@ export function AppProvider({ children, fallback }: { children: ReactNode; fallb
     document.documentElement.lang = language === 'zh-Hans' ? 'zh-CN' : 'en'
     document.documentElement.dataset.platform = window.freddie.platform
     document.documentElement.dataset.appearance = snapshot?.settings.readerAppearance ?? 'default'
-  }, [language, snapshot?.settings.readerAppearance])
+    document.documentElement.dataset.windowBackdrop = String(snapshot?.windowBackdrop ?? false)
+  }, [language, snapshot?.settings.readerAppearance, snapshot?.windowBackdrop])
 
   if (!snapshot) return <>{fallback ?? null}</>
   return <AppContext.Provider value={{ snapshot, reload, t, language }}>{children}</AppContext.Provider>

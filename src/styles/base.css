@@ -67,14 +67,20 @@ html[data-platform="linux"] {
   --glass-bg: rgba(255, 255, 255, 0.92);
 }
 
-/* Acrylic is much less refined than the macOS material; keep only a hint of it in the sidebar. */
+/* Windows stays opaque unless the main process successfully installs a backdrop. */
 html[data-platform="win32"] {
   --window-radius: 8px;
-  --sidebar-bg: rgba(232, 233, 236, 0.95);
+  --sidebar-bg: #e8e9ec;
   --sidebar-tint: rgba(220, 225, 240, 0.5);
   --reader-bg: #fbfbfc;
   --inspector-bg: #f6f7f8;
   --glass-bg: rgba(255, 255, 255, 0.92);
+}
+
+/* Win10's native blur and Win11 Acrylic sit beneath the web content. */
+html[data-platform="win32"][data-window="main"][data-window-backdrop="true"]:not([data-appearance="paper"]) {
+  --sidebar-bg: rgba(232, 233, 236, 0.65);
+  --sidebar-tint: rgba(220, 225, 240, 0.2);
 }
 
 /* On macOS the native AppKit layer supplies the window material. */
