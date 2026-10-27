@@ -18,6 +18,8 @@ Native Swift version: [SYYANI/Freddie](https://github.com/SYYANI/Freddie)
 - **Moving from the Mac app**: on macOS, *File → Import Library from Freddie for macOS…* copies papers, attachments, translations, notes, folders, item types, reading positions, and writings from the native app's library. The native library is opened read-only and not changed; API keys stay in the Keychain and must be entered again.
 - **Interface**: English and Simplified Chinese (the native string catalog is reused), Default and Paper Tone appearances, macOS vibrancy and Windows acrylic window materials.
 
+Windows Acrylic uses Electron's system material on Windows 11 22H2+, and a main-process Koffi binding to the undocumented `SetWindowCompositionAttribute` for a tinted blur on Windows 10 1809+ and earlier Windows 11 releases. Unsupported releases or native-call failures keep opaque surfaces; Paper Tone stays opaque.
+
 ## Screenshot
 
 <img width="1624" height="977" alt="Image" src="https://github.com/user-attachments/assets/7accab12-26e2-4916-a317-23b205a1d4f1" />

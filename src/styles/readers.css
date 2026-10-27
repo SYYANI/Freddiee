@@ -398,10 +398,11 @@
 .reader-content { --outline-width: min(300px, max(240px, calc(100% - 100px))); }
 .reader-document { position: absolute; inset: 0; min-width: 0; }
 .outline-pinned .reader-document { left: calc(var(--outline-width) + 16px); }
-/* A transparent iframe in a transparent macOS window bypasses the overlay's
-   backdrop blur. Back only the covered area, behind the iframe's content,
+/* A transparent iframe in a transparent macOS or Acrylic window bypasses the
+   overlay's backdrop blur. Back only the covered area, behind the iframe's content,
    so HTML and PDF share the same glass without making the whole page opaque. */
-html[data-platform="darwin"]:not([data-appearance="paper"]) .outline-over-html .reader-document::before {
+html[data-platform="darwin"]:not([data-appearance="paper"]) .outline-over-html .reader-document::before,
+html[data-platform="win32"][data-backdrop="acrylic"]:not([data-appearance="paper"]) .outline-over-html .reader-document::before {
   content: "";
   position: absolute;
   top: 8px;

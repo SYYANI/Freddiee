@@ -38,6 +38,7 @@ export function AppProvider({ children, fallback }: { children: ReactNode; fallb
   useEffect(() => {
     document.documentElement.lang = language === 'zh-Hans' ? 'zh-CN' : 'en'
     document.documentElement.dataset.platform = window.freddie.platform
+    document.documentElement.dataset.backdrop = window.freddie.backdrop
     document.documentElement.dataset.appearance = snapshot?.settings.readerAppearance ?? 'default'
   }, [language, snapshot?.settings.readerAppearance])
 

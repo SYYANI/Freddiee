@@ -43,6 +43,7 @@ import { latestLatexSourcePath } from '../../LaTeXTransKit'
 import { WritingStore } from './writings'
 import { importNativeLibrary, nativeLibraryExists, type NativeImportStage, type NativeImportUpdate } from './nativeLibrary'
 import { applyLiquidGlass, applyUnifiedToolbar, supportsLiquidGlass } from './windowChrome'
+import { applyWindowsBackdrop, windowsBackdrop } from './windowsBackdrop'
 import { applyHiddenRegions, readableProseColorCSS, readableProseLayoutCSS } from './localizer'
 import { detectLatexToolchainStatus } from './latexToolchain'
 import { AuthorExtractionService } from './authorExtraction'
@@ -192,10 +193,13 @@ type WindowMaterial = 'sidebar' | 'window' | 'under-window'
 
 function baseWindowOptions(route: WindowRoute, material: WindowMaterial): BrowserWindowConstructorOptions {
   const useLiquidGlass = supportsLiquidGlass() && (route.kind === 'main' || route.kind === 'settings' || route.kind === 'about')
+  const backdrop = windowsBackdrop()
   return {
     show: false,
     backgroundColor: process.platform === 'linux' ? '#f3f3f3' : '#00000000',
     titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
+    // The Accent policy blurs only what Chromium leaves transparent.
+    ...(backdrop === 'legacy' ? { transparent: true } : {}),
     ...(isMac ? {
       transparent: true,
       ...(!useLiquidGlass ? {
@@ -213,7 +217,7 @@ function baseWindowOptions(route: WindowRoute, material: WindowMaterial): Browse
       sandbox: true,
       webSecurity: true,
       spellcheck: true,
-      additionalArguments: [`--freddie-route=${JSON.stringify(route)}`]
+      additionalArguments: [`--freddie-route=${JSON.stringify(route)}`, `--freddie-backdrop=${backdrop === 'none' ? 'none' : 'acrylic'}`]
     }
   }
 }
@@ -225,7 +229,7 @@ function loadRoute(window: Window, route: WindowRoute): void {
 }
 
 function hardenWindow(window: Window): void {
-  if (isWindows) window.setBackgroundMaterial('acrylic')
+  applyWindowsBackdrop(window, windowsBackdrop())
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//i.test(url)) void shell.openExternal(url)
     return { action: 'deny' }

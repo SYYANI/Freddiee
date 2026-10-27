@@ -432,6 +432,8 @@ export interface WindowRoute {
 
 export interface FreddieAPI {
   platform: string
+  /** Whether a native window material shows through translucent surfaces (Windows only). */
+  backdrop: 'acrylic' | 'none'
   route: WindowRoute
   library: {
     snapshot(): Promise<LibrarySnapshot>
