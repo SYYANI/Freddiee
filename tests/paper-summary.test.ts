@@ -10,6 +10,12 @@ import type { CompletionRequest } from '../electron/main/llm'
 import type { SecretStore } from '../electron/main/secrets'
 import { builtInProviders, FreddieStore } from '../electron/main/store'
 
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((done) => { resolve = done })
+  return { promise, resolve }
+}
+
 const roots: string[] = []
 afterEach(async () => { await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))) })
 
@@ -157,6 +163,132 @@ describe('PDF inspector summaries', () => {
     const f = await fixture()
     const results = await Promise.all([f.service.content(f.paper.id), f.service.content(f.paper.id)])
     expect(results[0]).toEqual(results[1])
+    expect(f.completion).toHaveBeenCalledOnce()
+  })
+
+  it('reuses earlier language and model summaries after switching back, including after restart', async () => {
+    const f = await fixture()
+    const original = await f.service.content(f.paper.id)
+    await f.store.saveSettings({ targetLanguage: 'EN' })
+    await f.service.content(f.paper.id)
+    const model = f.store.database.models.find((item) => item.id === builtInProviders[0].model.id)!
+    const second = { ...model, id: randomUUID(), modelName: 'another-model' }
+    f.store.database.models.push(second)
+    await f.store.saveSettings({ htmlModelId: second.id })
+    await f.service.content(f.paper.id)
+    await f.store.saveSettings({ targetLanguage: 'zh-CN', htmlModelId: model.id })
+    const restarted = new PaperSummaryService(f.store, f.secrets, f.completion)
+    await expect(restarted.content(f.paper.id)).resolves.toEqual(original)
+    await f.store.saveSettings({ targetLanguage: 'EN' })
+    await restarted.content(f.paper.id)
+    expect(f.completion).toHaveBeenCalledTimes(3)
+    expect(f.key).toHaveBeenCalledTimes(3)
+    const cache = JSON.parse(await readFile(f.cachePath, 'utf8'))
+    expect(cache.version).toBe(2)
+    expect(cache.entries).toHaveLength(3)
+  })
+
+  it('reads a legacy single-entry cache and preserves it when adding a second identity', async () => {
+    const f = await fixture()
+    const original = await f.service.content(f.paper.id)
+    const { entries } = JSON.parse(await readFile(f.cachePath, 'utf8'))
+    await writeFile(f.cachePath, JSON.stringify({ version: 1, ...entries[0] }))
+    await expect(f.service.content(f.paper.id)).resolves.toEqual(original)
+    expect(f.completion).toHaveBeenCalledOnce()
+    await f.store.saveSettings({ targetLanguage: 'EN' })
+    await f.service.content(f.paper.id)
+    expect(JSON.parse(await readFile(f.cachePath, 'utf8')).entries).toHaveLength(2)
+    await f.store.saveSettings({ targetLanguage: 'zh-CN' })
+    await expect(f.service.content(f.paper.id)).resolves.toEqual(original)
+    expect(f.completion).toHaveBeenCalledTimes(2)
+  })
+
+  it('preserves both identities when their cache writes finish together', async () => {
+    const f = await fixture()
+    const firstStarted = deferred<void>()
+    const secondStarted = deferred<void>()
+    const release = deferred<void>()
+    f.completion.mockImplementation(async () => {
+      if (f.completion.mock.calls.length === 1) firstStarted.resolve()
+      else secondStarted.resolve()
+      await release.promise
+      return { text: 'Summary.', sources: [] }
+    })
+    const first = f.service.content(f.paper.id)
+    await firstStarted.promise
+    await f.store.saveSettings({ targetLanguage: 'EN' })
+    const second = f.service.content(f.paper.id)
+    await secondStarted.promise
+    release.resolve()
+    await Promise.all([first, second])
+    expect(JSON.parse(await readFile(f.cachePath, 'utf8')).entries).toHaveLength(2)
+    await f.service.content(f.paper.id)
+    await f.store.saveSettings({ targetLanguage: 'zh-CN' })
+    await f.service.content(f.paper.id)
+    expect(f.completion).toHaveBeenCalledTimes(2)
+  })
+
+  it('cancels the old request on a settings change without cancelling its replacement', async () => {
+    const f = await fixture()
+    const started = deferred<CompletionRequest>()
+    f.completion.mockImplementationOnce(async (request) => {
+      started.resolve(request)
+      await new Promise((_, reject) => request.signal!.addEventListener('abort', () => reject(request.signal!.reason), { once: true }))
+      return { text: 'Old summary.', sources: [] }
+    })
+    const operationId = randomUUID()
+    const old = f.service.content(f.paper.id, operationId)
+    const rejection = expect(old).rejects.toThrow()
+    const oldRequest = await started.promise
+    await f.store.saveSettings({ targetLanguage: 'EN' })
+    f.service.cancel(operationId)
+    const replacement = f.service.content(f.paper.id, randomUUID())
+    // Repeated cleanup from an old effect must never cancel its replacement.
+    f.service.cancel(operationId)
+    await rejection
+    expect(oldRequest.signal!.aborted).toBe(true)
+    await expect(replacement).resolves.toMatchObject({ kind: 'summary' })
+    const cache = JSON.parse(await readFile(f.cachePath, 'utf8'))
+    expect(cache.entries).toHaveLength(1)
+    expect(cache.entries[0].identity).toContain('"language":"EN"')
+  })
+
+  it('cancels before route lookup completes without starting a model request', async () => {
+    const f = await fixture()
+    const configured = deferred<Set<string>>()
+    vi.mocked(f.secrets.configuredProviderIds).mockReturnValueOnce(configured.promise)
+    const id = randomUUID()
+    const result = f.service.content(f.paper.id, id)
+    const rejection = expect(result).rejects.toThrow()
+    f.service.cancel(id)
+    configured.resolve(f.configured)
+    await rejection
+    expect(f.completion).not.toHaveBeenCalled()
+    await expect(access(f.cachePath)).rejects.toThrow()
+  })
+
+  it('keeps a shared generation alive until its last consumer cancels', async () => {
+    const f = await fixture()
+    const started = deferred<CompletionRequest>()
+    const release = deferred<void>()
+    f.completion.mockImplementation(async (request) => {
+      started.resolve(request)
+      await release.promise
+      return { text: 'Shared summary.', sources: [] }
+    })
+    const firstId = randomUUID()
+    const first = f.service.content(f.paper.id, firstId)
+    const rejection = expect(first).rejects.toThrow()
+    const request = await started.promise
+    const second = f.service.content(f.paper.id, randomUUID())
+    // Allow the second operation to finish its asynchronous route lookup.
+    await Promise.resolve()
+    await Promise.resolve()
+    f.service.cancel(firstId)
+    expect(request.signal!.aborted).toBe(false)
+    release.resolve()
+    await rejection
+    await expect(second).resolves.toEqual({ kind: 'summary', text: 'Shared summary.' })
     expect(f.completion).toHaveBeenCalledOnce()
   })
 

@@ -677,7 +677,8 @@ function registerIpc(): void {
   })
   handle('translation:cancel', (_event, paperId: string) => translations.cancel(requireUUID(paperId)))
   handle('translation:abstract', (_event, paperId: string) => translations.translateAbstract(requireUUID(paperId)))
-  handle('translation:abstract-content', (_event, paperId: string) => summaries.content(requireUUID(paperId)))
+  handle('translation:abstract-content', (_event, paperId: string, operationId: string) => summaries.content(requireUUID(paperId), requireUUID(operationId)))
+  handle('translation:cancel-abstract-content', (_event, operationId: string) => summaries.cancel(requireUUID(operationId)))
   handle('translation:reveal-log', (_event, path: string) => {
     const resolved = resolve(String(path))
     if (!resolved.startsWith(resolve(store.libraryRoot) + sep)) throw new Error('Invalid log path')

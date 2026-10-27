@@ -489,7 +489,8 @@ export interface FreddieAPI {
     translateBabeldocPDF(paperId: string, pageRange?: string): Promise<void>
     cancel(paperId: string): Promise<void>
     translateAbstract(paperId: string): Promise<string>
-    abstractContent(paperId: string): Promise<PaperAbstractContent>
+    abstractContent(paperId: string, operationId: string): Promise<PaperAbstractContent>
+    cancelAbstractContent(operationId: string): Promise<void>
     onEvent(listener: (event: TranslationEvent) => void): () => void
     revealLog(path: string): Promise<void>
     /** Shows the newest translated LaTeX project of the paper in the file manager. */

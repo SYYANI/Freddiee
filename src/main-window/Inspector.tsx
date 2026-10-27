@@ -8,7 +8,8 @@ import { Icon } from '../ui/Icon'
 import { NoteMarkdown } from '../ui/NoteMarkdown'
 import { WritingPane } from '../writing/WritingPane'
 
-export function Inspector({ paper, itemTypes, notes, mode, onMode, selection, focusedNoteId, onFocusHandled, onCreateNote, onOpenNoteAnchor, onOpenWriting, onCreateWritingAbout, onOpenCitation }: {
+export function Inspector({ collapsed, paper, itemTypes, notes, mode, onMode, selection, focusedNoteId, onFocusHandled, onCreateNote, onOpenNoteAnchor, onOpenWriting, onCreateWritingAbout, onOpenCitation }: {
+  collapsed: boolean
   paper?: Paper
   itemTypes: ItemTypeResolution
   notes: Note[]
@@ -40,7 +41,7 @@ export function Inspector({ paper, itemTypes, notes, mode, onMode, selection, fo
       {mode === 'paper' ? (
         paper ? (
           <div className="inspector-scroll">
-            <MetadataSection paper={paper} itemTypes={itemTypes} />
+            <MetadataSection collapsed={collapsed} paper={paper} itemTypes={itemTypes} />
             <div className="divider" />
             <NotesSection notes={notes} selection={selection} focusedNoteId={focusedNoteId} onFocusHandled={onFocusHandled} onCreateNote={onCreateNote} onOpenNoteAnchor={onOpenNoteAnchor} />
             <div className="divider" />
@@ -69,7 +70,7 @@ function SectionHeader({ title, children }: { title: string; children?: React.Re
   )
 }
 
-function MetadataSection({ paper, itemTypes }: { paper: Paper; itemTypes: ItemTypeResolution }): JSX.Element {
+function MetadataSection({ collapsed, paper, itemTypes }: { collapsed: boolean; paper: Paper; itemTypes: ItemTypeResolution }): JSX.Element {
   const { t, snapshot } = useApp()
   const [editingAuthors, setEditingAuthors] = useState(false)
   const [authorsDraft, setAuthorsDraft] = useState('')
@@ -96,16 +97,20 @@ function MetadataSection({ paper, itemTypes }: { paper: Paper; itemTypes: ItemTy
   const isSummary = abstractContent.kind === 'summary'
 
   useEffect(() => {
-    if (!hasPDF) return
+    if (!hasPDF || collapsed) return
     let active = true
-    void window.freddie.translation.abstractContent(paper.id).then((content) => {
+    const operationId = crypto.randomUUID()
+    void window.freddie.translation.abstractContent(paper.id, operationId).then((content) => {
       if (active) setPreparedAbstract({ key: summaryKey, content })
     }).catch(() => {
       // Optional summaries stay hidden when the provider or source is unavailable.
       if (active) setPreparedAbstract({ key: summaryKey, content: { kind: 'hidden' } })
     })
-    return () => { active = false }
-  }, [paper.id, hasPDF, summaryKey])
+    return () => {
+      active = false
+      void window.freddie.translation.cancelAbstractContent(operationId).catch(() => undefined)
+    }
+  }, [paper.id, hasPDF, collapsed, summaryKey])
 
   useEffect(() => {
     setEditingAuthors(false)

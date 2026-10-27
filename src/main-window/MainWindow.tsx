@@ -449,6 +449,7 @@ export function MainWindow(): JSX.Element {
       </main>
       {inspectorOpen && <div className="column-resizer inspector-resizer" onPointerDown={(event) => beginResize(event, 'inspector')} />}
       <Inspector
+        collapsed={!inspectorOpen}
         paper={selectedPaper}
         itemTypes={itemTypes}
         notes={notes}
