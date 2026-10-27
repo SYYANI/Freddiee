@@ -11,6 +11,8 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  # CPU binaries are bundled; skip the unused Linux CUDA download from NuGet.
+  ONNXRUNTIME_NODE_INSTALL: "skip"
 
 jobs:
   validate:
