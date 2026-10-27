@@ -46,6 +46,7 @@ import { applyLiquidGlass, applyUnifiedToolbar, supportsLiquidGlass } from './wi
 import { applyHiddenRegions, readableProseColorCSS, readableProseLayoutCSS } from './localizer'
 import { detectLatexToolchainStatus } from './latexToolchain'
 import { AuthorExtractionService } from './authorExtraction'
+import { PaperSummaryService } from './paperSummary'
 import * as cheerio from 'cheerio'
 
 const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, net, protocol, shell, systemPreferences } = electron
@@ -67,6 +68,7 @@ let secrets: SecretStore
 let writings: WritingStore
 let importer: PaperImporter
 let authorExtraction: AuthorExtractionService
+let summaries: PaperSummaryService
 let translations: TranslationService
 let assistant: AssistantService
 let annotations: AnnotationStore
@@ -95,6 +97,7 @@ app.whenReady().then(async () => {
 
   importer = new PaperImporter(store, (progress) => broadcast('import:progress', progress), () => translator)
   authorExtraction = new AuthorExtractionService(store, secrets, () => translator)
+  summaries = new PaperSummaryService(store, secrets)
   translations = new TranslationService(store, secrets, (event) => {
     broadcast('translation:event', event)
     if (event.type === 'finished' || event.type === 'failed' || event.type === 'cancelled') void refreshTranslatedIds()
@@ -482,6 +485,7 @@ function registerIpc(): void {
   handle('library:delete-paper', async (_event, id: string) => {
     translations.cancel(requireUUID(id))
     outlines.cancelPaper(id)
+    await summaries.cancelPaper(id)
     await store.deletePaper(id)
   })
   handle('library:set-item-type', (_event, paperId: string, itemType: string | null) => {
@@ -673,6 +677,7 @@ function registerIpc(): void {
   })
   handle('translation:cancel', (_event, paperId: string) => translations.cancel(requireUUID(paperId)))
   handle('translation:abstract', (_event, paperId: string) => translations.translateAbstract(requireUUID(paperId)))
+  handle('translation:abstract-content', (_event, paperId: string) => summaries.content(requireUUID(paperId)))
   handle('translation:reveal-log', (_event, path: string) => {
     const resolved = resolve(String(path))
     if (!resolved.startsWith(resolve(store.libraryRoot) + sep)) throw new Error('Invalid log path')

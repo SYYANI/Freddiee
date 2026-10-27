@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { InspectorMode, Note, NoteSelectionContext, Paper } from '../../shared/types'
+import type { InspectorMode, Note, NoteSelectionContext, Paper, PaperAbstractContent } from '../../shared/types'
 import { commonItemTypes, decodeEditableAuthors, displayAuthors, editableAuthorsText, itemTypeTitle, itemTypeTitles, metadataIdentifierText, sortedItemTypes, type ItemTypeResolution } from '../../shared/library'
 import { formatDate, useApp } from '../app/context'
 import { confirmDestructive, errorText, popupMenu } from '../app/native'
@@ -70,7 +70,7 @@ function SectionHeader({ title, children }: { title: string; children?: React.Re
 }
 
 function MetadataSection({ paper, itemTypes }: { paper: Paper; itemTypes: ItemTypeResolution }): JSX.Element {
-  const { t } = useApp()
+  const { t, snapshot } = useApp()
   const [editingAuthors, setEditingAuthors] = useState(false)
   const [authorsDraft, setAuthorsDraft] = useState('')
   const [error, setError] = useState<string>()
@@ -78,11 +78,34 @@ function MetadataSection({ paper, itemTypes }: { paper: Paper; itemTypes: ItemTy
   const [translatedAbstract, setTranslatedAbstract] = useState<string | null>(null)
   const [translating, setTranslating] = useState(false)
   const [abstractError, setAbstractError] = useState<string>()
+  const [preparedAbstract, setPreparedAbstract] = useState<{ key: string; content: PaperAbstractContent }>()
   const request = useRef(0)
   const authorsField = useRef<HTMLTextAreaElement>(null)
   const identifier = metadataIdentifierText(paper, t)
   const itemType = itemTypes.itemType(paper.id)
   const detected = itemTypes.detectedType(paper.id)
+  const pdfs = snapshot.attachments.filter((item) => item.paperId === paper.id && item.kind === 'pdf')
+  const hasPDF = pdfs.length > 0
+  const summaryKey = JSON.stringify([
+    paper.id, paper.title, paper.abstract, pdfs, snapshot.settings.targetLanguage,
+    snapshot.settings.htmlModelId, snapshot.settings.pdfModelId, snapshot.models, snapshot.providers
+  ])
+  const abstractContent: PaperAbstractContent = hasPDF
+    ? (preparedAbstract?.key === summaryKey ? preparedAbstract.content : { kind: 'hidden' })
+    : (paper.abstract.trim() ? { kind: 'original', text: paper.abstract } : { kind: 'hidden' })
+  const isSummary = abstractContent.kind === 'summary'
+
+  useEffect(() => {
+    if (!hasPDF) return
+    let active = true
+    void window.freddie.translation.abstractContent(paper.id).then((content) => {
+      if (active) setPreparedAbstract({ key: summaryKey, content })
+    }).catch(() => {
+      // Optional summaries stay hidden when the provider or source is unavailable.
+      if (active) setPreparedAbstract({ key: summaryKey, content: { kind: 'hidden' } })
+    })
+    return () => { active = false }
+  }, [paper.id, hasPDF, summaryKey])
 
   useEffect(() => {
     setEditingAuthors(false)
@@ -174,21 +197,21 @@ function MetadataSection({ paper, itemTypes }: { paper: Paper; itemTypes: ItemTy
       )}
       {identifier && <div className="caption secondary selectable">{identifier}</div>}
       {error && <div className="caption error">{error}</div>}
-      {paper.abstract && (
+      {abstractContent.kind !== 'hidden' && (
         <div className="abstract">
           <SectionHeader title={t('Abstract')}>
-            {translatedAbstract !== null ? (
+            {!isSummary && (translatedAbstract !== null ? (
               <IconButton icon="arrow.uturn.backward" size={14} label={t('Original')} onClick={() => setTranslatedAbstract(null)} />
             ) : !translating && (
               <IconButton icon="character.book.closed" size={14} label={t('Translate')} onClick={() => void translateAbstract()} />
-            )}
+            ))}
             <IconButton icon={abstractExpanded ? 'chevron.up' : 'chevron.down'} size={14} label={abstractExpanded ? t('Less') : t('More')} onClick={() => setAbstractExpanded((value) => !value)} />
           </SectionHeader>
-          {abstractError && <div className="caption error">{abstractError}</div>}
-          {translating ? (
+          {!isSummary && abstractError && <div className="caption error">{abstractError}</div>}
+          {!isSummary && translating ? (
             <div className="abstract-progress"><Spinner size={12} /><span>{t('Translating abstract...')}</span></div>
           ) : (
-            <p className={`abstract-text selectable ${abstractExpanded ? 'expanded' : ''}`}>{translatedAbstract ?? paper.abstract}</p>
+            <p className={`abstract-text selectable ${abstractExpanded ? 'expanded' : ''}`}>{isSummary ? abstractContent.text : (translatedAbstract ?? abstractContent.text)}</p>
           )}
         </div>
       )}

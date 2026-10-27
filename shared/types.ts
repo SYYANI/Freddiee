@@ -42,6 +42,11 @@ export interface Paper {
   modifiedAt: string
 }
 
+/** Inspector presentation only; the original paper abstract remains metadata. */
+export type PaperAbstractContent =
+  | { kind: 'hidden' }
+  | { kind: 'original' | 'summary'; text: string }
+
 export interface Attachment {
   id: string
   paperId: string
@@ -484,6 +489,7 @@ export interface FreddieAPI {
     translateBabeldocPDF(paperId: string, pageRange?: string): Promise<void>
     cancel(paperId: string): Promise<void>
     translateAbstract(paperId: string): Promise<string>
+    abstractContent(paperId: string): Promise<PaperAbstractContent>
     onEvent(listener: (event: TranslationEvent) => void): () => void
     revealLog(path: string): Promise<void>
     /** Shows the newest translated LaTeX project of the paper in the file manager. */
