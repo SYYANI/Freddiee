@@ -35,8 +35,6 @@ npm run dev
 
 `FREDDIE_DATA_DIR=/some/folder` points the app at a separate library, which keeps development runs away from your real data. When launching Electron from a terminal inside VS Code, unset `ELECTRON_RUN_AS_NODE` first.
 
-On Windows, the library sidebar requests desktop blur in the default appearance. Windows 11 22H2+ uses Electron Acrylic; Windows 10 1809+ and early Windows 11 use legacy Acrylic through the existing Koffi dependency, with BlurBehind for older Win10 builds. The adapter also extends DWM glass into the entire client area and resets Electron's content background; an accepted accent-policy call alone does not prove that page alpha is composited. The legacy accent policy is undocumented and needs testing on the target Windows machine, including dragging/resizing because legacy Acrylic can cause lag. Failed native calls keep an opaque background. Paper Tone stays opaque. After changing native window code, stop and restart `npm run dev`; tune the accepted-backdrop sidebar tint in `src/styles/base.css` under `data-window-backdrop="true"`. Close DevTools while judging transparency; the adapter reapplies the material when DevTools closes.
-
 Validation:
 
 ```sh

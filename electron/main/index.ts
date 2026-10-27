@@ -43,7 +43,6 @@ import { latestLatexSourcePath } from '../../LaTeXTransKit'
 import { WritingStore } from './writings'
 import { importNativeLibrary, nativeLibraryExists, type NativeImportStage, type NativeImportUpdate } from './nativeLibrary'
 import { applyLiquidGlass, applyUnifiedToolbar, supportsLiquidGlass } from './windowChrome'
-import { applyWindowsBackdrop } from './windowsBackdrop'
 import { applyHiddenRegions, readableProseColorCSS, readableProseLayoutCSS } from './localizer'
 import { detectLatexToolchainStatus } from './latexToolchain'
 import { AuthorExtractionService } from './authorExtraction'
@@ -80,7 +79,6 @@ let hasNativeLibrary = false
 let nativeImportRunning = false
 
 const windows: { main?: Window; settings?: Window; writing?: Window; about?: Window } = {}
-const windowsWithBackdrop = new WeakSet<Window>()
 
 app.whenReady().then(async () => {
   // Packaged builds take the icon from the bundle; unpackaged runs would otherwise show Electron's.
@@ -198,9 +196,6 @@ function baseWindowOptions(route: WindowRoute, material: WindowMaterial): Browse
     show: false,
     backgroundColor: process.platform === 'linux' ? '#f3f3f3' : '#00000000',
     titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
-    // Mark the content as translucent at creation; Win10's native adapter also
-    // has to extend the DWM glass into the client area after creation.
-    ...(isWindows ? { backgroundMaterial: 'acrylic' as const } : {}),
     ...(isMac ? {
       transparent: true,
       ...(!useLiquidGlass ? {
@@ -230,17 +225,7 @@ function loadRoute(window: Window, route: WindowRoute): void {
 }
 
 function hardenWindow(window: Window): void {
-  const refreshBackdrop = (notify: boolean): void => {
-    if (!isWindows || window.isDestroyed()) return
-    const previous = windowsWithBackdrop.has(window)
-    const accepted = applyWindowsBackdrop(window)
-    if (accepted) windowsWithBackdrop.add(window)
-    else windowsWithBackdrop.delete(window)
-    // Reset both the native/compositor background and the WebContents background.
-    window.setBackgroundColor(accepted ? '#00000000' : '#e9ecef')
-    if (notify && previous !== accepted) window.webContents.send('library:changed')
-  }
-  refreshBackdrop(false)
+  if (isWindows) window.setBackgroundMaterial('acrylic')
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//i.test(url)) void shell.openExternal(url)
     return { action: 'deny' }
@@ -249,12 +234,7 @@ function hardenWindow(window: Window): void {
     if (url !== window.webContents.getURL()) event.preventDefault()
   })
   window.webContents.on('will-attach-webview', (event) => event.preventDefault())
-  window.once('ready-to-show', () => {
-    window.show()
-    // Showing a window can reset the DWM frame; apply to the visible HWND too.
-    refreshBackdrop(true)
-  })
-  window.webContents.on('devtools-closed', () => refreshBackdrop(true))
+  window.once('ready-to-show', () => window.show())
 }
 
 function createMainWindow(): void {
@@ -389,7 +369,7 @@ function requireUUID(value: unknown): string {
   return value
 }
 
-async function snapshot(window?: Window): Promise<LibrarySnapshot> {
+async function snapshot(): Promise<LibrarySnapshot> {
   const database = store.database
   const configured = await secrets.configuredProviderIds()
   const builtIn = new Set(builtInProviders.map((provider) => provider.id))
@@ -415,7 +395,6 @@ async function snapshot(window?: Window): Promise<LibrarySnapshot> {
     writingError,
     htmlTranslatedPaperIds,
     platform: process.platform,
-    windowBackdrop: window ? windowsWithBackdrop.has(window) : false,
     systemDarkMode: systemDarkMode()
   })
 }
@@ -451,7 +430,7 @@ async function testCompletion(baseURL: string, apiStyle: ProviderProfile['apiSty
 
 function registerIpc(): void {
   // Library
-  handle('library:snapshot', (event) => snapshot(windowFor(event.sender)))
+  handle('library:snapshot', () => snapshot())
   handle('library:import', async (event, request: ImportRequest) => {
     try {
       if (request.type === 'arxiv') {
