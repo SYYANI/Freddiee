@@ -23,17 +23,16 @@ const handleValue = koffi.sizeof('void *') === 8 ? 0x1234567812345678n : 0x12345
 function makeWindow() {
   const handle = Buffer.alloc(koffi.sizeof('void *'))
   koffi.encode(handle, 'uintptr_t', handleValue)
-  const window = {
+  return {
     getNativeWindowHandle: vi.fn(() => handle),
     setBackgroundMaterial: vi.fn(),
     setBackgroundColor: vi.fn()
   }
-  return window
 }
 
 async function loadBackdrop() {
   const module = await import('../electron/main/windowsBackdrop')
-  return { ...module, apply: (window: ReturnType<typeof makeWindow>) => module.applyWindowsBackdrop(window as never, module.windowsBackdrop()) }
+  return { ...module, apply: (window: ReturnType<typeof makeWindow>) => module.applyWindowsBackdrop(window as never) }
 }
 
 beforeEach(() => {

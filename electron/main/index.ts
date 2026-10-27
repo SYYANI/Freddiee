@@ -229,7 +229,7 @@ function loadRoute(window: Window, route: WindowRoute): void {
 }
 
 function hardenWindow(window: Window): void {
-  applyWindowsBackdrop(window, windowsBackdrop())
+  applyWindowsBackdrop(window)
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//i.test(url)) void shell.openExternal(url)
     return { action: 'deny' }

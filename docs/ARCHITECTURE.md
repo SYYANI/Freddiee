@@ -22,12 +22,13 @@ Electron main process
   ├─ AnnotationStore     PDF annotation overlays and annotated-PDF export
   ├─ WritingStore        Markdown writings in Writings/{id}
   ├─ nativeLibrary       read-only import from native Freddie (macOS)
+  ├─ windowsBackdrop     Electron Acrylic on Windows 11 22H2+; Koffi-bound SetWindowCompositionAttribute blur on Windows 10 1809+, opaque on failure
   └─ freddie://          contained, read-only delivery of paper and writing files
 ```
 
 This applies the DeepSeek Harness desktop separation to a document application: Electron packages the complete web client, while the privileged process owns native integrations. Freddie needs no listening port: the narrow IPC facade and the custom read-only protocol give the same separation with a smaller attack surface.
 
-The windows match native Freddie's scenes. Each is the same renderer bundle opened with a route (`main`, `settings`, `writing`, `about`) passed through `additionalArguments`. Main-process changes are broadcast as `library:changed`, and every window reloads its snapshot from the main-process authority.
+The windows match native Freddie's scenes. Each is the same renderer bundle opened with a route (`main`, `settings`, `writing`, `about`) and, on Windows, whether a native backdrop is active, both passed through `additionalArguments`. Main-process changes are broadcast as `library:changed`, and every window reloads its snapshot from the main-process authority.
 
 ## Security invariants
 

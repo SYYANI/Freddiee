@@ -16,9 +16,7 @@ Native Swift version: [SYYANI/Freddie](https://github.com/SYYANI/Freddie)
 - **Export**: copy link, copy digest, export digest Markdown with a template, export HTML as PDF.
 - **Settings**: General (quick setup, language, target language, glossary, performance), Reader (typography, appearance, translation routes), LaTeX (opt-in arXiv source translation and toolchain detection), Digest, Providers, and Models, using the OpenAI Responses, Chat Completions, or Anthropic Messages API.
 - **Moving from the Mac app**: on macOS, *File → Import Library from Freddie for macOS…* copies papers, attachments, translations, notes, folders, item types, reading positions, and writings from the native app's library. The native library is opened read-only and not changed; API keys stay in the Keychain and must be entered again.
-- **Interface**: English and Simplified Chinese (the native string catalog is reused), Default and Paper Tone appearances, macOS vibrancy and Windows acrylic window materials.
-
-Windows Acrylic uses Electron's system material on Windows 11 22H2+, and a main-process Koffi binding to the undocumented `SetWindowCompositionAttribute` for a tinted blur on Windows 10 1809+ and earlier Windows 11 releases. Unsupported releases or native-call failures keep opaque surfaces; Paper Tone stays opaque.
+- **Interface**: English and Simplified Chinese (the native string catalog is reused), Default and Paper Tone appearances, macOS vibrancy and Windows translucent window materials (Windows 10 1809+; Paper Tone stays opaque).
 
 ## Screenshot
 

@@ -11,7 +11,7 @@ type BackdropWindow = Pick<BrowserWindow, 'getNativeWindowHandle' | 'setBackgrou
 const ACCENT_ENABLE_BLURBEHIND = 3
 const SOLID_BACKGROUND = '#f3f3f3'
 
-type SetAccent = (handle: Buffer, state: number) => boolean
+type SetAccent = (handle: Buffer) => boolean
 
 let resolved: WindowsBackdrop | undefined
 let setAccent: SetAccent | undefined
@@ -35,10 +35,10 @@ function bindAccentPolicy(): SetAccent {
   const setAttribute = user32.func('__stdcall', 'SetWindowCompositionAttribute', 'int32_t', [
     'void *', koffi.pointer(attributeData)
   ])
-  return (handle, state) => {
+  return (handle) => {
     const policy = Buffer.alloc(koffi.sizeof(accentPolicy))
     koffi.encode(policy, accentPolicy, {
-      AccentState: state,
+      AccentState: ACCENT_ENABLE_BLURBEHIND,
       AccentFlags: 2, // Draw GradientColor over the blur.
       GradientColor: 0xccf3f3f3, // AABBGGRR: translucent light gray, never zero alpha.
       AnimationId: 0
@@ -73,7 +73,8 @@ export function windowsBackdrop(): WindowsBackdrop {
 }
 
 /** Keep native handles and FFI in main; failure must leave an opaque, readable window. */
-export function applyWindowsBackdrop(window: BackdropWindow, backdrop: WindowsBackdrop): void {
+export function applyWindowsBackdrop(window: BackdropWindow): void {
+  const backdrop = windowsBackdrop()
   if (backdrop === 'system') {
     window.setBackgroundMaterial('acrylic')
     return
@@ -81,7 +82,7 @@ export function applyWindowsBackdrop(window: BackdropWindow, backdrop: WindowsBa
   if (backdrop !== 'legacy' || !setAccent) return
 
   try {
-    if (setAccent(window.getNativeWindowHandle(), ACCENT_ENABLE_BLURBEHIND)) return
+    if (setAccent(window.getNativeWindowHandle())) return
     console.warn('Windows rejected the native blur material; using a solid background.')
   } catch (error) {
     console.warn('Unable to apply native blur; using a solid background.', error)

@@ -67,7 +67,7 @@ html[data-platform="linux"] {
   --glass-bg: rgba(255, 255, 255, 0.92);
 }
 
-/* Acrylic is much less refined than the macOS material; keep only a hint of it in the sidebar. */
+/* Without native Acrylic (see below), keep the surfaces nearly opaque. */
 html[data-platform="win32"] {
   --window-radius: 8px;
   --sidebar-bg: rgba(232, 233, 236, 0.95);
