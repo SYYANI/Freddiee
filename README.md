@@ -33,6 +33,8 @@ npm install
 npm run dev
 ```
 
+`npm install` and `npm ci` automatically install the Electron binary before applying the development patches. An existing binary that matches the installed Electron version is reused. If you install with `--ignore-scripts`, run `npm run postinstall` afterward to complete setup.
+
 `FREDDIE_DATA_DIR=/some/folder` points the app at a separate library, which keeps development runs away from your real data. When launching Electron from a terminal inside VS Code, unset `ELECTRON_RUN_AS_NODE` first.
 
 Validation:

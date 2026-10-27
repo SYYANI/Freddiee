@@ -28,7 +28,7 @@
     "package:linux": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs linux && npm run build && electron-builder --linux",
     "package:linux:arm64": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs linux arm64 && npm run build && electron-builder --linux --arm64",
     "package:linux:x64": "node scripts/verify-babeldoc-runtime.mjs && node scripts/install-native-targets.mjs linux x64 && npm run build && electron-builder --linux --x64",
-    "postinstall": "node scripts/patch-dev-electron-name.mjs && node scripts/patch-osx-sign-isbinaryfile.mjs"
+    "postinstall": "node scripts/install-electron.mjs && node scripts/patch-dev-electron-name.mjs && node scripts/patch-osx-sign-isbinaryfile.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

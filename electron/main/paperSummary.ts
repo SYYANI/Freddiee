@@ -142,6 +142,10 @@ export class PaperSummaryService {
       const content = await job.result
       operation.controller.signal.throwIfAborted()
       return content
+    } catch (error) {
+      // UI cleanup is an expected outcome, not an IPC handler failure.
+      if (operation.controller.signal.aborted) return hidden
+      throw error
     } finally {
       if (this.operations.get(operationId) === operation) this.cancel(operationId)
     }

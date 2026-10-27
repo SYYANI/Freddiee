@@ -159,6 +159,14 @@ describe('PDF inspector summaries', () => {
     expect(f.store.paper(f.paper.id).abstract).toBe(f.paper.abstract)
   })
 
+  it('preserves provider abort errors when the summary operation was not cancelled', async () => {
+    const f = await fixture()
+    const error = new DOMException('Provider request aborted', 'AbortError')
+    f.completion.mockRejectedValueOnce(error)
+    await expect(f.service.content(f.paper.id)).rejects.toBe(error)
+    await expect(access(f.cachePath)).rejects.toThrow()
+  })
+
   it('coalesces concurrent requests for the same paper', async () => {
     const f = await fixture()
     const results = await Promise.all([f.service.content(f.paper.id), f.service.content(f.paper.id)])
@@ -238,14 +246,14 @@ describe('PDF inspector summaries', () => {
     })
     const operationId = randomUUID()
     const old = f.service.content(f.paper.id, operationId)
-    const rejection = expect(old).rejects.toThrow()
+    const cancelled = expect(old).resolves.toEqual({ kind: 'hidden' })
     const oldRequest = await started.promise
     await f.store.saveSettings({ targetLanguage: 'EN' })
     f.service.cancel(operationId)
     const replacement = f.service.content(f.paper.id, randomUUID())
     // Repeated cleanup from an old effect must never cancel its replacement.
     f.service.cancel(operationId)
-    await rejection
+    await cancelled
     expect(oldRequest.signal!.aborted).toBe(true)
     await expect(replacement).resolves.toMatchObject({ kind: 'summary' })
     const cache = JSON.parse(await readFile(f.cachePath, 'utf8'))
@@ -259,10 +267,10 @@ describe('PDF inspector summaries', () => {
     vi.mocked(f.secrets.configuredProviderIds).mockReturnValueOnce(configured.promise)
     const id = randomUUID()
     const result = f.service.content(f.paper.id, id)
-    const rejection = expect(result).rejects.toThrow()
+    const cancelled = expect(result).resolves.toEqual({ kind: 'hidden' })
     f.service.cancel(id)
     configured.resolve(f.configured)
-    await rejection
+    await cancelled
     expect(f.completion).not.toHaveBeenCalled()
     await expect(access(f.cachePath)).rejects.toThrow()
   })
@@ -278,7 +286,7 @@ describe('PDF inspector summaries', () => {
     })
     const firstId = randomUUID()
     const first = f.service.content(f.paper.id, firstId)
-    const rejection = expect(first).rejects.toThrow()
+    const cancelled = expect(first).resolves.toEqual({ kind: 'hidden' })
     const request = await started.promise
     const second = f.service.content(f.paper.id, randomUUID())
     // Allow the second operation to finish its asynchronous route lookup.
@@ -287,9 +295,34 @@ describe('PDF inspector summaries', () => {
     f.service.cancel(firstId)
     expect(request.signal!.aborted).toBe(false)
     release.resolve()
-    await rejection
+    await cancelled
     await expect(second).resolves.toEqual({ kind: 'summary', text: 'Shared summary.' })
     expect(f.completion).toHaveBeenCalledOnce()
+  })
+
+  it('discards late cancelled responses without disturbing a replacement for the same summary', async () => {
+    const f = await fixture()
+    const started = deferred<CompletionRequest>()
+    const release = deferred<void>()
+    f.completion.mockImplementationOnce(async (request) => {
+      started.resolve(request)
+      // A provider may still return a response after cancellation.
+      await release.promise
+      return { text: 'Stale summary.', sources: [] }
+    })
+    const operationId = randomUUID()
+    const old = f.service.content(f.paper.id, operationId)
+    const cancelled = expect(old).resolves.toEqual({ kind: 'hidden' })
+    const oldRequest = await started.promise
+    f.service.cancel(operationId)
+    expect(oldRequest.signal!.aborted).toBe(true)
+    await expect(f.service.content(f.paper.id)).resolves.toMatchObject({ kind: 'summary' })
+    release.resolve()
+    await cancelled
+    const cache = JSON.parse(await readFile(f.cachePath, 'utf8'))
+    expect(cache.entries).toHaveLength(1)
+    expect(cache.entries[0].text).toBe('论文探讨研究问题、方法及主要发现。')
+    expect(f.completion).toHaveBeenCalledTimes(2)
   })
 
   it('cancels a pending summary before deletion without recreating its cache', async () => {
@@ -302,11 +335,11 @@ describe('PDF inspector summaries', () => {
       return { text: 'Late summary.', sources: [] }
     })
     const result = f.service.content(f.paper.id)
-    const rejection = expect(result).rejects.toThrow()
+    const cancelled = expect(result).resolves.toEqual({ kind: 'hidden' })
     await pending
     await f.service.cancelPaper(f.paper.id)
     await f.store.deletePaper(f.paper.id)
-    await rejection
+    await cancelled
     await expect(access(f.directory)).rejects.toThrow()
   })
 
