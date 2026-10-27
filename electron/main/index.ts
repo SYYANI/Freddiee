@@ -198,8 +198,8 @@ function baseWindowOptions(route: WindowRoute, material: WindowMaterial): Browse
     show: false,
     backgroundColor: process.platform === 'linux' ? '#f3f3f3' : '#00000000',
     titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
-    // Seed Electron's translucent compositor at construction, also on Win10.
-    // The legacy native call alone cannot change an already opaque surface.
+    // Mark the content as translucent at creation; Win10's native adapter also
+    // has to extend the DWM glass into the client area after creation.
     ...(isWindows ? { backgroundMaterial: 'acrylic' as const } : {}),
     ...(isMac ? {
       transparent: true,
@@ -230,10 +230,17 @@ function loadRoute(window: Window, route: WindowRoute): void {
 }
 
 function hardenWindow(window: Window): void {
-  if (isWindows) {
-    if (applyWindowsBackdrop(window)) windowsWithBackdrop.add(window)
-    else window.setBackgroundColor('#e9ecef')
+  const refreshBackdrop = (notify: boolean): void => {
+    if (!isWindows || window.isDestroyed()) return
+    const previous = windowsWithBackdrop.has(window)
+    const accepted = applyWindowsBackdrop(window)
+    if (accepted) windowsWithBackdrop.add(window)
+    else windowsWithBackdrop.delete(window)
+    // Reset both the native/compositor background and the WebContents background.
+    window.setBackgroundColor(accepted ? '#00000000' : '#e9ecef')
+    if (notify && previous !== accepted) window.webContents.send('library:changed')
   }
+  refreshBackdrop(false)
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//i.test(url)) void shell.openExternal(url)
     return { action: 'deny' }
@@ -242,7 +249,12 @@ function hardenWindow(window: Window): void {
     if (url !== window.webContents.getURL()) event.preventDefault()
   })
   window.webContents.on('will-attach-webview', (event) => event.preventDefault())
-  window.once('ready-to-show', () => window.show())
+  window.once('ready-to-show', () => {
+    window.show()
+    // Showing a window can reset the DWM frame; apply to the visible HWND too.
+    refreshBackdrop(true)
+  })
+  window.webContents.on('devtools-closed', () => refreshBackdrop(true))
 }
 
 function createMainWindow(): void {

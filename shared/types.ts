@@ -213,7 +213,7 @@ export interface LibrarySnapshot {
   /** The last failed load or save of a writing. */
   writingError?: string
   platform: NodeJS.Platform | string
-  /** Runtime capability of the requesting window; never persisted. */
+  /** Native backdrop request accepted for this window; not a visual check, never persisted. */
   windowBackdrop?: boolean
   systemDarkMode: boolean
 }

@@ -67,7 +67,7 @@ html[data-platform="linux"] {
   --glass-bg: rgba(255, 255, 255, 0.92);
 }
 
-/* Windows stays opaque unless the main process successfully installs a backdrop. */
+/* Windows stays opaque unless the native backdrop APIs accept the request. */
 html[data-platform="win32"] {
   --window-radius: 8px;
   --sidebar-bg: #e8e9ec;
@@ -77,9 +77,9 @@ html[data-platform="win32"] {
   --glass-bg: rgba(255, 255, 255, 0.92);
 }
 
-/* Win10's native blur and Win11 Acrylic sit beneath the web content. */
+/* The native Windows material sits beneath the web content. */
 html[data-platform="win32"][data-window="main"][data-window-backdrop="true"]:not([data-appearance="paper"]) {
-  --sidebar-bg: rgba(232, 233, 236, 0.65);
+  --sidebar-bg: rgba(232, 233, 236, 0.45);
   --sidebar-tint: rgba(220, 225, 240, 0.2);
 }
 
