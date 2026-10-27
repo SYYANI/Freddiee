@@ -393,3 +393,57 @@
 .html-sidenotes .sidenote-card {
   pointer-events: auto;
 }
+
+/* MARK: Document contents */
+.reader-content { --outline-width: min(300px, max(240px, calc(100% - 100px))); }
+.reader-document { position: absolute; inset: 0; min-width: 0; }
+.outline-pinned .reader-document { left: calc(var(--outline-width) + 16px); }
+/* A transparent iframe in a transparent macOS window bypasses the overlay's
+   backdrop blur. Back only the covered area, behind the iframe's content,
+   so HTML and PDF share the same glass without making the whole page opaque. */
+html[data-platform="darwin"]:not([data-appearance="paper"]) .outline-over-html .reader-document::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 8px;
+  width: var(--outline-width);
+  border-radius: 14px;
+  background: var(--card-bg);
+  pointer-events: none;
+}
+.document-outline {
+  position: absolute; z-index: 15; top: 8px; bottom: 8px; left: 8px;
+  display: flex; flex-direction: column; width: var(--outline-width); min-height: 0;
+  /* Keep softly recognizable backdrop shapes, like the Swift contents material.
+     Derive the tint from the shared theme so Paper Tone stays warm. */
+  background: color-mix(in srgb, var(--glass-bg) 82%, transparent);
+  backdrop-filter: blur(8px) saturate(1.25);
+  -webkit-backdrop-filter: blur(8px) saturate(1.25);
+  border: 0.5px solid var(--glass-border); border-radius: 14px; overflow: hidden;
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.9), 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+.outline-header { display: flex; align-items: center; padding: 8px 10px; gap: 3px; }
+.outline-header strong { font-size: 13px; }
+.outline-source { display: flex; align-items: center; gap: 6px; padding: 0 12px 8px; color: var(--text-secondary); font-size: 11px; }
+.outline-source select { width: 100%; min-width: 0; border: 0; background: transparent; color: inherit; font: inherit; text-overflow: ellipsis; }
+.outline-filter { display: flex; align-items: center; gap: 6px; margin: 0 10px 8px; padding: 5px 8px; border: 1px solid var(--separator); border-radius: 7px; color: var(--text-secondary); }
+.outline-filter:focus-within { border-color: var(--accent, #007aff); }
+.outline-filter input { width: 100%; min-width: 0; padding: 0; border: 0; outline: 0; background: transparent; font-size: 12px; }
+.outline-list { flex: 1; min-height: 0; overflow: auto; padding: 6px; border-top: 1px solid var(--separator); overscroll-behavior: contain; }
+.outline-row { display: flex; align-items: flex-start; border-radius: 6px; margin-bottom: 2px; padding-block: 5px; padding-right: 8px; }
+.outline-row.selected { background: rgb(0 122 255 / 18%); }
+.outline-row.current { background: rgb(0 122 255 / 9%); }
+.outline-row:hover { background: rgb(0 122 255 / 12%); }
+.outline-disclosure { flex: none; display: grid; place-items: center; width: 18px; height: 24px; border: 0; padding: 0; background: transparent; color: var(--text-secondary); }
+.outline-destination { display: flex; align-items: baseline; gap: 8px; width: 100%; min-width: 0; padding: 4px 0; border: 0; background: transparent; color: inherit; text-align: left; font: inherit; font-size: 13px; }
+.outline-destination:disabled { opacity: 1; }
+.outline-titles { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.outline-titles > span, .outline-titles > small { display: block; }
+.outline-titles small { margin-top: 3px; }
+.outline-row small, .outline-page, .outline-empty { font-size: 11px; color: var(--text-secondary); }
+.outline-page { font-variant-numeric: tabular-nums; }
+.outline-row.untranslated { color: var(--text-secondary); }
+.outline-empty { padding: 14px; line-height: 1.5; }
+.outline-error { padding: 10px; margin: 0; color: var(--red); font-size: 11px; overflow-wrap: anywhere; }
+.outline-cancel { flex: none; margin: 8px; }

@@ -1,7 +1,7 @@
 import {
-  AlignLeft, AppWindowMac, Book, BookOpen, Bookmark, Check, ChevronDown, ChevronUp, CircleArrowUp, CircleCheck, CircleEllipsis,
+  AlignLeft, AppWindowMac, Book, BookOpen, Bookmark, Check, ChevronDown, ChevronRight, ChevronUp, CircleArrowUp, CircleCheck, CircleEllipsis,
   CirclePlus, CircleStop, CircleX, Copy, Earth, Eraser, File, FileClock, FileDown, FilePlus, FileText, FileUp, Folder, FolderMinus, Highlighter,
-  Languages, Link, Minus, MessageCircle, MousePointer2, NotebookPen, PanelLeft, PanelRight, PencilLine, Plus, Redo2, RefreshCw,
+  Languages, Link, ListTree, Pin, Minus, MessageCircle, MousePointer2, NotebookPen, PanelLeft, PanelRight, PencilLine, Plus, Redo2, RefreshCw,
   RotateCcw, ScanText, ScrollText, Search, Settings, Share, Sparkles, SquarePen, SquareStack, Star, StarOff, StickyNote,
   Strikethrough, TextQuote, Trash2, TriangleAlert, Underline, Undo2, X, type LucideIcon
 } from 'lucide-react'
@@ -10,6 +10,10 @@ import type { CSSProperties } from 'react'
 // SF Symbol names used by native Freddie, mapped to the closest line icons.
 const symbols: Record<string, LucideIcon> = {
   'plus': Plus,
+  'list.bullet.indent': ListTree,
+  'pin': Pin,
+  'pin.fill': Pin,
+  'chevron.right': ChevronRight,
   'minus': Minus,
   'trash': Trash2,
   'sidebar.left': PanelLeft,
@@ -122,5 +126,5 @@ export function Icon({ name, size = 16, weight = 1.7, className, style, filled }
     )
   }
   const Component = symbols[name] ?? FileText
-  return <Component className={className} style={style} size={size} strokeWidth={weight} fill={filled || name.endsWith('.fill') && name.startsWith('star') ? 'currentColor' : 'none'} aria-hidden="true" />
+  return <Component className={className} style={style} size={size} strokeWidth={weight} fill={filled || name.endsWith('.fill') && (name.startsWith('star') || name.startsWith('pin')) ? 'currentColor' : 'none'} aria-hidden="true" />
 }

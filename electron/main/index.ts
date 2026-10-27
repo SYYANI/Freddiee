@@ -30,6 +30,8 @@ import { firstAttachment, resolveItemTypes } from '../../shared/library'
 import { digestFileName, makeDigestContent, makeDigestMarkdown } from '../../shared/digest'
 import { parseCitation } from '../../shared/writing'
 import { AnnotationStore } from './annotations'
+import { DocumentOutlineService } from './documentOutline'
+import { outlineSources, type DocumentOutlineSource } from '../../shared/outline'
 import { AssistantService } from './assistant'
 import { safeFileName, atomicWriteFile } from './files'
 import { ImportError, PaperImporter, readPDFMetadata } from './importer'
@@ -68,6 +70,7 @@ let authorExtraction: AuthorExtractionService
 let translations: TranslationService
 let assistant: AssistantService
 let annotations: AnnotationStore
+let outlines: DocumentOutlineService
 let translator: Translator = createTranslator('en')
 let htmlTranslatedPaperIds: string[] = []
 let hasNativeLibrary = false
@@ -87,6 +90,7 @@ app.whenReady().then(async () => {
   writings = new WritingStore(store.writingsRoot)
   annotations = new AnnotationStore(store)
   updateTranslator()
+  outlines = new DocumentOutlineService(store, secrets, () => translator)
   synchronizeAppearance()
 
   importer = new PaperImporter(store, (progress) => broadcast('import:progress', progress), () => translator)
@@ -127,16 +131,14 @@ app.on('window-all-closed', () => {
   if (!isMac) app.quit()
 })
 
-// Every quit path (closing the last window, Cmd+Q, the menu) passes through
-// here. A BabelDOC worker torn down inside onnxruntime aborts the process, so
-// cancel running translations and let them unwind before quitting for real.
-let translationsStopped = false
-let stoppingTranslations: Promise<void> | undefined
+// Wait for native translation work and document parser workers to stop on every quit path.
+let backgroundStopped = false
+let stoppingBackground: Promise<void> | undefined
 app.on('before-quit', (event) => {
-  if (translationsStopped || !translations?.hasRunningJobs()) return
+  if (backgroundStopped || (!translations?.hasRunningJobs() && !outlines?.hasRunningJobs())) return
   event.preventDefault()
-  stoppingTranslations ??= translations.shutdown().finally(() => {
-    translationsStopped = true
+  stoppingBackground ??= Promise.allSettled([translations?.shutdown(), outlines?.shutdown()]).then(() => {
+    backgroundStopped = true
     app.quit()
   })
 })
@@ -479,6 +481,7 @@ function registerIpc(): void {
   })
   handle('library:delete-paper', async (_event, id: string) => {
     translations.cancel(requireUUID(id))
+    outlines.cancelPaper(id)
     await store.deletePaper(id)
   })
   handle('library:set-item-type', (_event, paperId: string, itemType: string | null) => {
@@ -518,6 +521,17 @@ function registerIpc(): void {
     const metadata = await readPDFMetadata(new Uint8Array(await readFile(store.attachmentPath(requireUUID(paperId), requireUUID(attachmentId)))))
     return { pageCount: metadata.pageCount, hasText: metadata.hasText }
   })
+
+  // Document outlines: identifiers only; extraction and model credentials stay in main.
+  handle('outline:load', (_event, paperId: string, attachmentId: string, operationId: string) =>
+    outlines.run({ paperId: requireUUID(paperId), attachmentId: requireUUID(attachmentId) }, requireUUID(operationId)))
+  handle('outline:select', (_event, paperId: string, attachmentId: string, source: DocumentOutlineSource, operationId: string) => {
+    if (!outlineSources.includes(source) || source === 'html') throw new Error('Invalid outline source')
+    return outlines.run({ paperId: requireUUID(paperId), attachmentId: requireUUID(attachmentId) }, requireUUID(operationId), source)
+  })
+  handle('outline:organize', (_event, paperId: string, attachmentId: string, operationId: string) =>
+    outlines.run({ paperId: requireUUID(paperId), attachmentId: requireUUID(attachmentId) }, requireUUID(operationId), 'organize'))
+  handle('outline:cancel', (_event, operationId: string) => outlines.cancel(requireUUID(operationId)))
 
   // Folders
   handle('folders:create', (_event, name: string, paperId?: string) => store.createFolder(String(name ?? ''), translator('New Folder'), isUUID(paperId) ? paperId : undefined).then(() => undefined))

@@ -17,6 +17,8 @@ Electron main process
   ├─ LaTeXTransKit       port of the Swift kit: secure arXiv extraction, structured units, slot templates, latexmk
   ├─ RebuildPDFKit       scanned PDFs: Tesseract measurement, vision transcription, review, translation, XeLaTeX
   ├─ AssistantService    retrieval, prompts, streaming answers, saved conversations
+  ├─ DocumentOutlineService cached outlines and opt-in AI organization
+  │    └─ Outline worker PDF parsing, bookmark assessment/repair, cached LaTeX/scan alignment and heuristics; no credentials
   ├─ AnnotationStore     PDF annotation overlays and annotated-PDF export
   ├─ WritingStore        Markdown writings in Writings/{id}
   ├─ nativeLibrary       read-only import from native Freddie (macOS)
@@ -52,3 +54,11 @@ The windows match native Freddie's scenes. Each is the same renderer bundle open
 ## Long-running work
 
 Import, translation, and the assistant publish typed events. The renderer treats its snapshot as a projection and reloads it after each change. HTML translation rewrites `paper.html` after every batch and sends each finished segment to the reader, which inserts it without reloading. PDF translation is replace-at-end: only a successful run becomes the visible translated attachment. BabelDOC emits helper-compatible stage events and keeps a credential-free structured-IL checkpoint keyed by PDF bytes, page selection and layout-model hash; route, glossary and thinking changes do not invalidate it. LaTeX units and scanned pages likewise use credential-free checkpoints.
+
+## Document contents
+
+PDF outlines are loaded lazily through named, UUID-validated preload operations. Main reads the registered original PDF and existing semantic/scan artifacts, then transfers the document bytes and credential-free heading data to a dedicated Node worker for PDF.js parsing, bookmark assessment/repair, LaTeX alignment and heuristic extraction; opening Contents never acquires source files or calls a model. Each attachment has a versioned, credential-free sidecar in `Resources/Outline/{attachmentId}.json`, written by atomic replacement. Its fingerprint records the paths, sizes and modification times of the PDF and semantic/scan artifacts, together with the arXiv identity; it is not a hash of file contents. Text and geometry are extracted once, then reused by the optional font pass. Both passes release each page and yield between pages inside the worker. Cancellation terminates the worker even during synchronous parsing; per-paper queues wait for it to exit, and app shutdown waits for pending outline work for at most five seconds. Native bookmarks remain selectable unchanged alongside a repaired variant; a reliable embedded outline defers heuristics until explicitly requested. Source choices persist in this derived sidecar, without changing the library schema or the PDF.
+
+AI organization requires the reader's explicit send action, uses the PDF model route, and may only select existing candidate IDs and levels 1–6. Main preserves candidate order, titles and destinations, rejects stale-document results, and supports cancellation. Requests are serialized per paper; paper deletion cancels pending work and late results cannot recreate deleted papers.
+
+HTML contents are read from the sandboxed frame by the host renderer, using the same stable `rp-path` anchors as notes. Translation blocks and hidden regions do not become extra headings; translated-only navigation targets the visible translation. Both readers report their current section, including multiple headings on one PDF page and scrolls led by the translated pane. Partial translation destinations keep original page coordinates and open the original when needed.

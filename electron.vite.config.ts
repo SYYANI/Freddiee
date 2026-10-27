@@ -13,7 +13,8 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve('electron/main/index.ts'),
-          babeldocWorker: resolve('electron/main/babeldocWorker.ts')
+          babeldocWorker: resolve('electron/main/babeldocWorker.ts'),
+          documentOutlineWorker: resolve('electron/main/documentOutlineWorker.ts')
         },
         output: { format: 'cjs', entryFileNames: '[name].cjs' }
       }

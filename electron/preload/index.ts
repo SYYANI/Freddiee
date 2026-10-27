@@ -71,6 +71,12 @@ const api: FreddieAPI = {
     openSettings: (tab) => invoke('settings:open', tab),
     openAbout: () => invoke('about:open')
   },
+  outline: {
+    load: (paperId, attachmentId, operationId) => invoke('outline:load', paperId, attachmentId, operationId),
+    select: (paperId, attachmentId, source, operationId) => invoke('outline:select', paperId, attachmentId, source, operationId),
+    organize: (paperId, attachmentId, operationId) => invoke('outline:organize', paperId, attachmentId, operationId),
+    cancel: (operationId) => invoke('outline:cancel', operationId)
+  },
   translation: {
     translateHTML: (paperId) => invoke('translation:html', paperId),
     translateLatex: (paperId) => invoke('translation:latex', paperId),

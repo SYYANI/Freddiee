@@ -15,6 +15,9 @@ import { TranslationCapsule, type CapsulePhase } from '../overlays/TranslationCa
 import { SelectionAssistant } from '../overlays/SelectionAssistant'
 import { HtmlSidenotes } from './HtmlSidenotes'
 import { translationMenuEntries } from './translationMenu'
+import { DocumentOutlinePanel } from '../readers/DocumentOutlinePanel'
+import { useDocumentOutline } from '../readers/useDocumentOutline'
+import { isUntranslatedHeading, type DocumentOutlineEntry } from '../../shared/outline'
 
 interface TranslationRun {
   working: boolean
@@ -114,12 +117,21 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   const run = paper ? runs[paper.id] : undefined
   const isWorking = Boolean(run?.working)
 
+  const outline = useDocumentOutline(paper?.id, pdf?.id, `${pdfReload}|${isWorking}|${paper?.arxivId ?? ''}|${paper?.arxivVersion ?? ''}`, readerMode === 'html')
+  const [htmlOutline, setHtmlOutline] = useState<{ paperId?: string; entries: DocumentOutlineEntry[]; currentID?: string }>({ entries: [] })
+  const updateHtmlOutline = useCallback((entries: DocumentOutlineEntry[], currentID?: string) => {
+    setHtmlOutline((previous) => ({ paperId: paper?.id, entries: previous.paperId === paper?.id && JSON.stringify(previous.entries) === JSON.stringify(entries) ? previous.entries : entries, currentID }))
+  }, [paper?.id])
+  const outlineEntries = readerMode === 'html' ? (htmlOutline.paperId === paper?.id ? htmlOutline.entries : [])
+    : outline.cache?.variants.find((variant) => variant.source === outline.cache?.selectedSource)?.entries ?? []
+
   // MARK: Reading state
 
   useEffect(() => {
     if (!paper) return
     const mode = resolvedReaderMode(readingState?.readerMode, Boolean(html), Boolean(pdf), Boolean(translated))
     setReaderMode(mode)
+    setReaderNavigation(null)
     if (mode !== 'html') setLastPDFMode(mode)
     setPageIndex(Math.max(0, readingState?.pageIndex ?? 0))
     setRestoredFor(paper.id)
@@ -300,7 +312,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
 
   // MARK: Navigation from notes and citations
 
-  const [readerNavigation, setReaderNavigation] = useState<{ id: string; pageIndex?: number; htmlSelector?: string; quote?: string; attachmentId?: string } | null>(null)
+  const [readerNavigation, setReaderNavigation] = useState<{ id: string; pageIndex?: number; htmlSelector?: string; quote?: string; attachmentId?: string; outlineFraction?: number; outline?: boolean } | null>(null)
   useEffect(() => {
     const request = props.navigation
     if (!request || !paper || (request.paperId && request.paperId !== paper.id) || restoredFor !== paper.id) return
@@ -317,6 +329,19 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
     props.onNavigationHandled()
   }, [props.navigation?.id, restoredFor])
 
+  const navigateOutline = (entry: DocumentOutlineEntry): void => {
+    if (readerMode === 'html') {
+      setReaderNavigation({ id: crypto.randomUUID(), htmlSelector: entry.anchor, outline: true })
+      return
+    }
+    if (entry.pageIndex === undefined) return
+    const opensOriginal = readerMode === 'translatedPDF' && isUntranslatedHeading(entry, translated?.translatedLastPage)
+    if (opensOriginal) { setReaderMode('pdf'); setLastPDFMode('pdf') }
+    setPageIndex(entry.pageIndex)
+    setReaderNavigation({ id: crypto.randomUUID(), pageIndex: entry.pageIndex, outlineFraction: entry.fraction ?? 0,
+      attachmentId: readerMode === 'translatedPDF' && !opensOriginal ? translated?.id : sourcePDF?.id })
+  }
+
   // MARK: Actions
 
   const primaryMode: 'html' | 'pdf' = readerMode === 'html' ? 'html' : 'pdf'
@@ -324,6 +349,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   const displayChoice = readerMode === 'html' ? displayMode : pdfDisplay
 
   const setPrimaryMode = (value: 'html' | 'pdf'): void => {
+    setReaderNavigation(null)
     if (value === 'html') {
       if (readerMode !== 'html') setLastPDFMode(readerMode)
       setReaderMode('html')
@@ -335,6 +361,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   }
 
   const setDisplayChoice = (value: TranslationDisplayMode): void => {
+    setReaderNavigation(null)
     if (readerMode === 'html') {
       setDisplayMode(value)
       return
@@ -645,6 +672,8 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
       if (!html) return <UnavailableView icon="doc.text" title={t('No HTML available')} description={t('Import an arXiv paper or web page with HTML content to read it here.')} />
       return (
         <HtmlView
+          key={html.id}
+          onOutline={updateHtmlOutline}
           paperId={paper.id}
           attachmentId={html.id}
           reloadToken={htmlReload}
@@ -687,6 +716,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
           }}
           pageIndex={pageIndex}
           onPageChange={setPageIndex}
+          onOutlineLocation={outline.updateLocation}
           appearance={appearance}
           find={findRequest}
           findTarget={findTarget}
@@ -718,6 +748,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
         url={`${window.freddie.shell.assetURL(paper.id, attachment.id)}?v=${encodeURIComponent(attachment.createdAt)}-${pdfReload}`}
         pageIndex={pageIndex}
         onPageChange={setPageIndex}
+        onOutlineLocation={outline.updateLocation}
         appearance={appearance}
         find={findRequest}
         onFindStatus={setFindStatus}
@@ -787,6 +818,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
                 ) : (
                   <IconButton icon={tool.mode === 'browse' ? 'pencil.tip.crop.circle' : tool.mode === 'ink' ? 'pencil.tip' : tool.mode === 'textNote' ? 'note.text.badge.plus' : 'eraser'} size={19} label={t('PDF Annotations')} active={tool.mode !== 'browse'} onClick={(event) => void showToolsMenu(event.currentTarget)} />
                 )}
+                <IconButton icon="list.bullet.indent" size={18} label={t('Contents')} active={outline.presented} onClick={() => outline.setPresented((value) => !value)} />
                 <IconButton icon="magnifyingglass" size={18} label={t('Find in Document')} disabled={!findAvailable} onClick={() => { setFindVisible(true); setFindFocus((value) => value + 1) }} />
                 <IconButton icon="plus.circle" size={18} label={props.selection ? t('Add Note to Current Selection') : t('Select text in PDF or HTML to attach a note.')} disabled={!props.selection} onClick={createNote} />
                 <IconButton icon="translate" size={19} label={translateHelp} disabled={isWorking || regionEditing || !hasTranslatableContent} onClick={(event) => void showTranslateMenu(event.currentTarget)} />
@@ -853,8 +885,27 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
             <IconButton icon="xmark" size={13} label={t('Close')} onClick={() => setStatusMessage(null)} />
           </div>
         )}
-        <div className={`reader-content ${capsulePhase || props.toast ? 'has-bottom-overlay' : ''}`} ref={contentRef}>
-          {content()}
+        <div className={`reader-content ${capsulePhase || props.toast ? 'has-bottom-overlay' : ''} ${paper && outline.presented && outline.pinned ? 'outline-pinned' : ''} ${paper && outline.presented && !outline.pinned && readerMode === 'html' ? 'outline-over-html' : ''}`}>
+          <div className="reader-document" ref={contentRef}>{content()}</div>
+          {paper && outline.presented && <DocumentOutlinePanel
+            key={`${paper.id}-${readerMode === 'html' ? 'html' : 'pdf'}`}
+            entries={outlineEntries}
+            currentID={readerMode === 'html' ? htmlOutline.currentID : outline.currentID}
+            isHTML={readerMode === 'html'}
+            cache={outline.cache}
+            busy={readerMode === 'html' ? undefined : outline.busy}
+            error={readerMode === 'html' ? undefined : outline.error}
+            unavailableReason={readerMode !== 'html' && !pdf ? t('The original PDF is required to read its contents.') : undefined}
+            pinned={outline.pinned}
+            translatedOnly={readerMode === 'translatedPDF'}
+            translatedLastPage={translated?.translatedLastPage}
+            onPin={() => outline.setPinned((value) => !value)}
+            onClose={() => outline.setPresented(false)}
+            onNavigate={navigateOutline}
+            onSelect={(source) => void outline.execute(source)}
+            onOrganize={() => void outline.execute('organize')}
+            onCancel={outline.cancel}
+          />}
           {paper && assistantSelection && assistantSelection.quote.trim() && (
             <SelectionAssistant
               paperId={paper.id}

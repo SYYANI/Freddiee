@@ -23,6 +23,34 @@ import { atomicWriteFile } from './files'
 
 const extractorVersion = 1
 
+function semanticCacheKey(identifier: string): string {
+  return createHash('sha256')
+    .update(`schema=${semanticHintsSchemaVersion}|extractor=${extractorVersion}|source=${identifier}`)
+    .digest('hex').slice(0, 24)
+}
+
+/** Outline reading must never initiate source acquisition or model requests. */
+export async function cachedBabelDocSemanticHints(paperDirectory: string, arxivIdentifier: string, arxivVersion?: string): Promise<BabelDocSemanticDocument | null> {
+  const identifier = resolvingArxivIdentifier(arxivIdentifier, arxivVersion)
+  const root = join(paperDirectory, 'translations', 'babeldoc', 'semantic')
+  try {
+    const cached = JSON.parse(await readFile(join(root, `semantic-${semanticCacheKey(identifier)}.json`), 'utf8')) as BabelDocSemanticDocument
+    validateSemanticDocument(cached)
+    if (cached.sourceIdentifier === identifier) return cached
+  } catch { /* Also recognize validated sidecars copied by native-library import. */ }
+  const nativeKey = createHash('sha256').update(`schema=1|extractor=3|source=${identifier}`).digest('hex').slice(0, 24)
+  const nativeRoot = join(paperDirectory, 'Resources', 'LaTeXSemantic')
+  try {
+    const data = await readFile(join(nativeRoot, `semantic-${nativeKey}.json`))
+    const metadata = JSON.parse(await readFile(join(nativeRoot, `semantic-${nativeKey}.metadata.json`), 'utf8'))
+    if (metadata.cacheSchemaVersion !== 1 || metadata.extractorAlgorithmVersion !== 3 || metadata.sourceIdentifier !== identifier ||
+      metadata.semanticSHA256 !== createHash('sha256').update(data).digest('hex')) return null
+    const cached = JSON.parse(data.toString('utf8')) as BabelDocSemanticDocument
+    validateSemanticDocument(cached)
+    return cached.sourceIdentifier === identifier ? cached : null
+  } catch { return null }
+}
+
 export interface BabelDocSemanticHintOptions {
   paperDirectory: string
   arxivIdentifier: string
@@ -40,10 +68,7 @@ export interface BabelDocSemanticHintOptions {
 export async function prepareBabelDocSemanticHints(options: BabelDocSemanticHintOptions): Promise<BabelDocSemanticDocument | null> {
   const { paperDirectory, signal, t, onStatus } = options
   const identifier = resolvingArxivIdentifier(options.arxivIdentifier, options.arxivVersion)
-  const key = createHash('sha256')
-    .update(`schema=${semanticHintsSchemaVersion}|extractor=${extractorVersion}|source=${identifier}`)
-    .digest('hex')
-    .slice(0, 24)
+  const key = semanticCacheKey(identifier)
   const root = join(paperDirectory, 'translations', 'babeldoc', 'semantic')
   const cachePath = join(root, `semantic-${key}.json`)
   onStatus(t('Checking cached arXiv structure...'))
@@ -96,7 +121,7 @@ export function semanticDocumentFromParsedProject(parsed: ParsedLaTeXProject, so
   const blocks: BabelDocSemanticBlock[] = []
   let ordinal = 0
   let sectionPath: Array<{ level: number; title: string }> = []
-  const append = (kind: BabelDocSemanticBlockKind, rawSource: string, environment?: string): void => {
+  const append = (kind: BabelDocSemanticBlockKind, rawSource: string, environment?: string, headingLevel?: number): void => {
     const alignmentText = latexVisibleText(rawSource)
     if (alignmentText.length < 3) return
     blocks.push({
@@ -108,6 +133,7 @@ export function semanticDocumentFromParsedProject(parsed: ParsedLaTeXProject, so
       rawSource,
       sectionPath: [...sectionPath],
       environment: environment ?? null,
+      ...(headingLevel === undefined ? {} : { headingLevel }),
       atoms: []
     })
     ordinal += 1
@@ -127,7 +153,7 @@ export function semanticDocumentFromParsedProject(parsed: ParsedLaTeXProject, so
       const level = heading[1] === 'section' ? 1 : heading[1] === 'subsection' ? 2 : heading[1] === 'subsubsection' ? 3 : 4
       const headingText = latexVisibleText(heading[2])
       sectionPath = [...sectionPath.filter((entry) => entry.level < level), { level, title: headingText }]
-      append('sectionHeading', heading[2])
+      append('sectionHeading', heading[2], undefined, level)
     }
     const kind: BabelDocSemanticBlockKind = unit.kind === 'caption'
       ? 'caption'

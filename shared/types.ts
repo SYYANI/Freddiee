@@ -2,6 +2,8 @@
 // The shapes mirror the native Freddie SwiftData models so both apps describe a
 // library the same way.
 
+import type { DocumentOutlineCache, DocumentOutlineSource } from './outline'
+
 export type AttachmentKind = 'pdf' | 'html' | 'translatedPDF' | 'resource'
 export type AttachmentSource =
   | 'arxivPDF'
@@ -466,6 +468,12 @@ export interface FreddieAPI {
     latexStatus(): Promise<LatexToolchainStatus>
     openSettings(tab?: string): Promise<void>
     openAbout(): Promise<void>
+  }
+  outline: {
+    load(paperId: string, attachmentId: string, operationId: string): Promise<DocumentOutlineCache>
+    select(paperId: string, attachmentId: string, source: DocumentOutlineSource, operationId: string): Promise<DocumentOutlineCache>
+    organize(paperId: string, attachmentId: string, operationId: string): Promise<DocumentOutlineCache>
+    cancel(operationId: string): Promise<void>
   }
   translation: {
     translateHTML(paperId: string): Promise<void>

@@ -17,11 +17,12 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
   translated: { url: string; attachmentId: string; label: ReactNode; maxPage?: number }
   pageIndex: number
   onPageChange: (pageIndex: number) => void
+  onOutlineLocation?: (page: number, fraction: number) => void
   appearance: 'default' | 'paper'
   find?: FindRequest | null
   findTarget: DualSide
   onFindStatus?: (status: FindStatus) => void
-  navigation?: { id: string; pageIndex?: number; quote?: string; attachmentId?: string } | null
+  navigation?: { id: string; pageIndex?: number; quote?: string; attachmentId?: string; outlineFraction?: number } | null
   onSelection?: (selection: NoteSelectionContext | null) => void
   heldSelection?: NoteSelectionContext | null
   tool?: AnnotationTool
@@ -123,6 +124,7 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
           tool={props.tool}
           onAnnotationState={props.onAnnotationState}
           onRequestTextNote={(page, point) => props.onRequestTextNote?.('original', page, point)}
+          onOutlineLocation={props.onOutlineLocation}
           onUserScroll={() => follow('original')}
           onLinkActivated={props.onLinkActivated}
           label={props.original.label}

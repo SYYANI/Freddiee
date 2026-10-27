@@ -54,7 +54,7 @@ export interface PdfViewProps {
   appearance: 'default' | 'paper'
   find?: FindRequest | null
   onFindStatus?: (status: FindStatus) => void
-  navigation?: { id: string; pageIndex?: number; quote?: string } | null
+  navigation?: { id: string; pageIndex?: number; quote?: string; outlineFraction?: number } | null
   onSelection?: (selection: NoteSelectionContext | null) => void
   /** A selection the reader still acts on, such as the assistant's; it stays painted after focus moves away. */
   heldSelection?: NoteSelectionContext | null
@@ -64,6 +64,7 @@ export interface PdfViewProps {
   sidenotes?: Note[]
   focusNoteId?: string | null
   onSidenoteFocusHandled?: () => void
+  onOutlineLocation?: (page: number, fraction: number) => void
   onUserScroll?: () => void
   onLinkActivated?: (url: string) => void
   label?: ReactNode
@@ -203,12 +204,12 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     scrollPosition.current = { top: element.scrollTop, left: element.scrollLeft }
   }
 
-  const scrollToPage = useCallback((pageIndex: number, fraction = 0) => {
+  const scrollToPage = useCallback((pageIndex: number, fraction = 0, topOffset?: number) => {
     const element = scroller.current
     if (!element || !sizes.length) return
     const index = Math.min(Math.max(pageIndex, 0), sizes.length - 1)
     programmatic.current += 1
-    element.scrollTop = tops[index] + sizes[index].height * scale * fraction - (fraction === 0 ? pageGap : element.clientHeight / 2)
+    element.scrollTop = tops[index] + sizes[index].height * scale * fraction - (topOffset ?? (fraction === 0 ? pageGap : element.clientHeight / 2))
     rememberScrollPosition(element)
     requestAnimationFrame(() => {
       programmatic.current = Math.max(0, programmatic.current - 1)
@@ -218,6 +219,9 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
   const updateVisible = useCallback(() => {
     const element = scroller.current
     if (!element || !sizes.length) return
+    const trackingY = element.scrollTop + Math.min(100, element.clientHeight * 0.22)
+    const trackingPage = pageAt(trackingY)
+    props.onOutlineLocation?.(trackingPage, Math.max(0, Math.min(1, (trackingY - tops[trackingPage]) / (sizes[trackingPage].height * scale))))
     const first = pageAt(element.scrollTop - element.clientHeight)
     const last = pageAt(element.scrollTop + element.clientHeight * 2)
     setVisible((current) => (current[0] === first && current[1] === last ? current : [first, last]))
@@ -226,7 +230,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
       currentPage.current = center
       onPageChange(center)
     }
-  }, [pageAt, sizes.length, onPageChange])
+  }, [pageAt, sizes, tops, scale, onPageChange, props.onOutlineLocation])
 
   // Restore the reading position once per document, then follow outside navigation.
   useLayoutEffect(() => {
@@ -424,7 +428,10 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     const navigation = props.navigation
     if (!navigation || navigation.pageIndex === undefined || !sizes.length) return
     currentPage.current = navigation.pageIndex
-    scrollToPage(navigation.pageIndex)
+    const fraction = navigation.outlineFraction
+    scrollToPage(navigation.pageIndex, fraction === undefined ? 0 : Math.min(1, Math.max(0, fraction)),
+      fraction === undefined ? undefined : Math.min(100, (scroller.current?.clientHeight ?? 0) * 0.22))
+    if (fraction !== undefined) updateVisible()
     if (navigation.quote) setTargetHighlight({ page: navigation.pageIndex, quote: navigation.quote })
     const timer = setTimeout(() => setTargetHighlight(null), 4000)
     return () => clearTimeout(timer)

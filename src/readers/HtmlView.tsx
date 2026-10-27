@@ -2,6 +2,10 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffec
 import type { Note, NoteSelectionContext, TranslationDisplayMode } from '../../shared/types'
 import { buildMatcher, type FindRequest, type FindStatus } from './find'
 import { readerCSS } from './htmlReaderCSS'
+import { elementPath, resolveElementPath } from './htmlAnchors'
+import { observeHtmlOutline, visibleHeadingTarget } from './htmlOutline'
+import type { DocumentOutlineEntry } from '../../shared/outline'
+export { elementPath, resolveElementPath } from './htmlAnchors'
 
 export interface HtmlViewHandle {
   scrollRatio(): number
@@ -16,39 +20,6 @@ export interface RegionEditState {
 const blockSelector = 'p, li, h1, h2, h3, h4, h5, h6, figcaption, blockquote, td, th, dd, dt, pre, figure, table, img'
 const regionSelector = 'p, li, ul, ol, h1, h2, h3, h4, h5, h6, figure, figcaption, blockquote, pre, table, img, video, math, section, aside, div.ltx_para, div.ltx_figure, nav, footer, header'
 
-/** A stable path to an element through original (non-reader) children, starting at <body>. */
-export function elementPath(element: Element): string | undefined {
-  const parts: number[] = []
-  let current: Element | null = element
-  const body = element.ownerDocument.body
-  while (current && current !== body) {
-    const parent: Element | null = current.parentElement
-    if (!parent) return undefined
-    const siblings = Array.from(parent.children).filter((child) => !child.classList.contains('rp-translation-block') && !child.hasAttribute('data-rp-reader'))
-    parts.unshift(siblings.indexOf(current))
-    current = parent
-  }
-  return current === body ? `rp-path:${parts.join('/')}` : undefined
-}
-
-export function resolveElementPath(document: Document, path: string): Element | undefined {
-  if (!path.startsWith('rp-path:')) {
-    try {
-      return document.querySelector(path) ?? undefined
-    } catch {
-      return undefined
-    }
-  }
-  let current: Element = document.body
-  for (const part of path.slice('rp-path:'.length).split('/').filter(Boolean)) {
-    const siblings = Array.from(current.children).filter((child) => !child.classList.contains('rp-translation-block') && !child.hasAttribute('data-rp-reader'))
-    const next = siblings[Number(part)]
-    if (!next) return undefined
-    current = next
-  }
-  return current
-}
-
 export const HtmlView = forwardRef<HtmlViewHandle, {
   paperId: string
   attachmentId: string
@@ -61,7 +32,8 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
   segmentUpdate?: { segmentId: string; translatedHTML: string; sequence: number } | null
   find?: FindRequest | null
   onFindStatus?: (status: FindStatus) => void
-  navigation?: { id: string; htmlSelector?: string; quote?: string } | null
+  navigation?: { id: string; htmlSelector?: string; quote?: string; outline?: boolean } | null
+  onOutline?: (entries: DocumentOutlineEntry[], currentID?: string) => void
   onSelection?: (selection: NoteSelectionContext | null) => void
   sidenotes: Note[]
   renderSidenotes: (positions: Array<{ note: Note; top: number }>, layout: { left: number; width: number; scrollTop: number } | null) => JSX.Element | null
@@ -144,6 +116,11 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
     setLayout(wide && next.length ? { left: width - 300, width: 280 } : null)
   }, [props.sidenotes, documentOf])
 
+  // The frame's resize listener lives for the document, while display mode and
+  // typography may change. Pinning Contents also resizes it; always use current styles.
+  const layoutCallbacks = useRef({ applyStyles, updateSidenotes })
+  layoutCallbacks.current = { applyStyles, updateSidenotes }
+
   // Wire the loaded page: scrolling, selection, links, region editing.
   const onLoad = (): void => {
     const document = documentOf()
@@ -168,8 +145,8 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
       }, 200)
     }, { passive: true })
     window_.addEventListener('resize', () => {
-      applyStyles()
-      updateSidenotes()
+      layoutCallbacks.current.applyStyles()
+      layoutCallbacks.current.updateSidenotes()
     })
     document.addEventListener('click', (event) => {
       const anchor = (event.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null
@@ -350,6 +327,15 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
     }
   }, [matchRanges, currentMatch])
 
+  // Runs in the host renderer; the imported frame remains sandboxed without scripts.
+  const outlineCallback = useRef(props.onOutline)
+  outlineCallback.current = props.onOutline
+  useEffect(() => {
+    const document = documentOf()
+    if (!loadedToken || !document?.body) return
+    return observeHtmlOutline(document, (entries, currentID) => outlineCallback.current?.(entries, currentID))
+  }, [loadedToken, documentOf])
+
   // MARK: Navigation
 
   useEffect(() => {
@@ -358,9 +344,10 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
     if (!document || !navigation?.htmlSelector) return
     const element = resolveElementPath(document, navigation.htmlSelector)
     if (!element) return
-    element.scrollIntoView({ block: 'center' })
-    element.classList.add('rp-note-anchor-target')
-    const timer = setTimeout(() => element.classList.remove('rp-note-anchor-target'), 2400)
+    const target = navigation.outline ? visibleHeadingTarget(element) ?? element : element
+    target.scrollIntoView({ block: navigation.outline ? 'start' : 'center' })
+    target.classList.add('rp-note-anchor-target')
+    const timer = setTimeout(() => target.classList.remove('rp-note-anchor-target'), 2400)
     return () => clearTimeout(timer)
   }, [props.navigation?.id, loadedToken])
 

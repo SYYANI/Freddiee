@@ -124,6 +124,7 @@ describe('BabelDOC integration', () => {
     expect(document.sourceIdentifier).toBe('2401.00001v1')
     expect(document.blocks.map((block) => block.kind)).toContain('documentTitle')
     expect(document.blocks.map((block) => block.kind)).toContain('sectionHeading')
+    expect(document.blocks.find((block) => block.kind === 'sectionHeading')?.headingLevel).toBe(1)
     expect(document.blocks.some((block) => block.alignmentText.includes('robust models'))).toBe(true)
   })
 })
