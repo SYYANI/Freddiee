@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { Attachment, AssistantSource, Note, NoteNavigationRequest, NoteSelectionContext, Paper, ReaderMode, TranslationDisplayMode, TranslationEvent } from '../../shared/types'
+import type { Attachment, AssistantHistoryAnchor, AssistantSource, Note, NoteNavigationRequest, NoteSelectionContext, Paper, ReaderMode, TranslationDisplayMode, TranslationEvent } from '../../shared/types'
 import { firstAttachment, isCompleteTranslation, isPartialTranslation, latestAttachment, resolvedReaderMode } from '../../shared/library'
 import { sourceMetadata } from '../../shared/digest'
 import { useApp } from '../app/context'
@@ -17,6 +17,7 @@ import { HtmlSidenotes } from './HtmlSidenotes'
 import { translationMenuEntries } from './translationMenu'
 import { DocumentOutlinePanel } from '../readers/DocumentOutlinePanel'
 import { useDocumentOutline } from '../readers/useDocumentOutline'
+import { useAssistantHistory } from '../readers/useAssistantHistory'
 import { isUntranslatedHeading, type DocumentOutlineEntry } from '../../shared/outline'
 
 interface TranslationRun {
@@ -103,6 +104,9 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   const [annotationState, setAnnotationState] = useState<AnnotationState>({ canUndo: false, canRedo: false, hasTextSelection: false })
   const [pendingTextNote, setPendingTextNote] = useState<{ side?: DualSide; pageIndex: number; point: { x: number; y: number } } | null>(null)
   const [assistantSelection, setAssistantSelection] = useState<NoteSelectionContext | null>(null)
+  const [assistantHistoryIdentity, setAssistantHistoryIdentity] = useState<string>()
+  const [assistantHistoryOpenToken, setAssistantHistoryOpenToken] = useState(0)
+  const assistantHistory = useAssistantHistory(paper?.id)
   const assistantPinned = useRef(false)
   const dismissTimer = useRef<ReturnType<typeof setTimeout>>()
   const [regionEditing, setRegionEditing] = useState(false)
@@ -288,6 +292,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
     props.onSelection(selection)
     clearTimeout(dismissTimer.current)
     if (selection) {
+      setAssistantHistoryIdentity(undefined)
       assistantPinned.current = false
       setAssistantSelection(selection)
       return
@@ -296,6 +301,13 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
     dismissTimer.current = setTimeout(() => {
       if (!assistantPinned.current) setAssistantSelection(null)
     }, 350)
+  }
+
+  const openAssistantHistory = (anchor: AssistantHistoryAnchor, selection: NoteSelectionContext): void => {
+    handleSelection(selection)
+    assistantPinned.current = true
+    setAssistantHistoryIdentity(anchor.selectionIdentity)
+    setAssistantHistoryOpenToken((token) => token + 1)
   }
 
   const activateSource = (source: AssistantSource): void => {
@@ -687,6 +699,8 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
           onFindStatus={setFindStatus}
           navigation={readerNavigation}
           onSelection={handleSelection}
+          assistantHistory={assistantHistory.anchors}
+          onAssistantHistoryActivated={openAssistantHistory}
           sidenotes={props.notes.filter((note) => note.htmlSelector && (!note.attachmentId || note.attachmentId === html.id))}
           renderSidenotes={(positions, layout) => <HtmlSidenotes positions={positions} layout={layout} focusNoteId={props.sidenoteFocusId} onFocusHandled={props.onSidenoteFocusHandled} />}
           regionEditing={regionEditing}
@@ -723,6 +737,8 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
           onFindStatus={setFindStatus}
           navigation={readerNavigation}
           onSelection={handleSelection}
+          assistantHistory={assistantHistory.anchors}
+          onAssistantHistoryActivated={openAssistantHistory}
           heldSelection={assistantSelection}
           tool={tool}
           onAnnotationState={setAnnotationState}
@@ -754,6 +770,8 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
         onFindStatus={setFindStatus}
         navigation={readerNavigation}
         onSelection={handleSelection}
+        assistantHistory={assistantHistory.anchors}
+        onAssistantHistoryActivated={openAssistantHistory}
         heldSelection={assistantSelection}
         tool={tool}
         onAnnotationState={setAnnotationState}
@@ -908,8 +926,11 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
           />}
           {paper && assistantSelection && assistantSelection.quote.trim() && (
             <SelectionAssistant
+              key={`${paper.id}-${assistantHistoryOpenToken}`}
               paperId={paper.id}
               selection={assistantSelection}
+              conversationIdentity={assistantHistoryIdentity}
+              onConversationSaved={assistantHistory.refresh}
               onInteraction={() => {
                 clearTimeout(dismissTimer.current)
                 assistantPinned.current = true

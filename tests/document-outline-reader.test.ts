@@ -29,6 +29,7 @@ beforeEach(() => {
   Object.defineProperty(window, 'freddie', { configurable: true, value: {
     library: { pageCount: vi.fn(async () => ({ pageCount: 4, hasText: true })), saveReadingState: vi.fn(async () => {}) },
     translation: { onEvent: () => () => {} },
+    assistant: { historyAnchors: vi.fn(async () => []) },
     outline: { load: vi.fn(async () => ({ algorithmVersion: 2, fingerprint: 'f', variants: [], candidates: [] })), cancel: vi.fn(async () => {}) },
     shell: { assetURL: () => 'freddie://paper/test/a/pdf' }
   } })

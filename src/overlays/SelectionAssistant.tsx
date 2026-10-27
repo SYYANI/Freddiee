@@ -11,9 +11,11 @@ export function selectionIdentity(selection: NoteSelectionContext): string {
   return [selection.attachmentId ?? '', selection.pageIndex ?? '', selection.htmlSelector ?? '', quote.slice(0, 400)].join('|')
 }
 
-export function SelectionAssistant({ paperId, selection, onInteraction, onDismiss, onSaveNote, onQuoteInWriting, onSourceActivated }: {
+export function SelectionAssistant({ paperId, selection, conversationIdentity, onConversationSaved, onInteraction, onDismiss, onSaveNote, onQuoteInWriting, onSourceActivated }: {
   paperId: string
   selection: NoteSelectionContext
+  conversationIdentity?: string
+  onConversationSaved?: () => void
   onInteraction: () => void
   onDismiss: () => void
   onSaveNote: (selection: NoteSelectionContext, markdown: string, existingNoteId?: string) => Promise<string>
@@ -21,7 +23,7 @@ export function SelectionAssistant({ paperId, selection, onInteraction, onDismis
   onSourceActivated: (source: AssistantSource) => void
 }): JSX.Element {
   const t = useT()
-  const identity = selectionIdentity(selection)
+  const identity = conversationIdentity ?? selectionIdentity(selection)
   const [action, setAction] = useState<SelectionAssistantAction | null>(null)
   const [enteringQuestion, setEnteringQuestion] = useState(false)
   const [question, setQuestion] = useState('')
@@ -36,6 +38,7 @@ export function SelectionAssistant({ paperId, selection, onInteraction, onDismis
   const [saved, setSaved] = useState(false)
   const [size, setSize] = useState<{ width: number; height: number } | null>(null)
   const requestId = useRef<string>()
+  const restoreGeneration = useRef(0)
   const questionField = useRef<HTMLInputElement>(null)
   const conversationEnd = useRef<HTMLDivElement>(null)
 
@@ -48,17 +51,24 @@ export function SelectionAssistant({ paperId, selection, onInteraction, onDismis
     setSaved(false)
     setSavedNoteId(undefined)
     setEnteringQuestion(false)
+    setWorking(false)
+    setPendingQuestion(null)
+    requestId.current = undefined
+    const generation = ++restoreGeneration.current
     let cancelled = false
     void window.freddie.assistant.conversation(paperId, identity).then((conversation) => {
-      if (cancelled || !conversation) return
+      if (cancelled || generation !== restoreGeneration.current || !conversation) return
       setAction(conversation.action)
       setTurns(conversation.turns)
       setSavedNoteId(conversation.savedNoteId)
       setSaved(Boolean(conversation.savedNoteId))
+    }).catch((reason: unknown) => {
+      if (!cancelled && generation === restoreGeneration.current) setError(errorText(reason))
     })
     return () => {
       cancelled = true
       if (requestId.current) void window.freddie.assistant.stop(requestId.current)
+      requestId.current = undefined
     }
   }, [paperId, identity])
 
@@ -73,16 +83,15 @@ export function SelectionAssistant({ paperId, selection, onInteraction, onDismis
       setPartial('')
     }
     if (event.type === 'done') {
+      requestId.current = undefined
       setWorking(false)
       setPartial('')
-      setTurns((current) => {
-        const next = [...current, { question: pendingQuestion ?? '', answer: event.text ?? '', sources: event.sources ?? [] }]
-        persist(next)
-        return next
-      })
+      const next = [...turns, { question: pendingQuestion ?? '', answer: event.text ?? '', sources: event.sources ?? [] }]
+      setTurns(next)
+      persist(next)
       setPendingQuestion(null)
     }
-  }), [pendingQuestion, action, savedNoteId])
+  }), [paperId, identity, pendingQuestion, action, savedNoteId, turns])
 
   useEffect(() => {
     conversationEnd.current?.scrollIntoView({ block: 'end' })
@@ -91,10 +100,14 @@ export function SelectionAssistant({ paperId, selection, onInteraction, onDismis
   const persist = (next: AssistantTurn[], noteId = savedNoteId): void => {
     if (!action) return
     const conversation: AssistantConversation = { selectionIdentity: identity, action, selection: { ...selection, rect: undefined }, turns: next, savedNoteId: noteId, modifiedAt: new Date().toISOString() }
-    void window.freddie.assistant.saveConversation(paperId, conversation)
+    const generation = restoreGeneration.current
+    void window.freddie.assistant.saveConversation(paperId, conversation).then(() => onConversationSaved?.()).catch((reason: unknown) => {
+      if (generation === restoreGeneration.current) setError(errorText(reason))
+    })
   }
 
   const run = (nextAction: SelectionAssistantAction, nextQuestion: string | null, history: AssistantTurn[]): void => {
+    ++restoreGeneration.current
     onInteraction()
     setAction(nextAction)
     setError(undefined)
@@ -112,6 +125,7 @@ export function SelectionAssistant({ paperId, selection, onInteraction, onDismis
       question: nextQuestion ?? undefined,
       conversation: history
     }).catch((reason: unknown) => {
+      if (requestId.current !== id) return
       setError(errorText(reason))
       setWorking(false)
     })

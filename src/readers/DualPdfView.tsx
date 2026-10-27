@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useImperativeHandle, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
-import type { NoteSelectionContext } from '../../shared/types'
+import type { AssistantHistoryAnchor, NoteSelectionContext } from '../../shared/types'
 import { PdfView, type AnnotationState, type AnnotationTool, type PdfViewHandle } from './PdfView'
 import type { FindRequest, FindStatus } from './find'
 import { clampedSplitFraction } from './pdfScaling'
@@ -24,6 +24,8 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
   onFindStatus?: (status: FindStatus) => void
   navigation?: { id: string; pageIndex?: number; quote?: string; attachmentId?: string; outlineFraction?: number } | null
   onSelection?: (selection: NoteSelectionContext | null) => void
+  assistantHistory?: AssistantHistoryAnchor[]
+  onAssistantHistoryActivated?: (anchor: AssistantHistoryAnchor, selection: NoteSelectionContext) => void
   heldSelection?: NoteSelectionContext | null
   tool?: AnnotationTool
   onAnnotationState?: (state: AnnotationState) => void
@@ -120,6 +122,8 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
           onFindStatus={props.findTarget === 'original' ? props.onFindStatus : undefined}
           navigation={navigationFor('original')}
           onSelection={props.onSelection}
+          assistantHistory={props.assistantHistory}
+          onAssistantHistoryActivated={props.onAssistantHistoryActivated}
           heldSelection={props.heldSelection}
           tool={props.tool}
           onAnnotationState={props.onAnnotationState}
@@ -149,6 +153,8 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
           onFindStatus={props.findTarget === 'translated' ? props.onFindStatus : undefined}
           navigation={navigationFor('translated')}
           onSelection={props.onSelection}
+          assistantHistory={props.assistantHistory}
+          onAssistantHistoryActivated={props.onAssistantHistoryActivated}
           heldSelection={props.heldSelection}
           tool={props.tool}
           onAnnotationState={props.onAnnotationState}

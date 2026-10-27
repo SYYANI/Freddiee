@@ -329,6 +329,8 @@ export interface AssistantConversation {
   modifiedAt: string
 }
 
+export type AssistantHistoryAnchor = Pick<AssistantConversation, 'selectionIdentity' | 'selection'>
+
 export interface AssistantRequest {
   requestId: string
   paperId: string
@@ -493,7 +495,7 @@ export interface FreddieAPI {
     onEvent(listener: (event: AssistantStreamEvent) => void): () => void
     conversation(paperId: string, selectionIdentity: string): Promise<AssistantConversation | null>
     saveConversation(paperId: string, conversation: AssistantConversation): Promise<void>
-    historyAnchors(paperId: string): Promise<Array<Pick<AssistantConversation, 'selectionIdentity' | 'selection'>>>
+    historyAnchors(paperId: string): Promise<AssistantHistoryAnchor[]>
   }
   annotations: {
     list(paperId: string, attachmentId: string): Promise<PdfAnnotation[]>

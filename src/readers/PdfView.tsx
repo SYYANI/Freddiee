@@ -1,10 +1,11 @@
 import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
-import type { Note, NoteSelectionContext, PdfAnnotation } from '../../shared/types'
+import type { AssistantHistoryAnchor, Note, NoteSelectionContext, PdfAnnotation } from '../../shared/types'
 import { openDocument, pageTexts, pdfjs } from './pdfjs'
 import { buildMatcher, type FindRequest, type FindStatus } from './find'
 import { SidenoteRail } from './SidenoteRail'
 import { clampScale, fittedScale, pageSideMargin, resolvedScale, shouldRestoreAutomaticScaling, wheelZoomFactor, type PdfScaling } from './pdfScaling'
+import { bindAssistantHistory, historyQuoteRange, type HistoryRange } from './assistantHistory'
 
 export type AnnotationMode = 'browse' | 'ink' | 'textNote' | 'erase'
 
@@ -56,6 +57,8 @@ export interface PdfViewProps {
   onFindStatus?: (status: FindStatus) => void
   navigation?: { id: string; pageIndex?: number; quote?: string; outlineFraction?: number } | null
   onSelection?: (selection: NoteSelectionContext | null) => void
+  assistantHistory?: AssistantHistoryAnchor[]
+  onAssistantHistoryActivated?: (anchor: AssistantHistoryAnchor, selection: NoteSelectionContext) => void
   /** A selection the reader still acts on, such as the assistant's; it stays painted after focus moves away. */
   heldSelection?: NoteSelectionContext | null
   tool?: AnnotationTool
@@ -112,6 +115,9 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
   const [renderedPages, setRenderedPages] = useState(0)
   const panDrag = useRef<{ pointerId: number; x: number; y: number; left: number; top: number }>()
   const [panning, setPanning] = useState(false)
+  const historySelectionGraceUntil = useRef(0)
+  const historyInteraction = useRef({ activate: props.onAssistantHistoryActivated, mode: props.tool?.mode })
+  historyInteraction.current = { activate: props.onAssistantHistoryActivated, mode: props.tool?.mode }
 
   // Load the document and every page's size.
   useEffect(() => {
@@ -462,6 +468,29 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
 
   // MARK: Selection
 
+  useEffect(() => {
+    const element = scroller.current
+    if (!element) return
+    const entries: HistoryRange[] = []
+    for (const anchor of props.assistantHistory ?? []) {
+      const selection = anchor.selection
+      if ((selection.attachmentId != null && selection.attachmentId !== attachmentId) || selection.pageIndex === undefined) continue
+      const layer = element.querySelector(`[data-page-index="${selection.pageIndex}"] .textLayer`)
+      if (!layer) continue
+      const range = historyQuoteRange(layer, selection.quote, true)
+      if (range) entries.push({ anchor, range })
+    }
+    return bindAssistantHistory(element, entries, {
+      name: `rp-assistant-history-${attachmentId}`,
+      selectionGraceUntil: historySelectionGraceUntil,
+      enabled: () => !historyInteraction.current.mode || historyInteraction.current.mode === 'browse',
+      activate: (anchor, range) => {
+        const rect = range.getBoundingClientRect()
+        historyInteraction.current.activate?.(anchor, { ...anchor.selection, rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } })
+      }
+    })
+  }, [props.assistantHistory, attachmentId, renderedPages, visible, document])
+
   const lastSelection = useRef<{ range: Range; quote: string } | null>(null)
   const [hasNativeSelection, setHasNativeSelection] = useState(false)
 
@@ -470,7 +499,9 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     if (!element || !props.onSelection) return
     const report = (): void => {
       const selection = window.getSelection()
-      if (!selection || selection.isCollapsed || !selection.rangeCount) {
+      const quote = selection?.toString().replace(/\s+/g, ' ').trim() ?? ''
+      if (!selection || selection.isCollapsed || !selection.rangeCount || !quote) {
+        if (Date.now() < historySelectionGraceUntil.current) return
         props.onSelection?.(null)
         props.onAnnotationState?.({ ...annotationState(), hasTextSelection: false })
         return
@@ -479,8 +510,6 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
       const pageElement = (range.commonAncestorContainer instanceof Element ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement)?.closest<HTMLElement>('[data-page-index]')
         ?? (range.startContainer.parentElement?.closest<HTMLElement>('[data-page-index]'))
       if (!pageElement || !element.contains(pageElement)) return
-      const quote = selection.toString().replace(/\s+/g, ' ').trim()
-      if (!quote) return
       const pageIndex = Number(pageElement.dataset.pageIndex)
       const pageText = texts.current?.[pageIndex] ?? pageElement.querySelector('.textLayer')?.textContent ?? ''
       const at = pageText.indexOf(quote.slice(0, 40))

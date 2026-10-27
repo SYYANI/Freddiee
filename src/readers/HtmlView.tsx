@@ -1,10 +1,11 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
-import type { Note, NoteSelectionContext, TranslationDisplayMode } from '../../shared/types'
+import type { AssistantHistoryAnchor, Note, NoteSelectionContext, TranslationDisplayMode } from '../../shared/types'
 import { buildMatcher, type FindRequest, type FindStatus } from './find'
 import { readerCSS } from './htmlReaderCSS'
 import { elementPath, resolveElementPath } from './htmlAnchors'
-import { observeHtmlOutline, visibleHeadingTarget } from './htmlOutline'
+import { headingTranslation, observeHtmlOutline, visibleHeadingTarget } from './htmlOutline'
 import type { DocumentOutlineEntry } from '../../shared/outline'
+import { bindAssistantHistory, htmlHistoryRange, type HistoryRange } from './assistantHistory'
 export { elementPath, resolveElementPath } from './htmlAnchors'
 
 export interface HtmlViewHandle {
@@ -35,6 +36,8 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
   navigation?: { id: string; htmlSelector?: string; quote?: string; outline?: boolean } | null
   onOutline?: (entries: DocumentOutlineEntry[], currentID?: string) => void
   onSelection?: (selection: NoteSelectionContext | null) => void
+  assistantHistory?: AssistantHistoryAnchor[]
+  onAssistantHistoryActivated?: (anchor: AssistantHistoryAnchor, selection: NoteSelectionContext) => void
   sidenotes: Note[]
   renderSidenotes: (positions: Array<{ note: Note; top: number }>, layout: { left: number; width: number; scrollTop: number } | null) => JSX.Element | null
   regionEditing: boolean
@@ -51,6 +54,10 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
   const [layout, setLayout] = useState<{ left: number; width: number } | null>(null)
   const [positions, setPositions] = useState<Array<{ note: Note; top: number }>>([])
   const regionHistory = useRef<{ undo: string[][]; redo: string[][] }>({ undo: [], redo: [] })
+  const [regionRevision, setRegionRevision] = useState(0)
+  const historySelectionGraceUntil = useRef(0)
+  const historyActivated = useRef(props.onAssistantHistoryActivated)
+  historyActivated.current = props.onAssistantHistoryActivated
 
   const documentOf = useCallback((): Document | undefined => frame.current?.contentDocument ?? undefined, [])
 
@@ -162,6 +169,7 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
     document.addEventListener('mouseup', () => setTimeout(reportSelection, 0))
     document.addEventListener('keyup', () => setTimeout(reportSelection, 0))
     document.addEventListener('selectionchange', () => {
+      if (Date.now() < historySelectionGraceUntil.current) return
       if (document.getSelection()?.isCollapsed) props.onSelection?.(null)
     })
     // Drag events do not bubble out of an iframe. Forward file drags to the iframe element so
@@ -218,8 +226,9 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
     const startElement = range.startContainer instanceof Element ? range.startContainer : range.startContainer.parentElement
     const block = startElement?.closest(blockSelector) ?? startElement
     if (!block) return
-    const sourceBlock = block.classList.contains('rp-translation-block')
-      ? document.querySelector(`[data-rp-segment-id="${block.getAttribute('data-rp-source-segment-id')}"]`) ?? block
+    const translation = startElement?.closest('.rp-translation-block')
+    const sourceBlock = translation
+      ? document.querySelector(`[data-rp-segment-id="${translation.getAttribute('data-rp-source-segment-id')}"]`) ?? block
       : block
     const context = [sourceBlock.previousElementSibling?.textContent, sourceBlock.textContent, sourceBlock.nextElementSibling?.textContent]
       .filter(Boolean).join('\n').replace(/[ \t]+/g, ' ').slice(0, 4000)
@@ -251,6 +260,33 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
   }, [props.segmentUpdate?.sequence])
 
   useEffect(updateSidenotes, [props.sidenotes, loadedToken, props.displayMode, props.fontSize])
+
+  useEffect(() => {
+    const document = documentOf()
+    if (!loadedToken || !document?.body) return
+    const entries: HistoryRange[] = []
+    const translations = new Map<string, Element>()
+    for (const block of document.querySelectorAll('.rp-translation-block[data-rp-source-segment-id]')) {
+      translations.set(block.getAttribute('data-rp-source-segment-id')!, block)
+    }
+    for (const anchor of props.assistantHistory ?? []) {
+      const selection = anchor.selection
+      if ((selection.attachmentId != null && selection.attachmentId !== props.attachmentId) || !selection.htmlSelector) continue
+      const target = resolveElementPath(document, selection.htmlSelector)
+      if (!target || target.closest('[data-rp-hidden="true"]')) continue
+      const range = htmlHistoryRange(target, selection.quote, headingTranslation(target, translations))
+      entries.push({ anchor, range })
+    }
+    return bindAssistantHistory(document.body, entries, {
+      name: 'rp-assistant-history',
+      selectionGraceUntil: historySelectionGraceUntil,
+      enabled: () => !document.documentElement.hasAttribute('data-rp-region-editing'),
+      activate: (anchor, range) => {
+        const rect = range.getBoundingClientRect(), host = frame.current!.getBoundingClientRect()
+        historyActivated.current?.(anchor, { ...anchor.selection, rect: { x: host.left + rect.left, y: host.top + rect.top, width: rect.width, height: rect.height } })
+      }
+    })
+  }, [props.assistantHistory, props.attachmentId, loadedToken, props.segmentUpdate?.sequence, props.displayMode, regionRevision, documentOf])
 
   // MARK: Find
 
@@ -376,6 +412,7 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
     if (!document) return
     document.querySelectorAll('[data-rp-hidden="true"]').forEach((element) => element.removeAttribute('data-rp-hidden'))
     for (const path of paths) resolveElementPath(document, path)?.setAttribute('data-rp-hidden', 'true')
+    setRegionRevision((value) => value + 1)
   }
 
   const toggleRegion = (element: Element): void => {
@@ -383,6 +420,7 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
     regionHistory.current.redo = []
     if (element.getAttribute('data-rp-hidden') === 'true') element.removeAttribute('data-rp-hidden')
     else element.setAttribute('data-rp-hidden', 'true')
+    setRegionRevision((value) => value + 1)
     saveRegions()
     reportRegionState()
   }
