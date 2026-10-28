@@ -90,7 +90,8 @@ html[data-appearance="paper"] .settings-tab.selected {
 }
 
 .settings-form.detail {
-  padding: 0 4px 24px 0;
+  /* Leave room for the groups' outer box-shadow border, which the scroll container would clip. */
+  padding: 1px 4px 24px 1px;
 }
 
 .settings-form.detail > .form-section {
