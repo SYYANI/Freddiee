@@ -21,6 +21,7 @@
 | `WritingPaneView`, `WritingWindow`, `MarkdownLiveSyntax`, `PaperCitation` | `WritingPane`, Writing window, CodeMirror live Markdown, same `readpaper://` links |
 | `InspectorPaneView` (item type, authors, abstract translation, notes, writings) | `Inspector` with the same sections |
 | `SettingsView` tabs | `SettingsWindow` with the same six tabs and forms |
+| `BrowserClipperServer`, `BrowserClipImporter` (browser extension API) | `clipperServer.ts`, `browserClip.ts` and `PaperImporter.importClip`: same port, routes, checks and clip rules |
 | `PaperDigestExportPolicy` | `shared/digest.ts` with the same template and placeholders |
 | `TranslationActivityCapsule`, toasts, setup notice | Same overlays |
 | `Localizable.xcstrings` (en, zh-Hans) | The catalog is reused as `shared/locales/zh-Hans.json` |

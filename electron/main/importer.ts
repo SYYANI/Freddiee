@@ -14,6 +14,7 @@ import {
   normalizeWebPageURL,
   type ArxivIdentifier
 } from '../../shared/identifiers'
+import { clipExtraction, parseClipDate, type BrowserClip, type ClipMetadata } from './browserClip'
 import { atomicWriteFile } from './files'
 import { localizeHTML } from './localizer'
 import { pdfjsResourceBase } from './pdfjsResources'
@@ -282,6 +283,135 @@ export class PaperImporter {
     }
   }
 
+  // MARK: Browser clips
+
+  /**
+   * Saves a page from the browser extension. A page already in the library gets the clip as
+   * a second file, as Zotero adds a PDF to an item with a snapshot; only a paper that already
+   * has that kind of file is reported back as existing.
+   */
+  async importClip(clip: BrowserClip): Promise<{ paper: Paper; existing: boolean }> {
+    const result = clip.kind === 'arxiv'
+      ? await this.importArxivClip(clip)
+      : clip.kind === 'pdf' ? await this.importPDFClip(clip) : await this.importHTMLClip(clip)
+    // A folder deleted since the extension listed it leaves the paper unfiled.
+    if (!result.existing && clip.folderId && this.store.database.folders.some((folder) => folder.id === clip.folderId)) {
+      await this.store.movePaper(result.paper.id, clip.folderId)
+    }
+    return result
+  }
+
+  private async importArxivClip(clip: BrowserClip): Promise<{ paper: Paper; existing: boolean }> {
+    const identifier = normalizeArxivIdentifier(clip.url)
+    const existing = this.store.database.papers.find((paper) => paper.arxivId === identifier.baseId)
+    if (existing) return { paper: existing, existing: true }
+    return { paper: await this.importArxiv(clip.url, true, randomUUID()), existing: false }
+  }
+
+  private async importHTMLClip(clip: BrowserClip): Promise<{ paper: Paper; existing: boolean }> {
+    const t = this.translator()
+    const url = this.clipURL(clip.url)
+    if (!clip.html) throw new ImportError(t('The browser sent nothing to save.'))
+    const existing = clip.allowDuplicate ? undefined : this.store.database.papers.find((paper) => paper.htmlUrl === url.toString())
+    if (existing && this.hasAttachment(existing.id, 'html')) return { paper: existing, existing: true }
+
+    const id = existing?.id ?? randomUUID()
+    const directory = await this.store.ensurePaperDirectory(id)
+    const file = join(directory, 'paper.html')
+    try {
+      const page = await localizeHTML(clip.html, url, {
+        directory,
+        extraction: clipExtraction(clip),
+        signal: AbortSignal.timeout(120_000),
+        fetchResource: (resourceURL, signal) => this.fetchResource(resourceURL, signal)
+      })
+      await atomicWriteFile(file, page.html)
+      const timestamp = now()
+      const attachment: Attachment = { id: randomUUID(), paperId: id, kind: 'html', source: 'webPage', filename: 'paper.html', createdAt: timestamp }
+      if (existing) {
+        await this.store.batch(async () => {
+          await this.store.addAttachment(attachment)
+          await this.store.updatePaper(id, clipFields(clip.metadata, existing))
+        })
+        return { paper: this.store.paper(id), existing: false }
+      }
+      const paper: Paper = {
+        id, title: clip.title || page.title || fallbackWebPageTitle(url, t('Untitled Web Page')),
+        abstract: page.excerpt ?? '', authors: [], categories: [], tags: [], isFavorite: false,
+        htmlUrl: url.toString(), createdAt: timestamp, modifiedAt: timestamp,
+        ...clipFields(clip.metadata)
+      }
+      await this.store.addPaper(paper, [attachment])
+      return { paper, existing: false }
+    } catch (error) {
+      await (existing ? rm(file, { force: true }) : rm(directory, { recursive: true, force: true }))
+      throw error
+    }
+  }
+
+  private async importPDFClip(clip: BrowserClip): Promise<{ paper: Paper; existing: boolean }> {
+    const t = this.translator()
+    const pageURL = this.clipURL(clip.url)
+    const pdfURL = clip.pdfUrl ? this.clipURL(clip.pdfUrl) : pageURL
+    const doi = clip.metadata.doi ? extractDOI(clip.metadata.doi) : undefined
+    const existing = clip.allowDuplicate ? undefined : this.store.database.papers.find((paper) =>
+      paper.pdfUrl === pdfURL.toString() || paper.htmlUrl === pageURL.toString() || (doi !== undefined && paper.doi?.toLowerCase() === doi.toLowerCase()))
+    if (existing && this.hasAttachment(existing.id, 'pdf')) return { paper: existing, existing: true }
+
+    const data = clip.pdf ?? new Uint8Array(await (await this.fetchOK(pdfURL.toString(), 'resource', AbortSignal.timeout(120_000),
+      (status) => new ImportError(t('The web server returned an error (status %d).', status)))).arrayBuffer())
+    // A sign-in page instead of the PDF is the usual failure.
+    if (!Buffer.from(data.subarray(0, 1024)).toString('latin1').includes('%PDF-')) throw new ImportError(t('The downloaded file is not a PDF.'))
+    const metadata = await readPDFMetadata(data)
+
+    const id = existing?.id ?? randomUUID()
+    const directory = await this.store.ensurePaperDirectory(id)
+    const file = join(directory, 'paper.pdf')
+    try {
+      await atomicWriteFile(file, data)
+      const timestamp = now()
+      const attachment: Attachment = { id: randomUUID(), paperId: id, kind: 'pdf', source: 'webPage', filename: 'paper.pdf', createdAt: timestamp }
+      if (existing) {
+        const patch: Partial<Paper> = clipFields(clip.metadata, existing)
+        if (!existing.pdfUrl) patch.pdfUrl = pdfURL.toString()
+        if (!existing.arxivId && metadata.arxiv) Object.assign(patch, { arxivId: metadata.arxiv.baseId, arxivVersion: metadata.arxiv.version })
+        if (!existing.doi && !patch.doi && !metadata.arxiv && metadata.doi) patch.doi = metadata.doi
+        await this.store.batch(async () => {
+          await this.store.addAttachment(attachment)
+          await this.store.updatePaper(id, patch)
+        })
+        return { paper: this.store.paper(id), existing: false }
+      }
+      // The page's own metadata, which the reader may have edited, comes before what the PDF
+      // says about itself.
+      const paper: Paper = {
+        id, title: clip.title || metadata.title || fallbackWebPageTitle(pdfURL, t('Untitled Web Page')),
+        abstract: '', authors: metadata.authors, categories: [], tags: [], isFavorite: false,
+        arxivId: metadata.arxiv?.baseId, arxivVersion: metadata.arxiv?.version, doi: metadata.arxiv ? undefined : metadata.doi,
+        pdfUrl: pdfURL.toString(), htmlUrl: pageURL.toString(), createdAt: timestamp, modifiedAt: timestamp,
+        ...clipFields(clip.metadata)
+      }
+      await this.store.addPaper(paper, [attachment])
+      return { paper, existing: false }
+    } catch (error) {
+      await (existing ? rm(file, { force: true }) : rm(directory, { recursive: true, force: true }))
+      throw error
+    }
+  }
+
+  private clipURL(rawValue: string): URL {
+    const t = this.translator()
+    try {
+      return normalizeWebPageURL(rawValue)
+    } catch (error) {
+      throw new ImportError((error as { code?: string }).code === 'unsupportedScheme' ? t('Only http:// or https:// page URLs are supported.') : t('Please enter a valid web page URL.'))
+    }
+  }
+
+  private hasAttachment(paperId: string, kind: Attachment['kind']): boolean {
+    return this.store.attachments(paperId).some((item) => item.kind === kind)
+  }
+
   private async fetchResource(url: string, signal: AbortSignal): Promise<{ data: Uint8Array; contentType: string } | undefined> {
     const response = await fetch(url, { headers: browserHeaders('resource'), signal })
     if (!response.ok) return undefined
@@ -331,6 +461,18 @@ export class PaperImporter {
       throw error
     }
   }
+}
+
+/** The page's metadata for a new paper, or only what an existing `paper` lacks, so a second clip does not undo the reader's edits. */
+function clipFields(metadata: ClipMetadata, paper?: Paper): Partial<Paper> {
+  const fields: Partial<Paper> = {}
+  if (metadata.authors.length && !paper?.authors.length) fields.authors = metadata.authors
+  const doi = metadata.doi ? extractDOI(metadata.doi) : undefined
+  if (doi && !paper?.doi) fields.doi = doi
+  if (metadata.abstract && !paper?.abstract) fields.abstract = metadata.abstract
+  const publishedAt = metadata.publishedDate ? parseClipDate(metadata.publishedDate) : undefined
+  if (publishedAt && !paper?.publishedAt) fields.publishedAt = publishedAt
+  return fields
 }
 
 export function parseArxivAtom(xml: string): ArxivMetadata | undefined {

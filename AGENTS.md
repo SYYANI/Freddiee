@@ -8,7 +8,7 @@ Freddie Cross-Platform is an Electron 44 + React 18 + TypeScript application.
 - `src/`: sandboxed React interface.
 - `tests/`: Node-side service tests.
 
-Preserve the security invariants in `docs/ARCHITECTURE.md`. Do not expose arbitrary filesystem paths, generic IPC, raw secrets, or shell execution to the renderer. Add persisted fields through a monotonic store migration. Use atomic replacement for user-authored data and translation outputs.
+Preserve the security invariants in `docs/ARCHITECTURE.md`. The browser clipper (`electron/main/clipperServer.ts`) shares its API, port and clip rules with native Freddie (`../read-paper`, `BrowserClipperServer.swift` / `BrowserClipImporter.swift`) because one extension serves both; change them together. Do not expose arbitrary filesystem paths, generic IPC, raw secrets, or shell execution to the renderer. Add persisted fields through a monotonic store migration. Use atomic replacement for user-authored data and translation outputs.
 
 Validate changes proportionally. For small, localized changes, run `npm run typecheck` and only the directly relevant targeted tests; do not run the full test suite or production build every time. Run the complete validation set for broad, high-risk, cross-module, release-oriented changes, or when the user explicitly requests it:
 

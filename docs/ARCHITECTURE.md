@@ -21,12 +21,13 @@ Electron main process
   │    └─ Outline worker PDF parsing, bookmark assessment/repair, cached LaTeX/scan alignment and heuristics; no credentials
   ├─ AnnotationStore     PDF annotation overlays and annotated-PDF export
   ├─ WritingStore        Markdown writings in Writings/{id}
+  ├─ clipperServer       browser-extension API on 127.0.0.1:23240 (ping, folders, save)
   ├─ nativeLibrary       read-only import from native Freddie (macOS)
   ├─ windowsBackdrop     Electron Acrylic on Windows 11 22H2+; Koffi-bound SetWindowCompositionAttribute blur on Windows 10 1809+, opaque on failure
   └─ freddie://          contained, read-only delivery of paper and writing files
 ```
 
-This applies the DeepSeek Harness desktop separation to a document application: Electron packages the complete web client, while the privileged process owns native integrations. Freddie needs no listening port: the narrow IPC facade and the custom read-only protocol give the same separation with a smaller attack surface.
+This applies the DeepSeek Harness desktop separation to a document application: Electron packages the complete web client, while the privileged process owns native integrations. The renderer needs no listening port: the narrow IPC facade and the custom read-only protocol give the same separation with a smaller attack surface. The one port is the browser clipper's, for the extension in native Freddie's repository (`BrowserExtension/`); it is the same API on the same port as native Freddie, so one extension works with either app, and whichever starts first owns the port.
 
 The windows match native Freddie's scenes. Each is the same renderer bundle opened with a route (`main`, `settings`, `writing`, `about`) and, on Windows, whether a native backdrop is active, both passed through `additionalArguments`. Main-process changes are broadcast as `library:changed`, and every window reloads its snapshot from the main-process authority.
 
@@ -46,7 +47,8 @@ The windows match native Freddie's scenes. Each is the same renderer bundle open
 8. API keys remain in the main process and are encrypted by the operating system.
 9. The native-library import runs the system `sqlite3` with a read-only URI and copies files; it never writes to the native store.
 10. arXiv source extraction rejects traversal, links, special files, oversized archives, and excessive file counts. TeX subprocesses run without shell escape and with paranoid TeX input/output restrictions.
-11. Scanned-page model output is parsed as constrained `<page>` markup: environments are allow-listed and checked, and file access, macro definition, `^^` character codes, `\csname` and similar commands are rejected before XeLaTeX runs (without shell escape, with paranoid file access). Tesseract runs offline from the packaged English model.
+11. The clipper server listens on 127.0.0.1 only and answers a request only if it carries the `X-Freddie-Clipper` header (a web page cannot send it without a CORS preflight, which is never approved), a `Host` of `127.0.0.1` or `localhost` with the port (DNS rebinding), and no `Origin` other than an extension's. It sends no CORS headers. Bodies are capped at 140 MB and parsed field by field (`parseBrowserClip`) before the importer sees them; folder IDs must be UUIDs. Saving goes through the same importer, localizer and sanitizer as an import by URL. "Open in Freddie" in the extension opens a `readpaper://paper/{id}` link instead of asking the server: the browser hands focus to the app that opens a link, while an app in the background cannot bring itself forward. On Windows and Linux, packaged builds hold the single-instance lock, so such a link reaches the running app through `second-instance` instead of starting a second process on the same library.
+12. Scanned-page model output is parsed as constrained `<page>` markup: environments are allow-listed and checked, and file access, macro definition, `^^` character codes, `\csname` and similar commands are rejected before XeLaTeX runs (without shell escape, with paranoid file access). Tesseract runs offline from the packaged English model.
 
 ## Persistence
 

@@ -48,6 +48,7 @@ import { applyHiddenRegions, readableProseColorCSS, readableProseLayoutCSS } fro
 import { detectLatexToolchainStatus } from './latexToolchain'
 import { AuthorExtractionService } from './authorExtraction'
 import { PaperSummaryService } from './paperSummary'
+import { clipperPort, startClipperServer } from './clipperServer'
 import * as cheerio from 'cheerio'
 
 const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, net, protocol, shell, systemPreferences } = electron
@@ -63,6 +64,11 @@ nativeTheme.themeSource = 'light'
 
 const isMac = process.platform === 'darwin'
 const isWindows = process.platform === 'win32'
+// Windows and Linux start a new process for each readpaper:// link; it hands the link to the
+// running one (`second-instance`) and quits without opening the library. Development runs
+// skip the lock so they can start beside an installed Freddie.
+const isSecondInstance = !isMac && app.isPackaged && !app.requestSingleInstanceLock()
+if (isSecondInstance) app.quit()
 
 let store: FreddieStore
 let secrets: SecretStore
@@ -82,6 +88,7 @@ let nativeImportRunning = false
 const windows: { main?: Window; settings?: Window; writing?: Window; about?: Window } = {}
 
 app.whenReady().then(async () => {
+  if (isSecondInstance) return
   // Packaged builds take the icon from the bundle; unpackaged runs would otherwise show Electron's.
   if (isMac && !app.isPackaged) app.dock?.setIcon(join(app.getAppPath(), 'public/icon.png'))
   // FREDDIE_DATA_DIR keeps development and test runs away from the real library.
@@ -98,6 +105,17 @@ app.whenReady().then(async () => {
 
   importer = new PaperImporter(store, (progress) => broadcast('import:progress', progress), () => translator)
   authorExtraction = new AuthorExtractionService(store, secrets, () => translator)
+  // Native Freddie serves the same API on the same port; when it runs, it gets the clips.
+  const clipper = startClipperServer({
+    version: app.getVersion(),
+    folders: () => store.database.folders.map((folder) => ({ id: folder.id, name: folder.name })),
+    save: async (clip) => {
+      const result = await importer.importClip(clip)
+      if (!result.existing) void authorExtraction.extractAuthorsIfNeeded(result.paper)
+      return result
+    }
+  }, clipperPort, (error) => console.warn(`Browser clipper is unavailable: ${error.message}`))
+  app.on('will-quit', () => clipper.close())
   summaries = new PaperSummaryService(store, secrets)
   translations = new TranslationService(store, secrets, (event) => {
     broadcast('translation:event', event)
@@ -1113,14 +1131,31 @@ function showFatalError(error: unknown): void {
   app.quit()
 }
 
-// Citation links (readpaper://) clicked in other apps open the cited paper.
+// Citation links (readpaper://) clicked in other apps open the cited paper, as does the
+// browser extension's "Open in Freddie".
 app.setAsDefaultProtocolClient('readpaper')
 app.on('open-url', (event, url) => {
   event.preventDefault()
-  const citation = parseCitation(url)
-  if (citation && windows.main) {
-    windows.main.webContents.send('shell:open-citation', { id: `${Date.now()}`, ...citation, quote: citation.quotePrefix })
-    windows.main.show()
-  }
+  openCitationLink(url)
 })
+
+app.on('second-instance', (_event, argv) => {
+  const link = argv.find((argument) => argument.toLowerCase().startsWith('readpaper://'))
+  if (link) openCitationLink(link)
+  else if (windows.main && !windows.main.isDestroyed()) showWindow(windows.main)
+})
+
+function openCitationLink(url: string): void {
+  const citation = parseCitation(url)
+  if (citation && windows.main && !windows.main.isDestroyed()) {
+    windows.main.webContents.send('shell:open-citation', { id: `${Date.now()}`, ...citation, quote: citation.quotePrefix })
+    showWindow(windows.main)
+  }
+}
+
+function showWindow(window: Window): void {
+  if (window.isMinimized()) window.restore()
+  window.show()
+  window.focus()
+}
 

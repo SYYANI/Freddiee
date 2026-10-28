@@ -866,5 +866,7 @@
  "Expand heading": "展开标题",
  "Collapse heading": "折叠标题",
  "The AI response could not be read. Please try organizing the headings again.": "无法解析 AI 返回的结果，请重新整理目录。",
- "The original PDF is required to read its contents.": "需要原文 PDF 才能读取目录。"
+ "The original PDF is required to read its contents.": "需要原文 PDF 才能读取目录。",
+ "The browser sent nothing to save.": "浏览器没有发送可保存的内容。",
+ "The downloaded file is not a PDF.": "下载的文件不是 PDF。"
 }

@@ -116,9 +116,19 @@ export interface LocalizedPage {
   html: string
 }
 
+/**
+ * How much of a page becomes the saved document. `readable` lets Readability pick the
+ * article and keeps the page when it finds too little. A browser clip's body is what the
+ * reader picked, so it always gets the reading shell: `clip` as is (a selection),
+ * `simplifiedClip` after Readability drops page chrome inside it. `original` keeps the
+ * page's own layout (a full-page clip).
+ */
+export type ContentExtraction = 'readable' | 'simplifiedClip' | 'clip' | 'original'
+
 export interface LocalizeOptions {
   /** Directory of the paper; resources are saved below `assets/`. */
   directory: string
+  extraction?: ContentExtraction
   fetchResource?: (url: string, signal: AbortSignal) => Promise<{ data: Uint8Array; contentType: string } | undefined>
   signal?: AbortSignal
   resourceBudgetMs?: number
@@ -129,19 +139,23 @@ const normalizeSpace = (value?: string | null): string | undefined => value?.rep
 
 /** Extracts the readable article, falling back to the sanitized page, and localizes its images. */
 export async function localizeHTML(source: string, pageURL: URL, options: LocalizeOptions): Promise<LocalizedPage> {
+  const extraction = options.extraction ?? 'readable'
   const dom = new JSDOM(source, { url: pageURL.toString() })
   const document = dom.window.document
   const documentTitle = normalizeSpace(document.title)
   let article: ReturnType<Readability<string>['parse']> = null
-  try {
-    article = new Readability(document.cloneNode(true) as Document, { keepClasses: true }).parse()
-  } catch {
-    article = null
+  if (extraction === 'readable' || extraction === 'simplifiedClip') {
+    try {
+      article = new Readability(document.cloneNode(true) as Document, { keepClasses: true }).parse()
+    } catch {
+      article = null
+    }
   }
 
   let html: string
   let title = normalizeSpace(article?.title) ?? documentTitle
-  if (article?.content && (article.textContent?.trim().length ?? 0) > 200) {
+  const minimumLength = extraction === 'readable' ? 200 : 0
+  if (article?.content && (article.textContent?.trim().length ?? 0) > minimumLength) {
     const content = preferLargerCandidate(article.content, article.textContent ?? '', document)
     html = renderReadableDocument({
       title,
@@ -151,6 +165,9 @@ export async function localizeHTML(source: string, pageURL: URL, options: Locali
       lang: article.lang ?? document.documentElement.lang,
       dir: article.dir ?? undefined
     })
+  } else if (extraction === 'simplifiedClip' || extraction === 'clip') {
+    title = documentTitle
+    html = renderReadableDocument({ title, content: document.body?.innerHTML ?? '', lang: document.documentElement.lang })
   } else {
     html = dom.serialize()
     title = documentTitle
