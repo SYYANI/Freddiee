@@ -765,21 +765,20 @@ html[data-appearance="paper"] .pane-title {
   font-weight: 700;
 }
 
-.toggle-row {
+.import-html-option {
   display: flex;
   align-items: center;
-  gap: 12px;
+  align-self: flex-start;
+  gap: 6px;
   padding: 4px 0;
 }
 
-.toggle-row > div:first-child {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.import-html-option input {
+  margin: 0;
+  accent-color: var(--accent);
 }
 
-.toggle-row.disabled {
+.import-html-option:has(input:disabled) {
   opacity: 0.5;
 }
 

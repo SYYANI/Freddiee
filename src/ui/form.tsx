@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { popupMenu } from '../app/native'
 import { Icon } from './Icon'
+import { InfoLabel } from './InfoButton'
 
 /** A grouped form section: a title above a rounded, translucent group of rows. */
 export function FormSection({ title, children, footer }: { title?: string; children: ReactNode; footer?: ReactNode }): JSX.Element {
@@ -23,10 +24,10 @@ export function FormRow({ label, children, help, stacked }: { label?: ReactNode;
 }
 
 /** A label column and a field column, as SettingsFieldRow lays them out. */
-export function FieldRow({ label, children }: { label: string; children: ReactNode }): JSX.Element {
+export function FieldRow({ label, help, children }: { label: string; help?: string; children: ReactNode }): JSX.Element {
   return (
     <div className="field-row">
-      <div className="field-row-label">{label}</div>
+      <div className="field-row-label">{help ? <InfoLabel title={label} message={help} /> : label}</div>
       <div className="field-row-control">{children}</div>
     </div>
   )
@@ -86,11 +87,12 @@ export function Disclosure({ title, children, initiallyOpen = false }: { title: 
   )
 }
 
-export function TextInput({ value, onChange, placeholder, secure, monospaced }: { value: string; onChange: (value: string) => void; placeholder?: string; secure?: boolean; monospaced?: boolean }): JSX.Element {
+export function TextInput({ value, onChange, label, placeholder, secure, monospaced }: { value: string; onChange: (value: string) => void; label?: string; placeholder?: string; secure?: boolean; monospaced?: boolean }): JSX.Element {
   return (
     <input
       className={`field-well text-input ${monospaced ? 'mono' : ''}`}
       type={secure ? 'password' : 'text'}
+      aria-label={label}
       value={value}
       placeholder={placeholder}
       spellCheck={false}

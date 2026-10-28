@@ -97,6 +97,29 @@ html[data-appearance="paper"] .settings-tab.selected {
   max-width: none;
 }
 
+.settings-form.detail > .form-section + .form-section {
+  margin-top: 16px;
+}
+
+.settings-form.detail .form-group {
+  padding: 16px;
+  box-shadow: 0 0 0 0.5px var(--separator-strong);
+}
+
+.settings-form.detail .form-row {
+  min-height: 0;
+  padding: 0;
+}
+
+.settings-form.detail .form-row + .form-row {
+  margin-top: 16px;
+  border-top: 0;
+}
+
+.settings-form.detail .form-control > .button-row {
+  margin-top: 0;
+}
+
 /* MARK: Grouped form */
 
 .form-section + .form-section {
@@ -297,21 +320,6 @@ html[data-appearance="paper"] .settings-tab.selected {
   gap: 10px;
 }
 
-.onboarding-step {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.onboarding-title {
-  font-weight: 650;
-}
-
-.onboarding-detail {
-  margin-top: 4px;
-  font-size: 12px;
-}
-
 .quick-setup {
   display: flex;
   flex-direction: column;
@@ -324,18 +332,6 @@ html[data-appearance="paper"] .settings-tab.selected {
 
 .quick-setup .native-segmented button {
   flex: 1;
-}
-
-.quick-setup-hint,
-.more-options {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.more-options {
-  padding-top: 10px;
-  border-top: 0.5px solid var(--separator);
 }
 
 .executables {

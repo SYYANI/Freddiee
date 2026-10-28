@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { ImportProgress, Paper } from '../../shared/types'
 import { useT } from '../app/context'
 import { errorText } from '../app/native'
-import { Button, ProgressBar, Sheet, Switch } from '../ui/controls'
+import { Button, ProgressBar, Sheet } from '../ui/controls'
+import { Icon } from '../ui/Icon'
 
 export function ImportProgressView({ progress }: { progress: ImportProgress }): JSX.Element {
   return (
@@ -76,8 +77,9 @@ export function AddPaperSheet({ onClose, onImported }: { onClose: () => void; on
       <div className="add-paper">
         <h1>{t('Add a paper')}</h1>
         <section>
-          <h3>{t('arXiv ID or URL')}</h3>
+          <h3><label htmlFor="import-arxiv">{t('arXiv ID or URL')}</label></h3>
           <input
+            id="import-arxiv"
             ref={arxivField}
             className="text-field rounded"
             value={arxiv}
@@ -85,19 +87,17 @@ export function AddPaperSheet({ onClose, onImported }: { onClose: () => void; on
             onChange={(event) => setArxiv(event.target.value)}
             onKeyDown={(event) => event.key === 'Enter' && importArxiv()}
           />
-          <div className={`toggle-row ${importing ? 'disabled' : ''}`}>
-            <div>
-              <div>{t('Download HTML version')}</div>
-              <div className="caption secondary">{t('Adds a localized HTML copy for HTML reading and translation. Import may take longer.')}</div>
-            </div>
-            <Switch checked={includeHTML} onChange={setIncludeHTML} disabled={importing} label={t('Download HTML version')} />
-          </div>
+          <label className="import-html-option" title={t('Adds a localized HTML copy for HTML reading and translation. Import may take longer.')}>
+            <input type="checkbox" checked={includeHTML} onChange={(event) => setIncludeHTML(event.target.checked)} disabled={importing} />
+            <span>{t('Download HTML version')}</span>
+          </label>
           <div><Button disabled={importing || !arxiv.trim()} onClick={importArxiv}>{t('Import from arXiv')}</Button></div>
         </section>
         <div className="divider" />
         <section>
-          <h3>{t('Web page URL')}</h3>
+          <h3><label htmlFor="import-web">{t('Web page URL')}</label></h3>
           <input
+            id="import-web"
             className="text-field rounded"
             value={webURL}
             placeholder={t('https://example.com/paper.html')}
@@ -107,10 +107,7 @@ export function AddPaperSheet({ onClose, onImported }: { onClose: () => void; on
           <div><Button disabled={importing || !webURL.trim()} onClick={importWeb}>{t('Import web page')}</Button></div>
         </section>
         <div className="divider" />
-        <section>
-          <h3>{t('Local PDF')}</h3>
-          <div><Button disabled={importing} onClick={() => void run(() => window.freddie.library.importPaper({ type: 'pdf', operationId: crypto.randomUUID() }))}>{t('Choose PDF...')}</Button></div>
-        </section>
+        <div><Button disabled={importing} onClick={() => void run(() => window.freddie.library.importPaper({ type: 'pdf', operationId: crypto.randomUUID() }))}><Icon name="doc.badge.plus" size={15} />{t('Choose PDF...')}</Button></div>
         {importing && (progress ? <ImportProgressView progress={progress} /> : <ProgressBar />)}
         {error && <div className="import-error selectable">{error}</div>}
         <div className="sheet-buttons">

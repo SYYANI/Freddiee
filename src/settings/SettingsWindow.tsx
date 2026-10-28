@@ -6,6 +6,7 @@ import { confirmDestructive, errorText, popupMenu } from '../app/native'
 import { Button, Checkbox, Spinner, Switch } from '../ui/controls'
 import { Disclosure, FieldRow, FormNote, FormRow, FormSection, MenuPicker, Stepper, TextInput } from '../ui/form'
 import { Icon } from '../ui/Icon'
+import { InfoLabel } from '../ui/InfoButton'
 
 type Tab = 'general' | 'reader' | 'latex' | 'digest' | 'providers' | 'models'
 
@@ -20,9 +21,9 @@ const tabs: Array<{ id: Tab; title: string; icon: string }> = [
 
 // Built-in providers, in the order the quick setup lists them.
 const quickSetupProviders = [
-  { id: '1c613f2b-6209-4e63-b9e1-9dfb415b6cd3', name: 'OpenAI', model: 'OpenAI GPT-5.6 Terra', baseURL: 'https://api.openai.com/v1', keyPage: 'https://platform.openai.com/api-keys' },
-  { id: '71c0bb1c-d797-431f-8bd0-96e0a8c579b5', name: 'DeepSeek', model: 'DeepSeek V4 Flash', baseURL: 'https://api.deepseek.com', keyPage: 'https://platform.deepseek.com/api_keys' },
-  { id: 'e92e2d96-5184-4522-8fb5-df1fc53621ac', name: 'Anthropic', model: 'Claude Opus 5.5', baseURL: 'https://api.anthropic.com/v1', keyPage: 'https://console.anthropic.com/settings/keys' }
+  { id: '1c613f2b-6209-4e63-b9e1-9dfb415b6cd3', name: 'OpenAI', model: 'OpenAI GPT-5.6 Terra', keyPage: 'https://platform.openai.com/api-keys' },
+  { id: '71c0bb1c-d797-431f-8bd0-96e0a8c579b5', name: 'DeepSeek', model: 'DeepSeek V4 Flash', keyPage: 'https://platform.deepseek.com/api_keys' },
+  { id: 'e92e2d96-5184-4522-8fb5-df1fc53621ac', name: 'Anthropic', model: 'Claude Opus 5.5', keyPage: 'https://console.anthropic.com/settings/keys' }
 ]
 
 function save(patch: Partial<AppSettings>): void {
@@ -68,7 +69,7 @@ export function SettingsWindow(): JSX.Element {
         </div>
       </div>
       <div className="settings-content">
-        {tab === 'general' && <GeneralTab onSelectTab={setTab} />}
+        {tab === 'general' && <GeneralTab />}
         {tab === 'reader' && <ReaderTab />}
         {tab === 'latex' && <LatexTab />}
         {tab === 'digest' && <DigestTab />}
@@ -88,7 +89,7 @@ function useModelChoices(): Array<{ value: string; title: string }> {
 
 // MARK: General
 
-function GeneralTab({ onSelectTab }: { onSelectTab: (tab: Tab) => void }): JSX.Element {
+function GeneralTab(): JSX.Element {
   const { snapshot, t } = useApp()
   const settings = snapshot.settings
   const [glossary, setGlossary] = useState(settings.translationGlossary)
@@ -100,21 +101,26 @@ function GeneralTab({ onSelectTab }: { onSelectTab: (tab: Tab) => void }): JSX.E
     glossaryTimer.current = setTimeout(() => save({ translationGlossary: value }), 400)
   }
 
+  const clearGlossary = async (): Promise<void> => {
+    if (await confirmDestructive(t('Clear Glossary?'), t('All terms will be removed. This can’t be undone.'), t('Clear glossary'), t('Cancel'))) updateGlossary('')
+  }
+
   return (
     <div className="settings-form">
       <FormSection title={t('Getting Started')}>
         {settings.quickSetupHidden ? (
-          <FormRow label={<span className="secondary inline-icon"><Icon name="checkmark.circle.fill" size={15} />{t('Getting started guide is hidden.')}</span>}>
+          <FormRow>
             <Button onClick={() => save({ quickSetupHidden: false })}>{t('Show Guide Again')}</Button>
           </FormRow>
         ) : (
-          <GettingStarted onSelectTab={onSelectTab} />
+          <GettingStarted />
         )}
       </FormSection>
 
       <FormSection title={t('Language')}>
         <FormRow label={t('App language')}>
           <MenuPicker
+            label={t('App language')}
             value={settings.appLanguage}
             onChange={(value) => save({ appLanguage: value })}
             options={[{ value: 'system', title: t('Follow System') }, { value: 'en', title: 'English' }, { value: 'zh-Hans', title: '简体中文' }]}
@@ -124,15 +130,17 @@ function GeneralTab({ onSelectTab }: { onSelectTab: (tab: Tab) => void }): JSX.E
 
       <FormSection title={t('Translation')}>
         <FormRow label={t('Target language')}>
-          <MenuPicker value={settings.targetLanguage} onChange={(value) => save({ targetLanguage: value })} options={[{ value: 'EN', title: 'English' }, { value: 'zh-CN', title: '中文（简体）' }]} />
+          <MenuPicker label={t('Target language')} value={settings.targetLanguage} onChange={(value) => save({ targetLanguage: value })} options={[{ value: 'EN', title: 'English' }, { value: 'zh-CN', title: '中文（简体）' }]} />
         </FormRow>
-        <FormRow stacked label={t('Optional glossary')}>
-          <textarea className="field-well template-editor small" value={glossary} onChange={(event) => updateGlossary(event.target.value)} spellCheck={false} />
+        <FormRow label={t('Use arXiv LaTeX structure for PDF translation')} help={t('When enabled, Freddie uses available arXiv source to improve BabelDOC structure and translation context. No TeX installation is required, and failures fall back to PDF-only analysis.')}>
+          <Switch label={t('Use arXiv LaTeX structure for PDF translation')} checked={settings.babelDocSemanticHintsEnabled} onChange={(value) => save({ babelDocSemanticHintsEnabled: value })} />
+        </FormRow>
+        <FormRow stacked label={<InfoLabel title={t('Optional glossary')} message={t('One term per line, for example “large language model = 大语言模型”.')} />}>
+          <textarea aria-label={t('Optional glossary')} className="field-well template-editor small" value={glossary} onChange={(event) => updateGlossary(event.target.value)} spellCheck={false} />
         </FormRow>
         <FormRow>
-          <Button destructive disabled={!glossary} onClick={() => updateGlossary('')}>{t('Clear glossary')}</Button>
+          <Button destructive disabled={!glossary} onClick={() => void clearGlossary()}>{t('Clear glossary')}</Button>
         </FormRow>
-        <FormRow><FormNote>{t('One term per line, for example “large language model = 大语言模型”.')}</FormNote></FormRow>
       </FormSection>
 
       <FormSection title={t('Advanced')}>
@@ -143,10 +151,13 @@ function GeneralTab({ onSelectTab }: { onSelectTab: (tab: Tab) => void }): JSX.E
               <Stepper value={settings.htmlTranslationConcurrency} min={1} max={12} onChange={(value) => save({ htmlTranslationConcurrency: value })} />
             </div>
             <div className="stepper-row">
+              <span>{t('BabelDOC QPS: %d', settings.babelDocQPS)}</span>
+              <Stepper value={settings.babelDocQPS} min={1} max={20} onChange={(value) => save({ babelDocQPS: value })} />
+            </div>
+            <div className="stepper-row">
               <span>{t('PDF pages per batch: %d', settings.pdfTranslationBatchSize)}</span>
               <Stepper value={settings.pdfTranslationBatchSize} min={1} max={50} onChange={(value) => save({ pdfTranslationBatchSize: value })} />
             </div>
-            <FormNote>{t('Lower concurrency if your provider reports rate limits.')}</FormNote>
           </Disclosure>
         </FormRow>
       </FormSection>
@@ -163,7 +174,7 @@ function GeneralTab({ onSelectTab }: { onSelectTab: (tab: Tab) => void }): JSX.E
   )
 }
 
-function GettingStarted({ onSelectTab }: { onSelectTab: (tab: Tab) => void }): JSX.Element {
+function GettingStarted(): JSX.Element {
   const { snapshot, t } = useApp()
   const settings = snapshot.settings
   const modelName = (id?: string): string | undefined => {
@@ -200,28 +211,18 @@ function GettingStarted({ onSelectTab }: { onSelectTab: (tab: Tab) => void }): J
     }
   }
 
-  const step = (title: string, detail: string, complete: boolean): JSX.Element => (
-    <div className="onboarding-step">
-      <Icon name={complete ? 'checkmark.circle.fill' : 'circle.dashed'} size={20} className={complete ? 'green' : 'secondary'} />
-      <div>
-        <div className="onboarding-title">{title}</div>
-        <div className="onboarding-detail secondary">{detail}</div>
-      </div>
-    </div>
-  )
-
   return (
     <>
       <FormRow stacked>
-        {step(t('1. Connect a translation service'), ready ? summary : t('Paste an API key to use it for HTML and PDF translation.'), ready)}
         {ready && !showForm ? (
           <div className="quick-setup">
+            <span className="inline-icon secondary"><Icon name="checkmark.circle.fill" size={15} />{summary}</span>
             <StatusLabel message={status} />
             <div><Button onClick={() => { setStatus(null); setShowForm(true) }}>{t('Use Another Provider')}</Button></div>
           </div>
         ) : (
           <div className="quick-setup">
-            <div className="native-segmented" role="radiogroup">
+            <div className="native-segmented" role="radiogroup" aria-label={t('Provider')}>
               {quickSetupProviders.map((provider) => (
                 <button key={provider.id} type="button" role="radio" aria-checked={provider.id === providerId} className={provider.id === providerId ? 'selected' : ''} disabled={running} onClick={() => { setProviderId(provider.id); setAPIKey(''); setStatus(null) }}>
                   {provider.name}
@@ -229,13 +230,9 @@ function GettingStarted({ onSelectTab }: { onSelectTab: (tab: Tab) => void }): J
               ))}
             </div>
             <FieldRow label={t('API key')}>
-              <TextInput secure value={apiKey} onChange={setAPIKey} placeholder={hasStoredKey && !apiKey ? '••••••••••••' : ''} />
+              <TextInput label={t('API key')} secure value={apiKey} onChange={setAPIKey} placeholder={hasStoredKey && !apiKey ? '••••••••••••' : ''} />
             </FieldRow>
-            <div className="quick-setup-hint">
-              <FormNote>{t('Uses %1$@ at %2$@.', descriptor.model, descriptor.baseURL)}</FormNote>
-              <span className="spacer" />
-              <button type="button" className="link-button small" onClick={() => void window.freddie.shell.openExternal(descriptor.keyPage)}>{t('Get an API Key')}</button>
-            </div>
+            <div><button type="button" className="link-button small" onClick={() => void window.freddie.shell.openExternal(descriptor.keyPage)}>{t('Get an API Key')}</button></div>
             <div className="button-row">
               <Button prominent disabled={running || (!apiKey.trim() && !hasStoredKey)} onClick={() => void runQuickSetup()}>{running ? t('Testing connection...') : t('Test and Use for Translation')}</Button>
               {running && <Spinner />}
@@ -243,22 +240,6 @@ function GettingStarted({ onSelectTab }: { onSelectTab: (tab: Tab) => void }): J
             </div>
             <StatusLabel message={status} />
           </div>
-        )}
-        <div className="more-options">
-          <FormNote>{t('More options:')}</FormNote>
-          <span className="spacer" />
-          {(['providers', 'models', 'reader'] as const).map((tab) => (
-            <button key={tab} type="button" className="link-button small" onClick={() => onSelectTab(tab)}>{t(tabs.find((item) => item.id === tab)!.title)}</button>
-          ))}
-        </div>
-      </FormRow>
-      <FormRow stacked>
-        {step(
-          t('2. Import and translate papers'),
-          snapshot.papers.length > 0
-            ? t('%d paper%@ already in your library. Use Translate in the reader toolbar.', snapshot.papers.length, snapshot.papers.length === 1 ? '' : 's')
-            : t('Return to the main window, add an arXiv paper or local PDF, then use Translate in the reader toolbar.'),
-          snapshot.papers.length > 0
         )}
       </FormRow>
       <FormRow>
@@ -298,60 +279,28 @@ function ReaderTab(): JSX.Element {
       </FormSection>
       <FormSection title={t('Reader Controls')}>
         <FormRow label={t('Enable PDF hand tool')} help={t('Drag to pan over images and blank areas; selectable text keeps the text-selection cursor. When disabled, non-text areas use the standard arrow cursor.')}>
-          <Switch checked={settings.pdfHandToolEnabled} onChange={(value) => save({ pdfHandToolEnabled: value })} />
+          <Switch label={t('Enable PDF hand tool')} checked={settings.pdfHandToolEnabled} onChange={(value) => save({ pdfHandToolEnabled: value })} />
         </FormRow>
         <FormRow label={t('Show PDF zoom buttons')} help={t('Adds zoom-out and zoom-in buttons to the PDF reader toolbar.')}>
-          <Switch checked={settings.showPDFZoomControls} onChange={(value) => save({ showPDFZoomControls: value })} />
+          <Switch label={t('Show PDF zoom buttons')} checked={settings.showPDFZoomControls} onChange={(value) => save({ showPDFZoomControls: value })} />
         </FormRow>
       </FormSection>
       <FormSection title={t('Translation Routes')}>
         <FormRow label={t('HTML Model')}>
-          <MenuPicker value={settings.htmlModelId ?? ''} onChange={(value) => save({ htmlModelId: value || undefined })} options={[{ value: '', title: t('Not Selected') }, ...choices]} />
+          <MenuPicker label={t('HTML Model')} value={settings.htmlModelId ?? ''} onChange={(value) => save({ htmlModelId: value || undefined })} options={[{ value: '', title: t('Not Selected') }, ...choices]} />
         </FormRow>
-        <FormRow label={t('Document Translation Model')}>
-          <MenuPicker value={settings.pdfModelId ?? ''} onChange={(value) => save({ pdfModelId: value || undefined })} options={[{ value: '', title: t('Not Selected') }, ...choices]} />
+        <FormRow label={t('PDF/BabelDOC Model')}>
+          <MenuPicker label={t('PDF/BabelDOC Model')} value={settings.pdfModelId ?? ''} onChange={(value) => save({ pdfModelId: value || undefined })} options={[{ value: '', title: t('Not Selected') }, ...choices]} />
         </FormRow>
-        <FormRow label={t('Page Transcription and Review Model')} help={t('Translating a scanned PDF sends each page image to this model, which must accept image input; the document translation model then translates the transcribed text.')}>
-          <MenuPicker value={settings.scannedPageModelId ?? ''} onChange={(value) => save({ scannedPageModelId: value || undefined })} options={[{ value: '', title: t('Use Document Translation Model') }, ...choices]} />
+        <FormRow label={<InfoLabel title={t('Scanned Page Model')} message={t('Translating a scanned PDF sends each page image to the scanned page model, which must accept image input; the PDF/BabelDOC model then translates the transcribed text.')} />}>
+          <MenuPicker label={t('Scanned Page Model')} value={settings.scannedPageModelId ?? ''} onChange={(value) => save({ scannedPageModelId: value || undefined })} options={[{ value: '', title: t('Use PDF/BabelDOC Model') }, ...choices]} />
         </FormRow>
         <FormRow label={t('Reading Assistant Model')}>
-          <MenuPicker value={settings.assistantModelId ?? ''} onChange={(value) => save({ assistantModelId: value || undefined })} options={[{ value: '', title: t('Use HTML Model') }, ...choices]} />
+          <MenuPicker label={t('Reading Assistant Model')} value={settings.assistantModelId ?? ''} onChange={(value) => save({ assistantModelId: value || undefined })} options={[{ value: '', title: t('Use HTML Model') }, ...choices]} />
         </FormRow>
         <FormRow label={t('Allow external search for the reading assistant')} help={t("Uses the selected model's server-side web search (Responses API or Anthropic Messages API).")}>
-          <Switch checked={settings.assistantWebSearch} onChange={(value) => save({ assistantWebSearch: value })} />
+          <Switch label={t('Allow external search for the reading assistant')} checked={settings.assistantWebSearch} onChange={(value) => save({ assistantWebSearch: value })} />
         </FormRow>
-      </FormSection>
-      <FormSection title={t('BabelDOC')}>
-        <FormRow label={t('Page range')} help={t('Leave empty to translate every page. Use comma-separated pages or ranges, for example 1-5,8.') }>
-          <TextInput value={settings.babelDocPageRange} onChange={(value) => save({ babelDocPageRange: value })} placeholder={t('All pages')} />
-        </FormRow>
-        <FormRow label={t('Rendering mode')}>
-          <MenuPicker
-            value={settings.babelDocRenderingMode}
-            onChange={(value) => save({ babelDocRenderingMode: value })}
-            options={[
-              { value: 'source-preserving', title: t('Source-preserving') },
-              { value: 'rebuild', title: t('Rebuild') }
-            ]}
-          />
-        </FormRow>
-        <FormRow label={t('BabelDOC QPS: %d', settings.babelDocQPS)} help={t('Limits how quickly paragraph translation requests start.') }>
-          <Stepper value={settings.babelDocQPS} min={1} max={20} onChange={(value) => save({ babelDocQPS: value })} />
-        </FormRow>
-        <FormRow label={t('Thinking mode')}>
-          <MenuPicker
-            value={settings.babelDocThinkingMode}
-            onChange={(value) => save({ babelDocThinkingMode: value })}
-            options={[
-              { value: 'disabled', title: t('Disabled') },
-              { value: 'enabled', title: t('Enabled') }
-            ]}
-          />
-        </FormRow>
-        <FormRow label={t('Use arXiv LaTeX structure for PDF translation')} help={t('When enabled, Freddie uses available arXiv source to improve BabelDOC structure and translation context. No TeX installation is required, and failures fall back to PDF-only analysis.')}>
-          <Switch checked={settings.babelDocSemanticHintsEnabled} onChange={(value) => save({ babelDocSemanticHintsEnabled: value })} />
-        </FormRow>
-        <FormRow stacked><FormNote>{t('The glossary in General settings is also used for BabelDOC translation.')}</FormNote></FormRow>
       </FormSection>
     </div>
   )
@@ -363,8 +312,8 @@ function LatexTab(): JSX.Element {
   const { snapshot, t } = useApp()
   const settings = snapshot.settings
   const texDistribution = window.freddie.platform === 'darwin'
-    ? { downloadLabel: 'Download MacTeX', url: 'https://tug.org/mactex/mactex-download.html' }
-    : { downloadLabel: 'Download TeX Live', url: 'https://tug.org/texlive/' }
+    ? { title: 'MacTeX', downloadLabel: 'Download MacTeX', url: 'https://tug.org/mactex/mactex-download.html' }
+    : { title: 'TeX Live', downloadLabel: 'Download TeX Live', url: 'https://tug.org/texlive/' }
   const [status, setStatus] = useState<LatexToolchainStatus | null>(null)
   const refresh = async (): Promise<void> => setStatus(await window.freddie.settings.latexStatus())
   useEffect(() => {
@@ -375,7 +324,7 @@ function LatexTab(): JSX.Element {
     <div className="settings-form">
       <FormSection title={t('LaTeX Translation')}>
         <FormRow label={t('Enable arXiv LaTeX translation')} help={t("When enabled, Translate arXiv LaTeX appears in the reader's Translate menu. It downloads the paper source, translates its semantic units, and uses the selected external TeX distribution to compile the translated PDF.")}>
-          <Switch checked={settings.latexTranslationEnabled} onChange={(value) => save({ latexTranslationEnabled: value })} />
+          <Switch label={t('Enable arXiv LaTeX translation')} checked={settings.latexTranslationEnabled} onChange={(value) => save({ latexTranslationEnabled: value })} />
         </FormRow>
         {settings.latexTranslationEnabled && status && !status.healthy && (
           <FormRow stacked><FormNote error>{window.freddie.platform === 'darwin'
@@ -383,8 +332,7 @@ function LatexTab(): JSX.Element {
             : t('LaTeX translation is enabled, but the selected toolchain is not ready. Install TeX Live or MiKTeX, or choose a directory that contains latexmk and a PDF engine.')}</FormNote></FormRow>
         )}
       </FormSection>
-      <FormSection title={t('TeX Distribution')}>
-        <FormRow stacked><span>{t('Install a TeX distribution for your platform: MacTeX on macOS and TeX Live on Windows or Linux. It is installed and maintained separately from Freddie.')}</span></FormRow>
+      <FormSection title={texDistribution.title}>
         <FormRow>
           <button type="button" className="link-button" onClick={() => void window.freddie.shell.openExternal(texDistribution.url)}>
             {t(texDistribution.downloadLabel)}
@@ -394,6 +342,7 @@ function LatexTab(): JSX.Element {
       <FormSection title={t('LaTeX Installation')}>
         <FormRow label={t('Toolchain directory')} help={t("Automatic detection checks the app's PATH and common TeX Live, MacTeX, MiKTeX, Homebrew, and system locations. A manually selected directory takes precedence and must contain an executable latexmk.")}>
           <MenuPicker
+            label={t('Toolchain directory')}
             value={settings.latexToolchainDirectory ?? ''}
             onChange={(value) => save({ latexToolchainDirectory: value || undefined })}
             options={[
@@ -480,11 +429,10 @@ function DigestTab(): JSX.Element {
             }}>{t('Clear')}</Button>
           </div>
         </FormRow>
-        <FormRow stacked><FormNote>{t('Markdown export requires a configured folder. Copy Digest can still use the template without an export folder.')}</FormNote></FormRow>
       </FormSection>
       <FormSection title={t('Markdown Template')}>
         <FormRow stacked>
-          <textarea ref={editor} className="field-well template-editor mono" value={template} spellCheck={false} onChange={(event) => update(event.target.value)} />
+          <textarea ref={editor} aria-label={t('Markdown Template')} className="field-well template-editor mono" value={template} spellCheck={false} onChange={(event) => update(event.target.value)} />
         </FormRow>
         <FormRow>
           <div className="button-row">
@@ -495,7 +443,6 @@ function DigestTab(): JSX.Element {
             }}>{t('Reset Default Template')}</Button>
           </div>
         </FormRow>
-        <FormRow stacked><FormNote>{t('Available placeholders: {{dateISO}}, {{title}}, {{slug}}, {{authors}}, {{identifier}}, {{sourceTitle}}, {{sourceURL}}, {{metadataBlock}}, {{abstractBlock}}, {{notesBlock}}, {{generatedBy}}.')}</FormNote></FormRow>
         {status && <FormRow stacked><StatusLabel message={status} /></FormRow>}
       </FormSection>
     </div>
@@ -588,7 +535,7 @@ function ProvidersTab(): JSX.Element {
 
   const remove = async (): Promise<void> => {
     if (!selected) return
-    if (!(await confirmDestructive(t('Delete'), selected.name, t('Delete'), t('Cancel')))) return
+    if (!(await confirmDestructive(t('Delete Provider?'), t('The models that use “%@” and its saved API key will also be deleted. Translation routes that use them will be cleared.', selected.name), t('Delete'), t('Cancel')))) return
     await window.freddie.settings.deleteProvider(selected.id)
     setSelectedId(undefined)
     apply(undefined)
@@ -619,21 +566,15 @@ function ProvidersTab(): JSX.Element {
         )}
       />
       <div className="settings-form detail">
-        <FormSection title={t('Providers')}>
-          <FormRow stacked>
-            <div>{t('OpenAI, DeepSeek and Anthropic are ready to use after you save an API key. You can also add custom providers and choose the Responses API, Chat Completions or the Anthropic Messages API.')}</div>
-          </FormRow>
-          <FormRow stacked><FormNote>{t('API keys are encrypted with the operating system’s credential storage. Leaving the API key field blank while editing keeps the saved key.')}</FormNote></FormRow>
+        <FormSection>
+          <FormRow stacked><FieldRow label={t('Display name')}><TextInput label={t('Display name')} value={form.name} onChange={(name) => setForm({ ...form, name })} /></FieldRow></FormRow>
+          <FormRow stacked><FieldRow label={t('Base URL')}><TextInput label={t('Base URL')} value={form.baseURL} onChange={(baseURL) => setForm({ ...form, baseURL })} /></FieldRow></FormRow>
+          <FormRow stacked><FieldRow label={t('API protocol')}><MenuPicker label={t('API protocol')} value={form.apiStyle} onChange={(apiStyle) => setForm({ ...form, apiStyle })} options={apiStyles.map((style) => ({ value: style, title: apiStyleLabel(style, t) }))} /></FieldRow></FormRow>
+          <FormRow stacked><FieldRow label={t('API key')} help={t('API keys are encrypted with the operating system’s credential storage. Leaving the API key field blank while editing keeps the saved key.')}><TextInput label={t('API key')} secure value={apiKey} onChange={setAPIKey} placeholder={selected?.apiKeyConfigured ? '••••••••••••' : ''} /></FieldRow></FormRow>
+          <FormRow stacked><FieldRow label={t('Test model')}><TextInput label={t('Test model')} value={form.testModel} onChange={(testModel) => setForm({ ...form, testModel })} /></FieldRow></FormRow>
+          <FormRow stacked><FieldRow label={t('Enabled')}><Checkbox label={t('Enabled')} checked={form.isEnabled} onChange={(isEnabled) => setForm({ ...form, isEnabled })} /></FieldRow></FormRow>
         </FormSection>
-        <FormSection title={t('Configuration')}>
-          <FormRow stacked><FieldRow label={t('Display name')}><TextInput value={form.name} onChange={(name) => setForm({ ...form, name })} /></FieldRow></FormRow>
-          <FormRow stacked><FieldRow label={t('Base URL')}><TextInput value={form.baseURL} onChange={(baseURL) => setForm({ ...form, baseURL })} /></FieldRow></FormRow>
-          <FormRow stacked><FieldRow label={t('API protocol')}><MenuPicker value={form.apiStyle} onChange={(apiStyle) => setForm({ ...form, apiStyle })} options={apiStyles.map((style) => ({ value: style, title: apiStyleLabel(style, t) }))} /></FieldRow></FormRow>
-          <FormRow stacked><FieldRow label={t('API key')}><TextInput secure value={apiKey} onChange={setAPIKey} placeholder={selected?.apiKeyConfigured ? '••••••••••••' : ''} /></FieldRow></FormRow>
-          <FormRow stacked><FieldRow label={t('Test model')}><TextInput value={form.testModel} onChange={(testModel) => setForm({ ...form, testModel })} /></FieldRow></FormRow>
-          <FormRow stacked><FieldRow label={t('Enabled')}><Checkbox checked={form.isEnabled} onChange={(isEnabled) => setForm({ ...form, isEnabled })} /></FieldRow></FormRow>
-        </FormSection>
-        <FormSection title={t('Actions')}>
+        <FormSection>
           <FormRow stacked>
             <div className="button-row">
               <Button prominent onClick={() => void saveProvider()}>{t('Save')}</Button>
@@ -732,7 +673,7 @@ function ModelsTab(): JSX.Element {
 
   const remove = async (): Promise<void> => {
     if (!selected) return
-    if (!(await confirmDestructive(t('Delete'), selected.name, t('Delete'), t('Cancel')))) return
+    if (!(await confirmDestructive(t('Delete Model?'), t('Translation routes that use “%@” will be cleared.', selected.name), t('Delete'), t('Cancel')))) return
     await window.freddie.settings.deleteModel(selected.id)
     setSelectedId(undefined)
     apply(undefined)
@@ -765,30 +706,26 @@ function ModelsTab(): JSX.Element {
         )}
       />
       <div className="settings-form detail">
-        <FormSection title={t('Models')}>
-          <FormRow stacked><div>{t('A model profile points to one provider and stores the exact model name plus optional sampling parameters. You can create separate profiles for fast HTML translation and heavier PDF work.')}</div></FormRow>
-          <FormRow stacked><FormNote>{t('Profile name is only for display inside ReadPaper. Model name must match the real model identifier accepted by your provider.')}</FormNote></FormRow>
-        </FormSection>
-        <FormSection title={t('Configuration')}>
-          <FormRow stacked><FieldRow label={t('Provider')}><MenuPicker value={form.providerId} onChange={(providerId) => setForm({ ...form, providerId })} options={providerOptions} /></FieldRow></FormRow>
-          <FormRow stacked><FieldRow label={t('Profile name')}><TextInput value={form.name} onChange={(name) => setForm({ ...form, name })} /></FieldRow></FormRow>
-          <FormRow stacked><FieldRow label={t('Model name')}><TextInput value={form.modelName} onChange={(modelName) => setForm({ ...form, modelName })} /></FieldRow></FormRow>
-          <FormRow stacked><FieldRow label={t('Enabled')}><Checkbox checked={form.isEnabled} onChange={(isEnabled) => setForm({ ...form, isEnabled })} /></FieldRow></FormRow>
+        <FormSection>
+          <FormRow stacked><FieldRow label={t('Provider')}><MenuPicker label={t('Provider')} value={form.providerId} onChange={(providerId) => setForm({ ...form, providerId })} options={providerOptions} /></FieldRow></FormRow>
+          <FormRow stacked><FieldRow label={t('Profile name')}><TextInput label={t('Profile name')} value={form.name} onChange={(name) => setForm({ ...form, name })} /></FieldRow></FormRow>
+          <FormRow stacked><FieldRow label={t('Model name')} help={t('Profile name is only for display inside Freddie. Model name must match the real model identifier accepted by your provider.')}><TextInput label={t('Model name')} value={form.modelName} onChange={(modelName) => setForm({ ...form, modelName })} /></FieldRow></FormRow>
+          <FormRow stacked><FieldRow label={t('Enabled')}><Checkbox label={t('Enabled')} checked={form.isEnabled} onChange={(isEnabled) => setForm({ ...form, isEnabled })} /></FieldRow></FormRow>
           <FormRow stacked>
             <Disclosure title={t('Advanced Parameters')}>
               <FieldRow label={t('Thinking Mode')}>
-                <MenuPicker value={form.thinkingMode} onChange={(thinkingMode) => setForm({ ...form, thinkingMode })} options={[{ value: '', title: t('Default') }, { value: 'enabled', title: t('Enabled') }, { value: 'disabled', title: t('Disabled') }]} />
+                <MenuPicker label={t('Thinking Mode')} value={form.thinkingMode} onChange={(thinkingMode) => setForm({ ...form, thinkingMode })} options={[{ value: '', title: t('Default') }, { value: 'enabled', title: t('Enabled') }, { value: 'disabled', title: t('Disabled') }]} />
               </FieldRow>
               <FieldRow label={t('Reasoning Effort')}>
-                <MenuPicker disabled={form.thinkingMode === 'disabled'} value={form.reasoningEffort} onChange={(reasoningEffort) => setForm({ ...form, reasoningEffort })} options={[{ value: '', title: t('Default') }, { value: 'low', title: t('Low') }, { value: 'high', title: t('High') }, { value: 'max', title: t('Max') }]} />
+                <MenuPicker label={t('Reasoning Effort')} disabled={form.thinkingMode === 'disabled'} value={form.reasoningEffort} onChange={(reasoningEffort) => setForm({ ...form, reasoningEffort })} options={[{ value: '', title: t('Default') }, { value: 'low', title: t('Low') }, { value: 'high', title: t('High') }, { value: 'max', title: t('Max') }]} />
               </FieldRow>
-              <FieldRow label={t('Temperature')}><TextInput value={form.temperature} onChange={(temperature) => setForm({ ...form, temperature })} /></FieldRow>
-              <FieldRow label={t('Top-P')}><TextInput value={form.topP} onChange={(topP) => setForm({ ...form, topP })} /></FieldRow>
-              <FieldRow label={t('Max tokens')}><TextInput value={form.maxTokens} onChange={(maxTokens) => setForm({ ...form, maxTokens })} /></FieldRow>
+              <FieldRow label={t('Temperature')}><TextInput label={t('Temperature')} value={form.temperature} onChange={(temperature) => setForm({ ...form, temperature })} /></FieldRow>
+              <FieldRow label={t('Top-P')}><TextInput label={t('Top-P')} value={form.topP} onChange={(topP) => setForm({ ...form, topP })} /></FieldRow>
+              <FieldRow label={t('Max tokens')}><TextInput label={t('Max tokens')} value={form.maxTokens} onChange={(maxTokens) => setForm({ ...form, maxTokens })} /></FieldRow>
             </Disclosure>
           </FormRow>
         </FormSection>
-        <FormSection title={t('Actions')}>
+        <FormSection>
           <FormRow stacked>
             <div className="button-row">
               <Button prominent onClick={() => void saveModel()}>{t('Save')}</Button>

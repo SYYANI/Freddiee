@@ -4,6 +4,8 @@ import type { AppLanguage } from './types'
 // Strings the native catalog does not have: platform-specific chrome and the
 // cross-platform translation routes.
 const extraZhHans: Record<string, string> = {
+  'Profile name is only for display inside Freddie. Model name must match the real model identifier accepted by your provider.':
+    '配置名称仅用于 Freddie 内部显示。模型名称必须与 Provider 接受的真实模型标识符一致。',
   'Hide Sidebar': '隐藏侧栏',
   'Show Sidebar': '显示侧栏',
   'Show in File Manager': '在文件管理器中显示',

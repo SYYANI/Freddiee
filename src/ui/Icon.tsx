@@ -1,7 +1,7 @@
 import {
   AlignLeft, AppWindowMac, Book, BookOpen, Bookmark, Check, ChevronDown, ChevronRight, ChevronUp, CircleArrowUp, CircleCheck, CircleEllipsis,
   CirclePlus, CircleStop, CircleX, Copy, Earth, Eraser, File, FileClock, FileDown, FilePlus, FileText, FileUp, Folder, FolderMinus, Highlighter,
-  Languages, Link, ListTree, Pin, Minus, MessageCircle, MousePointer2, NotebookPen, PanelLeft, PanelRight, PencilLine, Plus, Redo2, RefreshCw,
+  Info, Languages, Link, ListTree, Pin, Minus, MessageCircle, MousePointer2, NotebookPen, PanelLeft, PanelRight, PencilLine, Plus, Redo2, RefreshCw,
   RotateCcw, ScanText, ScrollText, Search, Settings, Share, Sparkles, SquarePen, SquareStack, Star, StarOff, StickyNote,
   Strikethrough, TextQuote, Trash2, TriangleAlert, Underline, Undo2, X, type LucideIcon
 } from 'lucide-react'
@@ -10,6 +10,7 @@ import type { CSSProperties } from 'react'
 // SF Symbol names used by native Freddie, mapped to the closest line icons.
 const symbols: Record<string, LucideIcon> = {
   'plus': Plus,
+  'info.circle': Info,
   'list.bullet.indent': ListTree,
   'pin': Pin,
   'pin.fill': Pin,
