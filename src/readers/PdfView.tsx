@@ -4,7 +4,7 @@ import type { AssistantHistoryAnchor, Note, NoteSelectionContext, PdfAnnotation 
 import { openDocument, pageTexts, pdfjs } from './pdfjs'
 import { buildMatcher, type FindRequest, type FindStatus } from './find'
 import { SidenoteRail } from './SidenoteRail'
-import { clampScale, fittedScale, pageSideMargin, resolvedScale, shouldRestoreAutomaticScaling, wheelZoomFactor, type PdfScaling } from './pdfScaling'
+import { clampScale, fittedScale, pageSideMargin, resolvedScale, scalingAfterDividerGrab, wheelZoomFactor, type PdfScaling } from './pdfScaling'
 import { bindAssistantHistory, historyQuoteRange, type HistoryRange } from './assistantHistory'
 
 export type AnnotationMode = 'browse' | 'ink' | 'textNote' | 'erase'
@@ -75,7 +75,7 @@ export interface PdfViewProps {
   maxPage?: number
   /** Fit pages to the pane's width until the reader zooms, like the native dual-pane reader. */
   automaticScaling?: boolean
-  /** Each change returns a zoomed pane to fitting when its scale is close to the fitted one. */
+  /** Each change returns a zoomed pane to fitting when its scale is close to the fitted one, or caps a smaller one at fit. */
   scalingRestoreToken?: number
   /** Turns non-text PDF areas into a contextual drag-to-pan hand tool. */
   handToolEnabled?: boolean
@@ -188,7 +188,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     if (restoreToken.current === props.scalingRestoreToken) return
     restoreToken.current = props.scalingRestoreToken
     if (!props.automaticScaling) return
-    setScaling((current) => (current.mode === 'manual' && shouldRestoreAutomaticScaling(current.scale, fitted) ? { mode: 'fit' } : current))
+    setScaling((current) => scalingAfterDividerGrab(current, fitted))
   }, [props.scalingRestoreToken])
 
   const tops = useMemo(() => {
