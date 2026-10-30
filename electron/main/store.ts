@@ -134,6 +134,8 @@ export class FreddieStore {
   private writeQueue: Promise<void> = Promise.resolve()
   private readonly listeners = new Set<() => void>()
   private batchDepth = 0
+  /** Bumped by every write, so sync can tell whether the library changed while it read it. */
+  generation = 0
 
   constructor(root: string) {
     this.root = root
@@ -333,7 +335,12 @@ export class FreddieStore {
   async saveReadingState(state: Omit<ReadingState, 'modifiedAt'>): Promise<void> {
     this.paper(state.paperId)
     const next: ReadingState = { ...state, scrollRatio: Math.round(Math.min(Math.max(state.scrollRatio, 0), 1) * 1000) / 1000, modifiedAt: now() }
+    delete next.htmlAnchor
     const index = this.data.readingStates.findIndex((item) => item.paperId === state.paperId)
+    // This app reads positions by ratio; native Freddie's anchor stays valid while the position does.
+    const previous = index >= 0 ? this.data.readingStates[index] : undefined
+    if (previous?.htmlAnchor && previous.attachmentId === next.attachmentId && previous.readerMode === next.readerMode &&
+      previous.pageIndex === next.pageIndex && previous.scrollRatio === next.scrollRatio) next.htmlAnchor = previous.htmlAnchor
     if (index >= 0) this.data.readingStates[index] = next
     else this.data.readingStates.push(next)
     await this.commit(false)
@@ -508,14 +515,27 @@ export class FreddieStore {
     await this.commit()
   }
 
-  async importTranslationCache(paperId: string, entries: unknown[]): Promise<void> {
-    await atomicWriteFile(join(this.paperDirectory(paperId), 'translations', 'html-cache.json'), `${JSON.stringify({ version: 1, entries })}\n`)
+  // MARK: Sync
+
+  /** Applies a batch of synced changes with one write; nothing changes if `mutate` throws. */
+  async applySync(mutate: (database: Database) => void): Promise<void> {
+    const next = structuredClone(this.data)
+    mutate(next)
+    const previous = this.data
+    this.data = next
+    try {
+      await this.commit()
+    } catch (error) {
+      this.data = previous
+      throw error
+    }
   }
 
   // MARK: Persistence
 
   private async commit(notify = true): Promise<void> {
     if (this.batchDepth > 0) return
+    this.generation += 1
     await this.persist()
     if (notify) for (const listener of this.listeners) listener()
   }

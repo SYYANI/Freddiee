@@ -6,12 +6,14 @@ import { isAbsolute, join, relative, sep } from 'node:path'
 import { promisify } from 'node:util'
 import type { Attachment, AttachmentKind, AttachmentSource, Folder, NativeLibraryImportResult, ReaderMode } from '../../shared/types'
 import type { FreddieStore } from './store'
+import { TranslationSegmentStore } from './translationSegments'
 
 const run = promisify(execFile)
 
 /** Core Data stores dates as seconds since 2001-01-01. */
 const referenceDate = Date.UTC(2001, 0, 1)
-const date = (value: unknown): string | undefined => (typeof value === 'number' ? new Date(referenceDate + value * 1000).toISOString() : undefined)
+const milliseconds = (value: unknown): number | undefined => (typeof value === 'number' ? Math.round(referenceDate + value * 1000) : undefined)
+const date = (value: unknown): string | undefined => (typeof value === 'number' ? new Date(milliseconds(value)!).toISOString() : undefined)
 const uuid = (hex: unknown): string | undefined => {
   if (typeof hex !== 'string' || !/^[0-9A-F]{32}$/i.test(hex)) return undefined
   const value = hex.toLowerCase()
@@ -83,7 +85,7 @@ export async function importNativeLibrary(store: FreddieStore, writingsRoot: str
   const memberships = await read('select hex(ZPAPERID) paperId, hex(ZFOLDERID) folderId, ZADDEDAT addedAt from ZPAPERFOLDERMEMBERSHIP')
   const itemTypes = await read('select hex(ZPAPERID) paperId, ZITEMTYPERAWVALUE itemType, ZASSIGNEDAT assignedAt from ZPAPERITEMTYPEASSIGNMENT')
   const readingStates = await read('select hex(ZPAPERID) paperId, hex(ZATTACHMENTID) attachmentId, ZREADERMODERAWVALUE mode, ZPAGEINDEX pageIndex, ZSCROLLRATIO scrollRatio, ZZOOMSCALE zoom, ZMODIFIEDAT modifiedAt from ZREADINGSTATE')
-  const segments = await read("select hex(ZPAPERID) paperId, ZSOURCEHASH hash, ZTARGETLANGUAGE language, ZTRANSLATEDTEXT text, hex(ZPROVIDERPROFILEID) providerId, hex(ZMODELPROFILEID) modelId, ZMODELNAME identity, ZCREATEDAT createdAt from ZTRANSLATIONSEGMENT where ZSOURCETYPE = 'html'")
+  const segments = await read('select hex(ZID) id, hex(ZPAPERID) paperId, ZSOURCETYPE type, ZTARGETLANGUAGE language, ZSOURCEHASH hash, ZSOURCETEXT source, ZTRANSLATEDTEXT text, ZMODELNAME identity, hex(ZPROVIDERPROFILEID) providerId, hex(ZMODELPROFILEID) modelId, ZCREATEDAT createdAt, ZMODIFIEDAT modifiedAt from ZTRANSLATIONSEGMENT')
 
   const existing = new Set(store.database.papers.map((paper) => paper.id))
   const imported = new Set<string>()
@@ -211,7 +213,7 @@ export async function importNativeLibrary(store: FreddieStore, writingsRoot: str
   }
   reportRange('organizing', organizationTotal, organizationTotal, 0.80, 0.88)
 
-  // HTML translation caches mark papers as translated for the library filter.
+  // Translation caches keep native Freddie's format, so they still hit here and sync as they are.
   const segmentsByPaper = new Map<string, Array<Record<string, unknown>>>()
   for (const [index, row] of segments.entries()) {
     reportRange('translations', index, segments.length, 0.88, 0.92)
@@ -221,15 +223,26 @@ export async function importNativeLibrary(store: FreddieStore, writingsRoot: str
   const translationGroups = [...segmentsByPaper.entries()]
   for (const [index, [paperId, rows]] of translationGroups.entries()) {
     reportRange('translations', index, translationGroups.length, 0.92, 0.95)
-    await store.importTranslationCache(paperId, rows.map((row) => ({
-      sourceHash: String(row.hash ?? ''),
-      targetLanguage: String(row.language ?? ''),
-      providerId: uuid(row.providerId) ?? '',
-      modelId: uuid(row.modelId) ?? '',
-      identity: `native|${String(row.identity ?? '')}`,
-      text: String(row.text ?? ''),
-      createdAt: date(row.createdAt) ?? now
-    })))
+    await new TranslationSegmentStore(store).write(paperId, rows.flatMap((row) => {
+      const id = uuid(row.id)
+      if (!id) return []
+      const createdAt = milliseconds(row.createdAt) ?? Date.now()
+      const providerProfileID = uuid(row.providerId)?.toUpperCase()
+      const modelProfileID = uuid(row.modelId)?.toUpperCase()
+      return [{
+        id: id.toUpperCase(),
+        sourceType: String(row.type ?? 'html'),
+        targetLanguage: String(row.language ?? ''),
+        sourceHash: String(row.hash ?? ''),
+        sourceText: String(row.source ?? ''),
+        translatedText: String(row.text ?? ''),
+        modelName: String(row.identity ?? ''),
+        createdAt,
+        modifiedAt: milliseconds(row.modifiedAt) ?? createdAt,
+        ...(providerProfileID ? { providerProfileID } : {}),
+        ...(modelProfileID ? { modelProfileID } : {})
+      }]
+    }))
   }
   reportRange('translations', translationGroups.length, translationGroups.length, 0.92, 0.95)
 

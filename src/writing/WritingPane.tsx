@@ -32,12 +32,28 @@ export function WritingPane({ presentation, onOpenCitation }: {
   const saveTimer = useRef<ReturnType<typeof setTimeout>>()
   const editorHandle = useRef<WritingEditorHandle | null>(null)
 
+  const [reloadToken, setReloadToken] = useState(0)
+
   const flush = useCallback(() => {
     clearTimeout(saveTimer.current)
     const item = pending.current
     pending.current = null
-    if (item) void window.freddie.writings.save(item.id, item.text)
+    if (!item) return
+    // Sync leaves the writing alone until the edit is on disk.
+    void window.freddie.writings.save(item.id, item.text).finally(() => {
+      if (pending.current?.id !== item.id) window.freddie.sync.setWritingDirty(item.id, false)
+    })
   }, [])
+
+  // A newer version from another device replaces the text when nothing is unsaved here.
+  useEffect(() => window.freddie.sync.onApplied((change) => {
+    if (!current || !change.writingIds.includes(current.id) || pending.current) return
+    void window.freddie.writings.load(current.id).then((markdown) => {
+      if (pending.current) return
+      setText(markdown)
+      setReloadToken((value) => value + 1)
+    })
+  }), [current?.id])
 
   useEffect(() => {
     setText(null)
@@ -73,6 +89,7 @@ export function WritingPane({ presentation, onOpenCitation }: {
   const onChange = (value: string): void => {
     if (!current) return
     setText(value)
+    if (!pending.current) window.freddie.sync.setWritingDirty(current.id, true)
     pending.current = { id: current.id, text: value }
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(flush, 700)
@@ -198,7 +215,7 @@ export function WritingPane({ presentation, onOpenCitation }: {
         <div className="writing-loading" />
       ) : (
         <WritingEditor
-          key={current.id}
+          key={`${current.id}-${reloadToken}`}
           writingId={current.id}
           initialText={text}
           onChange={onChange}

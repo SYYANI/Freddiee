@@ -1,7 +1,7 @@
 import {
   AlignLeft, AppWindowMac, Book, BookOpen, Bookmark, Check, ChevronDown, ChevronRight, ChevronUp, CircleArrowUp, CircleCheck, CircleEllipsis,
   CirclePlus, CircleStop, CircleX, Copy, Earth, Eraser, File, FileClock, FileDown, FilePlus, FileText, FileUp, Folder, FolderMinus, Highlighter,
-  Info, Languages, Link, ListTree, Pin, Minus, MessageCircle, MousePointer2, NotebookPen, PanelLeft, PanelRight, PencilLine, Plus, Redo2, RefreshCw,
+  Info, Languages, Link, ListTree, Pin, Minus, MessageCircle, MousePointer2, NotebookPen, PanelLeft, PanelRight, PencilLine, Plus, Redo2, RefreshCcw, RefreshCw,
   RotateCcw, ScanText, ScrollText, Search, Settings, Share, Sparkles, SquarePen, SquareStack, Star, StarOff, StickyNote,
   Strikethrough, TextQuote, Trash2, TriangleAlert, Underline, Undo2, X, type LucideIcon
 } from 'lucide-react'
@@ -71,6 +71,7 @@ const symbols: Record<string, LucideIcon> = {
   'link': Link,
   'globe': Earth,
   'arrow.clockwise': RefreshCw,
+  'arrow.triangle.2.circlepath': RefreshCcw,
   'arrow.counterclockwise': RotateCcw,
   'bookmark': Bookmark,
   'text.alignleft': AlignLeft,

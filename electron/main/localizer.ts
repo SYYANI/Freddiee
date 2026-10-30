@@ -126,7 +126,7 @@ export interface LocalizedPage {
 export type ContentExtraction = 'readable' | 'simplifiedClip' | 'clip' | 'original'
 
 export interface LocalizeOptions {
-  /** Directory of the paper; resources are saved below `assets/`. */
+  /** Directory of the paper; resources are saved below `Resources/`, as in native Freddie. */
   directory: string
   extraction?: ContentExtraction
   fetchResource?: (url: string, signal: AbortSignal) => Promise<{ data: Uint8Array; contentType: string } | undefined>
@@ -253,7 +253,7 @@ const extensionFor = (contentType: string, url: string): string => {
 
 async function localizeResources($: CheerioAPI, pageURL: URL, options: LocalizeOptions): Promise<void> {
   if (!options.fetchResource) return
-  const assetsDirectory = join(options.directory, 'assets')
+  const assetsDirectory = join(options.directory, 'Resources')
   await mkdir(assetsDirectory, { recursive: true })
   const deadline = Date.now() + (options.resourceBudgetMs ?? 30_000)
   const saved = new Map<string, string>()
@@ -280,8 +280,8 @@ async function localizeResources($: CheerioAPI, pageURL: URL, options: LocalizeO
       let data = result.data
       if (kind === 'css') data = new TextEncoder().encode(rewriteCSSURLs(new TextDecoder().decode(data), new URL(key)))
       await writeFile(join(assetsDirectory, name), data)
-      saved.set(key, `assets/${name}`)
-      return `assets/${name}`
+      saved.set(key, `Resources/${name}`)
+      return `Resources/${name}`
     } catch {
       return undefined
     }

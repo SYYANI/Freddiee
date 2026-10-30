@@ -102,9 +102,9 @@ export class WritingStore {
     }
   }
 
-  /** Copies an image into the writing's folder and returns the relative path to link it with. */
+  /** Copies an image into the writing's `assets/` folder, as native Freddie does, and returns the path to link it with. */
   async importImage(id: string, source: string): Promise<string> {
-    const imagesDirectory = join(this.directory(id), 'images')
+    const imagesDirectory = join(this.directory(id), 'assets')
     await mkdir(imagesDirectory, { recursive: true })
     const extension = extname(source).toLowerCase() || '.png'
     const base = basename(source, extname(source)).replace(/[^\p{L}\p{N}_-]+/gu, '-').slice(0, 60) || 'image'
@@ -120,7 +120,7 @@ export class WritingStore {
       }
     }
     await copyFile(source, join(imagesDirectory, name))
-    return `images/${name}`
+    return `assets/${name}`
   }
 }
 

@@ -9,6 +9,8 @@ interface SecretFile {
   /** Written by schema 2, before keys were stored per provider. */
   apiKey?: string
   providers?: Record<string, string>
+  /** Library sync device tokens, by server and device. */
+  sync?: Record<string, string>
 }
 
 /**
@@ -57,6 +59,20 @@ export class SecretStore {
 
   async key(providerId: string): Promise<string | undefined> {
     const encrypted = (await this.read()).providers?.[providerId]
+    if (!encrypted || !safeStorage.isEncryptionAvailable()) return undefined
+    return safeStorage.decryptString(Buffer.from(encrypted, 'base64'))
+  }
+
+  async setSyncToken(account: string, token: string): Promise<void> {
+    if (!safeStorage.isEncryptionAvailable()) throw new Error('Secure credential storage is not available on this system.')
+    const encrypted = safeStorage.encryptString(token).toString('base64')
+    await this.update((file) => {
+      file.sync = { ...file.sync, [account]: encrypted }
+    })
+  }
+
+  async syncToken(account: string): Promise<string | undefined> {
+    const encrypted = (await this.read()).sync?.[account]
     if (!encrypted || !safeStorage.isEncryptionAvailable()) return undefined
     return safeStorage.decryptString(Buffer.from(encrypted, 'base64'))
   }

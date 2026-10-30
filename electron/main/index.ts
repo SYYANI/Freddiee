@@ -1,6 +1,6 @@
 import electron from 'electron'
 import type { BrowserWindowConstructorOptions, IpcMainInvokeEvent, MenuItemConstructorOptions, WebContents } from 'electron'
-import { access, readFile, rm, writeFile } from 'node:fs/promises'
+import { access, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { delimiter, join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type {
@@ -13,7 +13,7 @@ import type {
   MessageBoxSpec,
   ModelProfile,
   NoteSelectionContext,
-  PdfAnnotation,
+  PdfAnnotationRecord,
   ProviderProfile,
   ProviderTestResult,
   ReadingState,
@@ -41,6 +41,8 @@ import { builtInProviders, FreddieStore } from './store'
 import { TranslationService, translationDisplayCSS } from './translation'
 import { latestLatexSourcePath } from '../../LaTeXTransKit'
 import { WritingStore } from './writings'
+import { SyncController } from './sync/controller'
+import type { SyncConflictChoice } from '../../shared/sync'
 import { importNativeLibrary, nativeLibraryExists, type NativeImportStage, type NativeImportUpdate } from './nativeLibrary'
 import { applyLiquidGlass, applyUnifiedToolbar, supportsLiquidGlass } from './windowChrome'
 import { applyWindowsBackdrop, windowsBackdrop } from './windowsBackdrop'
@@ -79,6 +81,9 @@ let summaries: PaperSummaryService
 let translations: TranslationService
 let assistant: AssistantService
 let annotations: AnnotationStore
+let sync: SyncController
+/** Writings with unsaved edits in an editor; sync leaves them alone until they are saved. */
+const dirtyWritings = new Map<number, Set<string>>()
 let outlines: DocumentOutlineService
 let translator: Translator = createTranslator('en')
 let htmlTranslatedPaperIds: string[] = []
@@ -123,6 +128,22 @@ app.whenReady().then(async () => {
   }, () => translator, () => app.getAppPath())
   assistant = new AssistantService(store, secrets, (event) => windows.main?.webContents.send('assistant:event', event), () => translator)
   void refreshTranslatedIds()
+  sync = new SyncController({
+    root,
+    store,
+    writings,
+    tokens: secrets,
+    translator: () => translator,
+    busyPapers: () => translations.runningPaperIds(),
+    busyWritings: () => new Set([...dirtyWritings.values()].flatMap((ids) => [...ids])),
+    onStatus: (status) => broadcast('sync:status', status),
+    onApplied: (paperIds, writingIds) => {
+      broadcast('sync:applied', { paperIds, writingIds })
+      broadcast('library:changed')
+      void refreshTranslatedIds()
+    }
+  })
+  await sync.initialize()
 
   store.onChange(() => {
     updateTranslator()
@@ -135,6 +156,9 @@ app.whenReady().then(async () => {
   createMenu()
   createMainWindow()
   if (process.env.FREDDIE_IMPORT_NATIVE === '1' && hasNativeLibrary) void runNativeImport(false)
+  sync.start(() => BrowserWindow.getFocusedWindow() !== null)
+  app.on('browser-window-focus', () => sync.foregrounded())
+  app.on('will-quit', () => sync.stop())
 
   if (isMac) {
     systemPreferences.subscribeNotification('AppleInterfaceThemeChangedNotification', () => {
@@ -348,11 +372,11 @@ function registerProtocol(): void {
         const [paperId, kind, ...rest] = parts
         store.paper(paperId)
         if (kind === 'a') path = store.attachmentPath(paperId, rest[0])
-        // Localized page resources live below assets/ (native Freddie: Resources/) next to paper.html.
-        else if ((kind === 'assets' || kind === 'Resources') && rest.length) path = store.resolvePaperPath(paperId, [kind, ...rest].join('/'))
+        // Localized page resources live below Resources/ next to paper.html, as in native Freddie.
+        else if (kind === 'Resources' && rest.length) path = store.resolvePaperPath(paperId, [kind, ...rest].join('/'))
       } else if (url.hostname === 'writing' && parts.length >= 2) {
         const [writingId, ...rest] = parts
-        if (rest[0] === 'images') path = writings.resolve(writingId, rest.join('/'))
+        if (rest[0] === 'assets') path = writings.resolve(writingId, rest.join('/'))
       } else if (url.hostname === 'pdfjs' && parts.length === 2) {
         const [kind, file] = parts
         if (['cmaps', 'standard_fonts'].includes(kind) && /^[A-Za-z0-9_.-]+$/.test(file)) {
@@ -722,7 +746,7 @@ function registerIpc(): void {
 
   // Annotations
   handle('annotations:list', (_event, paperId: string, attachmentId: string) => annotations.list(requireUUID(paperId), requireUUID(attachmentId)))
-  handle('annotations:save', (_event, paperId: string, attachmentId: string, list: PdfAnnotation[]) => annotations.save(requireUUID(paperId), requireUUID(attachmentId), Array.isArray(list) ? list : []))
+  handle('annotations:save', (_event, paperId: string, attachmentId: string, list: PdfAnnotationRecord[]) => annotations.save(requireUUID(paperId), requireUUID(attachmentId), Array.isArray(list) ? list : []))
   handle('annotations:export', async (event, paperId: string, attachmentId: string) => {
     const attachment = store.attachment(requireUUID(paperId), requireUUID(attachmentId))
     const base = attachment.filename.split('/').pop()!.replace(/\.pdf$/i, '')
@@ -839,6 +863,65 @@ function registerIpc(): void {
     const window = windowFor(event.sender)
     if (window) window.setTitle(String(title).slice(0, 200))
   })
+
+  // Sync
+  handle('sync:status', () => sync.status)
+  handle('sync:import-credential', (event) => importSyncCredential(windowFor(event.sender)!))
+  handle('sync:now', () => sync.syncNow())
+  handle('sync:set-automatic', (_event, value: boolean) => sync.setAutomatic(Boolean(value)))
+  handle('sync:resolve', (_event, conflictId: string, choice: SyncConflictChoice) => {
+    if (!['thisDevice', 'server', 'keepBoth'].includes(choice)) throw new Error('Invalid choice')
+    return sync.resolve(String(conflictId), choice)
+  })
+  handle('sync:review-history', () => sync.reviewChangedHistory())
+  handle('sync:reveal-unavailable', (_event, attachmentId: string) => {
+    const path = sync.unavailablePath(requireUUID(attachmentId))
+    if (path) shell.showItemInFolder(path)
+  })
+  ipcMain.on('sync:writing-dirty', (event, writingId: string, dirty: boolean) => {
+    if (!windowFor(event.sender) || !isUUID(writingId)) return
+    const id = event.sender.id
+    if (!dirtyWritings.has(id)) {
+      dirtyWritings.set(id, new Set())
+      event.sender.once('destroyed', () => dirtyWritings.delete(id))
+    }
+    if (dirty) dirtyWritings.get(id)!.add(writingId.toLowerCase())
+    else dirtyWritings.get(id)!.delete(writingId.toLowerCase())
+  })
+}
+
+/**
+ * The credential file stays in the main process. Freddie ships without a server, so the
+ * address it names is confirmed before any part of the library is uploaded to it.
+ */
+async function importSyncCredential(owner: Window): Promise<void> {
+  const result = await dialog.showOpenDialog(owner, { properties: ['openFile'], filters: [{ name: 'JSON', extensions: ['json'] }] })
+  const path = result.filePaths[0]
+  if (!path) return
+  let json: string
+  let server: { server: string; isNew: boolean }
+  try {
+    const { size } = await stat(path)
+    if (size > 64 * 1024) throw new Error(translator('The device credential is not valid.'))
+    json = await readFile(path, 'utf8')
+    server = sync.credentialServer(json)
+  } catch (error) {
+    await dialog.showMessageBox(owner, { type: 'warning', message: translator('Unable to connect sync: %@', error instanceof Error ? translator(error.message) : String(error)), noLink: true })
+    return
+  }
+  if (server.isNew) {
+    const { response } = await dialog.showMessageBox(owner, {
+      type: 'warning',
+      message: sync.status.configuration ? translator('Connect to a Different Server?') : translator('Connect to This Server?'),
+      detail: translator('This server will receive a copy of your paper library: %@', server.server),
+      buttons: [translator('Connect and Sync'), translator('Cancel')],
+      defaultId: 1,
+      cancelId: 1,
+      noLink: true
+    })
+    if (response !== 0) return
+  }
+  if (await sync.connect(json)) await sync.syncNow()
 }
 
 function finiteOrUndefined(value: unknown): number | undefined {
@@ -934,12 +1017,13 @@ async function exportHTMLAsPDF(sender: WebContents, paperId: string, displayMode
   const source = await readFile(store.attachmentPath(paperId, html.id), 'utf8')
   const mode = ['original', 'bilingual', 'translated'].includes(displayMode) ? displayMode : 'bilingual'
   const extraCSS = `<style>${translationDisplayCSS}${readableProseLayoutCSS}${readableProseColorCSS}:root{--rp-reader-font-size:${fontSize}px}body.rp-readability-body .rp-readability-content{font-size:${fontSize}px!important}body{-webkit-print-color-adjust:exact}</style>`
-  const prepared = source.replace(/<html([^>]*)>/i, `<html$1 data-rp-display-mode="${mode}">`).replace(/<\/head>/i, `${extraCSS}</head>`)
-  const temporary = store.resolvePaperPath(paperId, `assets/.export-${Date.now()}.html`)
+  // Resources/… links resolve against the paper folder, not the temporary file's folder.
+  const prepared = source.replace(/<html([^>]*)>/i, `<html$1 data-rp-display-mode="${mode}">`).replace(/<head([^>]*)>/i, `<head$1><base href="freddie://paper/${paperId}/">`).replace(/<\/head>/i, `${extraCSS}</head>`)
+  const temporary = store.resolvePaperPath(paperId, `Resources/.export-${Date.now()}.html`)
   await atomicWriteFile(temporary, prepared)
   const window = new BrowserWindow({ show: false, webPreferences: { sandbox: true, javascript: false, contextIsolation: true } })
   try {
-    await window.loadURL(`freddie://paper/${paperId}/assets/${temporary.split(/[\\/]/).pop()}`)
+    await window.loadURL(`freddie://paper/${paperId}/Resources/${temporary.split(/[\\/]/).pop()}`)
     const pdf = await window.webContents.printToPDF({ printBackground: true, pageSize: 'A4', margins: { top: 0.6, bottom: 0.6, left: 0.6, right: 0.6 } })
     await atomicWriteFile(result.filePath, pdf)
     return result.filePath.split(/[\\/]/).pop()!

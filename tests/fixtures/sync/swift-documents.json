@@ -1,0 +1,128 @@
+[
+  {
+    "id" : "0e9b3f0a-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
+    "json" : "{\"content\":{\"paper\":{\"_0\":{\"abstractText\":\"Line one\\nLine two\\\\\",\"arxivID\":\"2303.08774\",\"arxivVersion\":\"v2\",\"authorsStorage\":\"Ashish Vaswani\\nNoam Shazeer\",\"categoriesStorage\":\"cs.CL\\ncs.LG\",\"createdAt\":1761800000123,\"doi\":\"10.1000\/xyz\",\"htmlURLString\":\"https:\/\/arxiv.org\/html\/2303.08774\",\"id\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\",\"isFavorite\":true,\"modifiedAt\":1761886400456,\"pdfURLString\":\"https:\/\/arxiv.org\/pdf\/2303.08774\",\"publishedAt\":1761800000123,\"tagsStorage\":\"\",\"title\":\"Attention \/ \\\"Is\\\" All\\tYou Need — 注意力 😀\\u0001\",\"updatedAt\":1761886400456}}},\"schemaVersion\":1}",
+    "kind" : "paper",
+    "label" : "paper-full"
+  },
+  {
+    "id" : "7d1c55a2-9f3e-4b6a-8c2d-1e0f9a8b7c6d",
+    "json" : "{\"content\":{\"paper\":{\"_0\":{\"abstractText\":\"\",\"authorsStorage\":\"\",\"categoriesStorage\":\"\",\"createdAt\":1761800000123,\"id\":\"7D1C55A2-9F3E-4B6A-8C2D-1E0F9A8B7C6D\",\"isFavorite\":false,\"modifiedAt\":1761800000123,\"tagsStorage\":\"\",\"title\":\"Untitled PDF\"}}},\"schemaVersion\":1}",
+    "kind" : "paper",
+    "label" : "paper-minimal"
+  },
+  {
+    "id" : "7d1c55a2-9f3e-4b6a-8c2d-1e0f9a8b7c6d",
+    "json" : "{\"content\":{\"attachment\":{\"_0\":{\"createdAt\":1761800000123,\"file\":{\"hash\":\"abababababababababababababababababababababababababababababababab\",\"relativePath\":\"translations\/paper.zh.pdf\",\"size\":12345},\"filename\":\"paper.zh.pdf\",\"id\":\"7D1C55A2-9F3E-4B6A-8C2D-1E0F9A8B7C6D\",\"kind\":\"translatedPDF\",\"paperID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\",\"source\":\"babeldoc\",\"translatedLastPage\":10}}},\"schemaVersion\":1}",
+    "kind" : "attachment",
+    "label" : "attachment"
+  },
+  {
+    "id" : "c3a1e2f4-5b6d-4e7f-8091-a2b3c4d5e6f7",
+    "json" : "{\"content\":{\"attachment\":{\"_0\":{\"createdAt\":1761800000123,\"file\":{\"hash\":\"abababababababababababababababababababababababababababababababab\",\"relativePath\":\"paper.pdf\",\"size\":0},\"filename\":\"paper.pdf\",\"id\":\"C3A1E2F4-5B6D-4E7F-8091-A2B3C4D5E6F7\",\"kind\":\"pdf\",\"paperID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\",\"source\":\"localImport\"}}},\"schemaVersion\":1}",
+    "kind" : "attachment",
+    "label" : "attachment-plain"
+  },
+  {
+    "id" : "7d1c55a2-9f3e-4b6a-8c2d-1e0f9a8b7c6d",
+    "json" : "{\"content\":{\"folder\":{\"_0\":{\"createdAt\":1761800000123,\"id\":\"7D1C55A2-9F3E-4B6A-8C2D-1E0F9A8B7C6D\",\"modifiedAt\":1761886400456,\"name\":\"研究 \/ Research\",\"parentID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\"}}},\"schemaVersion\":1}",
+    "kind" : "folder",
+    "label" : "folder"
+  },
+  {
+    "id" : "7d1c55a2-9f3e-4b6a-8c2d-1e0f9a8b7c6d",
+    "json" : "{\"content\":{\"folder\":{\"_0\":{\"createdAt\":1761800000123,\"id\":\"7D1C55A2-9F3E-4B6A-8C2D-1E0F9A8B7C6D\",\"modifiedAt\":1761800000123,\"name\":\"Inbox\"}}},\"schemaVersion\":1}",
+    "kind" : "folder",
+    "label" : "folder-root"
+  },
+  {
+    "id" : "0e9b3f0a-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
+    "json" : "{\"content\":{\"membership\":{\"_0\":{\"addedAt\":1761800000123,\"folderID\":\"7D1C55A2-9F3E-4B6A-8C2D-1E0F9A8B7C6D\",\"paperID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\"}}},\"schemaVersion\":1}",
+    "kind" : "folderMembership",
+    "label" : "membership"
+  },
+  {
+    "id" : "0e9b3f0a-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
+    "json" : "{\"content\":{\"itemType\":{\"_0\":{\"assignedAt\":1761800000123,\"paperID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\",\"rawValue\":\"journalArticle\"}}},\"schemaVersion\":1}",
+    "kind" : "itemType",
+    "label" : "itemType"
+  },
+  {
+    "id" : "7d1c55a2-9f3e-4b6a-8c2d-1e0f9a8b7c6d",
+    "json" : "{\"content\":{\"note\":{\"_0\":{\"attachmentID\":\"C3A1E2F4-5B6D-4E7F-8091-A2B3C4D5E6F7\",\"body\":\"**body**\\nnext\",\"createdAt\":1761800000123,\"htmlSelector\":\"rp-anchor:\/0\/2\",\"id\":\"7D1C55A2-9F3E-4B6A-8C2D-1E0F9A8B7C6D\",\"modifiedAt\":1761886400456,\"pageIndex\":3,\"paperID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\",\"quote\":\"quoted\"}}},\"schemaVersion\":1}",
+    "kind" : "note",
+    "label" : "note"
+  },
+  {
+    "id" : "7d1c55a2-9f3e-4b6a-8c2d-1e0f9a8b7c6d",
+    "json" : "{\"content\":{\"note\":{\"_0\":{\"body\":\"\",\"createdAt\":1761800000123,\"id\":\"7D1C55A2-9F3E-4B6A-8C2D-1E0F9A8B7C6D\",\"modifiedAt\":1761800000123,\"paperID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\",\"quote\":\"\"}}},\"schemaVersion\":1}",
+    "kind" : "note",
+    "label" : "note-minimal"
+  },
+  {
+    "id" : "0e9b3f0a-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
+    "json" : "{\"content\":{\"reading\":{\"_0\":{\"attachmentID\":\"7D1C55A2-9F3E-4B6A-8C2D-1E0F9A8B7C6D\",\"modifiedAt\":1761800000123,\"pageIndex\":0,\"paperID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\",\"readerMode\":\"bilingualPDF\",\"scrollRatio\":0.4}}},\"schemaVersion\":1}",
+    "kind" : "readingState",
+    "label" : "reading-0"
+  },
+  {
+    "id" : "0e9b3f0a-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
+    "json" : "{\"content\":{\"reading\":{\"_0\":{\"modifiedAt\":1761800000123,\"pageIndex\":7,\"paperID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\",\"readerMode\":\"bilingualPDF\",\"scrollRatio\":1e-05}}},\"schemaVersion\":1}",
+    "kind" : "readingState",
+    "label" : "reading-1"
+  },
+  {
+    "id" : "0e9b3f0a-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
+    "json" : "{\"content\":{\"reading\":{\"_0\":{\"attachmentID\":\"7D1C55A2-9F3E-4B6A-8C2D-1E0F9A8B7C6D\",\"modifiedAt\":1761800000123,\"pageIndex\":14,\"paperID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\",\"readerMode\":\"bilingualPDF\",\"scrollRatio\":0.3333333333333333}}},\"schemaVersion\":1}",
+    "kind" : "readingState",
+    "label" : "reading-2"
+  },
+  {
+    "id" : "0e9b3f0a-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
+    "json" : "{\"content\":{\"reading\":{\"_0\":{\"htmlAnchor\":\"rp-anchor:\/1\/4\",\"modifiedAt\":1761800000123,\"pageIndex\":21,\"paperID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\",\"readerMode\":\"html\",\"scrollRatio\":1}}},\"schemaVersion\":1}",
+    "kind" : "readingState",
+    "label" : "reading-3"
+  },
+  {
+    "id" : "0e9b3f0a-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
+    "json" : "{\"content\":{\"reading\":{\"_0\":{\"attachmentID\":\"7D1C55A2-9F3E-4B6A-8C2D-1E0F9A8B7C6D\",\"modifiedAt\":1761800000123,\"pageIndex\":28,\"paperID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\",\"readerMode\":\"bilingualPDF\",\"scrollRatio\":0}}},\"schemaVersion\":1}",
+    "kind" : "readingState",
+    "label" : "reading-4"
+  },
+  {
+    "id" : "0e9b3f0a-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
+    "json" : "{\"content\":{\"reading\":{\"_0\":{\"modifiedAt\":1761800000123,\"pageIndex\":35,\"paperID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\",\"readerMode\":\"bilingualPDF\",\"scrollRatio\":0.125}}},\"schemaVersion\":1}",
+    "kind" : "readingState",
+    "label" : "reading-5"
+  },
+  {
+    "id" : "0e9b3f0a-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
+    "json" : "{\"content\":{\"translations\":{\"_0\":{\"paperID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\",\"segments\":[{\"createdAt\":1761800000123,\"id\":\"C3A1E2F4-5B6D-4E7F-8091-A2B3C4D5E6F7\",\"modelName\":\"gpt\",\"modifiedAt\":1761886400456,\"sourceHash\":\"bb\",\"sourceText\":\"World\",\"sourceType\":\"abstract\",\"targetLanguage\":\"zh-CN\",\"translatedText\":\"世界\"},{\"createdAt\":1761800000123,\"id\":\"7D1C55A2-9F3E-4B6A-8C2D-1E0F9A8B7C6D\",\"modelName\":\"gpt\",\"modelProfileID\":\"7D1C55A2-9F3E-4B6A-8C2D-1E0F9A8B7C6D\",\"modifiedAt\":1761800000123,\"providerProfileID\":\"C3A1E2F4-5B6D-4E7F-8091-A2B3C4D5E6F7\",\"sourceHash\":\"aa\",\"sourceText\":\"Hello\",\"sourceType\":\"html\",\"targetLanguage\":\"zh-CN\",\"translatedText\":\"你好\"}]}}},\"schemaVersion\":1}",
+    "kind" : "translationSegment",
+    "label" : "translations"
+  },
+  {
+    "id" : "c3a1e2f4-5b6d-4e7f-8091-a2b3c4d5e6f7",
+    "json" : "{\"content\":{\"annotation\":{\"_0\":{\"annotation\":{\"bounds\":{\"height\":0.1,\"width\":100,\"x\":10.5,\"y\":20.25},\"color\":{\"alpha\":1,\"blue\":0.9,\"green\":0.3,\"red\":0.58},\"createdAt\":1761800000000,\"id\":\"C3A1E2F4-5B6D-4E7F-8091-A2B3C4D5E6F7\",\"inkPaths\":[[{\"x\":1,\"y\":2},{\"x\":3.3,\"y\":4.4}]],\"inkSamplePaths\":[[{\"width\":0.5,\"x\":1,\"y\":2}]],\"kind\":\"ink\",\"lineWidth\":2.5,\"modifiedAt\":1761886400000,\"pageIndex\":1,\"quadrilateralPoints\":[],\"quote\":\"q\"},\"attachmentID\":\"7D1C55A2-9F3E-4B6A-8C2D-1E0F9A8B7C6D\",\"paperID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\"}}},\"schemaVersion\":1}",
+    "kind" : "pdfAnnotation",
+    "label" : "annotation"
+  },
+  {
+    "id" : "6c91f331079f4809bf5018990653ac9d0dbeb8abaec9f2df5f27105c426587d5",
+    "json" : "{\"content\":{\"resource\":{\"_0\":{\"file\":{\"hash\":\"abababababababababababababababababababababababababababababababab\",\"relativePath\":\"Resources\/figure 1.png\",\"size\":99},\"scope\":{\"paperID\":\"0E9B3F0A-1C2D-4E5F-8A9B-0C1D2E3F4A5B\"}}}},\"schemaVersion\":1}",
+    "kind" : "htmlState",
+    "label" : "resource-paper"
+  },
+  {
+    "id" : "18511cac12663faf691b6c2f95132152328bfa4e15f0878db33efc9c4616dfd0",
+    "json" : "{\"content\":{\"resource\":{\"_0\":{\"file\":{\"hash\":\"abababababababababababababababababababababababababababababababab\",\"relativePath\":\"assets\/image.png\",\"size\":4},\"scope\":{\"writingID\":\"C3A1E2F4-5B6D-4E7F-8091-A2B3C4D5E6F7\"}}}},\"schemaVersion\":1}",
+    "kind" : "htmlState",
+    "label" : "resource-writing"
+  },
+  {
+    "id" : "c3a1e2f4-5b6d-4e7f-8091-a2b3c4d5e6f7",
+    "json" : "{\"content\":{\"writing\":{\"_0\":{\"createdAt\":1761800000123,\"file\":{\"hash\":\"abababababababababababababababababababababababababababababababab\",\"relativePath\":\"writing.md\",\"size\":42},\"id\":\"C3A1E2F4-5B6D-4E7F-8091-A2B3C4D5E6F7\",\"modifiedAt\":1761886400456,\"title\":\"My writing\"}}},\"schemaVersion\":1}",
+    "kind" : "writing",
+    "label" : "writing"
+  }
+]

@@ -3,6 +3,7 @@
 // library the same way.
 
 import type { DocumentOutlineCache, DocumentOutlineSource } from './outline'
+import type { SyncAppliedChange, SyncConflictChoice, SyncStatus } from './sync'
 
 export type AttachmentKind = 'pdf' | 'html' | 'translatedPDF' | 'resource'
 export type AttachmentSource =
@@ -98,6 +99,8 @@ export interface ReadingState {
   pageIndex: number
   scrollRatio: number
   zoomScale: number
+  /** Native Freddie's HTML reading anchor, kept from sync while the position is unchanged. */
+  htmlAnchor?: string
   modifiedAt: string
 }
 
@@ -352,19 +355,46 @@ export interface AssistantStreamEvent {
   sources?: AssistantSource[]
 }
 
+export type PdfAnnotationKind = 'highlight' | 'underline' | 'strikeOut' | 'ink' | 'text'
+
+/**
+ * A stored annotation: native Freddie's `PDFAnnotationRecord` in its sidecar form. Geometry
+ * is in PDF page space (points, origin at the bottom left); dates are ISO 8601 in whole
+ * seconds; the identifier is an uppercase UUID.
+ */
+export interface PdfAnnotationRecord {
+  id: string
+  pageIndex: number
+  kind: PdfAnnotationKind
+  bounds: { x: number; y: number; width: number; height: number }
+  color: { red: number; green: number; blue: number; alpha: number }
+  lineWidth: number
+  contents?: string
+  quote?: string
+  quadrilateralPoints: Array<{ x: number; y: number }>
+  inkPaths: Array<Array<{ x: number; y: number }>>
+  /** Pressure-aware ink from native Freddie on iPad. */
+  inkSamplePaths?: Array<Array<{ x: number; y: number; width: number }>>
+  createdAt: string
+  modifiedAt: string
+}
+
+/** The reader's view of an annotation, in normalized page coordinates (0...1, origin top-left). */
 export interface PdfAnnotation {
   id: string
   attachmentId: string
   pageIndex: number
-  type: 'highlight' | 'underline' | 'strikeOut' | 'ink' | 'text'
+  type: PdfAnnotationKind
   color: string
   lineWidth?: number
-  /** Normalized page rectangles (0...1, origin top-left) for text markup and notes. */
+  /** Normalized page rectangles for text markup and notes. */
   rects?: Array<{ x: number; y: number; width: number; height: number }>
   /** Normalized ink paths. */
   paths?: Array<Array<{ x: number; y: number }>>
   contents?: string
   createdAt: string
+  /** The stored record it was read from; saved unchanged while the annotation is. */
+  record?: PdfAnnotationRecord
 }
 
 export interface MenuItemSpec {
@@ -507,8 +537,8 @@ export interface FreddieAPI {
     historyAnchors(paperId: string): Promise<AssistantHistoryAnchor[]>
   }
   annotations: {
-    list(paperId: string, attachmentId: string): Promise<PdfAnnotation[]>
-    save(paperId: string, attachmentId: string, annotations: PdfAnnotation[]): Promise<void>
+    list(paperId: string, attachmentId: string): Promise<PdfAnnotationRecord[]>
+    save(paperId: string, attachmentId: string, records: PdfAnnotationRecord[]): Promise<void>
     exportAnnotated(paperId: string, attachmentId: string): Promise<number | null>
   }
   writings: {
@@ -527,6 +557,20 @@ export interface FreddieAPI {
     onCommand(listener: (command: WritingCommand) => void): () => void
     sendCommand(command: WritingCommand): Promise<void>
     sendCitation(request: NoteNavigationRequest): Promise<void>
+  }
+  sync: {
+    status(): Promise<SyncStatus>
+    onStatus(listener: (status: SyncStatus) => void): () => void
+    /** Picks a device credential, confirms its server, connects and syncs. */
+    importCredential(): Promise<void>
+    syncNow(): Promise<void>
+    setAutomatic(value: boolean): Promise<void>
+    resolve(conflictId: string, choice: SyncConflictChoice): Promise<void>
+    reviewHistory(): Promise<void>
+    revealUnavailable(attachmentId: string): Promise<void>
+    /** Writings with unsaved edits are left alone by sync until they are saved. */
+    setWritingDirty(writingId: string, dirty: boolean): void
+    onApplied(listener: (change: SyncAppliedChange) => void): () => void
   }
   digest: {
     copyMarkdown(paperId: string): Promise<void>

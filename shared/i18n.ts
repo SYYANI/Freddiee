@@ -64,7 +64,13 @@ const extraZhHans: Record<string, string> = {
   'Drag to pan over images and blank areas; selectable text keeps the text-selection cursor. When disabled, non-text areas use the standard arrow cursor.':
     '在图片和空白区域拖动以平移；可选文字仍使用划词光标。关闭后，非文字区域使用原来的箭头光标。',
   'Zoom Out': '缩小',
-  'Zoom In': '放大'
+  'Zoom In': '放大',
+  // Library sync; annotations made here are not synced yet.
+  'Syncs papers, files, reading positions, and writings across your own devices. Use a separate device credential on each device; your library stays available offline. Credentials are encrypted by the operating system, and LLM API keys and device preferences are not synced. The sync server can read uploaded content.':
+    '在自己的设备间同步论文、文件、阅读位置和写作稿。每台设备使用独立的设备凭证，离线时仍可使用论文库。凭证由操作系统加密保存，LLM API 密钥和设备偏好不会同步。同步服务器可以读取上传的内容。',
+  'Freddie does not include a sync server. Whoever runs a Freddie Sync Server for you issues a credential file for each device.':
+    'Freddie 不内置同步服务器。由为你部署 Freddie Sync Server 的人为每台设备签发凭证文件。',
+  Status: '状态'
 }
 
 const dictionaries: Record<'zh-Hans', Record<string, string>> = {

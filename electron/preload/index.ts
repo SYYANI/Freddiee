@@ -121,6 +121,18 @@ const api: FreddieAPI = {
     sendCommand: (command) => invoke('writings:send-command', command),
     sendCitation: (request) => invoke('writings:send-citation', request)
   },
+  sync: {
+    status: () => invoke('sync:status'),
+    onStatus: (listener) => subscribe('sync:status', listener),
+    importCredential: () => invoke('sync:import-credential'),
+    syncNow: () => invoke('sync:now'),
+    setAutomatic: (value) => invoke('sync:set-automatic', value),
+    resolve: (conflictId, choice) => invoke('sync:resolve', conflictId, choice),
+    reviewHistory: () => invoke('sync:review-history'),
+    revealUnavailable: (attachmentId) => invoke('sync:reveal-unavailable', attachmentId),
+    setWritingDirty: (writingId, dirty) => ipcRenderer.send('sync:writing-dirty', writingId, dirty),
+    onApplied: (listener) => subscribe('sync:applied', listener)
+  },
   digest: {
     copyMarkdown: (paperId) => invoke('digest:copy', paperId),
     export: (paperId) => invoke('digest:export', paperId),

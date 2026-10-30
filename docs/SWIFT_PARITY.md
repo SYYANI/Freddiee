@@ -17,12 +17,13 @@
 | Bundled native BabelDOC helper | `BabelDocKit/` TypeScript + wasm port with worker-thread service integration, main-process model RPC, stage diagnostics, checkpoints and replace-at-end attachments |
 | `LaTeXTranslationService` with the Swift `LaTeXTransKit` | `LaTeXTransKit/` port with the same prompts, templates, checkpoints, preamble policies and latexmk diagnostics |
 | `SelectionAssistantOverlay` / `Orchestrator` / `Service` | `SelectionAssistant` overlay and `AssistantService` with the same prompt |
-| PDF annotations (PDFKit) and export | Overlay annotations and pdf-lib export |
+| PDF annotations (PDFKit), `PDFAnnotationStore` sidecars, and export | Overlay annotations over native sidecars (PDF page coordinates via PDF.js viewports) and pdf-lib export |
 | `WritingPaneView`, `WritingWindow`, `MarkdownLiveSyntax`, `PaperCitation` | `WritingPane`, Writing window, CodeMirror live Markdown, same `readpaper://` links |
 | `InspectorPaneView` (item type, authors, abstract translation, notes, writings) | `Inspector` with the same sections |
 | `SettingsView` tabs | `SettingsWindow` with the same six tabs and forms |
 | `BrowserClipperServer`, `BrowserClipImporter` (browser extension API) | `clipperServer.ts`, `browserClip.ts` and `PaperImporter.importClip`: same port, routes, checks and clip rules |
 | `PaperDigestExportPolicy` | `shared/digest.ts` with the same template and placeholders |
+| `LibrarySyncController` / `LibrarySyncFiles` / `LibrarySyncMerge`, Settings → Sync | `electron/main/sync/` with the same protocol, byte-identical documents and merge rules; Settings → Sync |
 | `TranslationActivityCapsule`, toasts, setup notice | Same overlays |
 | `Localizable.xcstrings` (en, zh-Hans) | The catalog is reused as `shared/locales/zh-Hans.json` |
 | `PaperTheme` Paper Tone, light-only interface | Same colors and PDF color matrix, light-only |

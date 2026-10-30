@@ -321,6 +321,29 @@ html[data-appearance="paper"] .settings-tab.selected {
   gap: 10px;
 }
 
+.sync-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.sync-progress .progress-bar {
+  flex: 1;
+}
+
+.sync-progress .secondary {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+.sync-conflict {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
 .quick-setup {
   display: flex;
   flex-direction: column;

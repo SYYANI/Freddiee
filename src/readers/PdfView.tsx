@@ -1,6 +1,7 @@
 import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
-import type { AssistantHistoryAnchor, Note, NoteSelectionContext, PdfAnnotation } from '../../shared/types'
+import type { AssistantHistoryAnchor, Note, NoteSelectionContext, PdfAnnotation, PdfAnnotationRecord } from '../../shared/types'
+import { annotationToRecord, recordToAnnotation, type PageGeometry } from '../../shared/pdfAnnotationGeometry'
 import { openDocument, pageTexts, pdfjs } from './pdfjs'
 import { buildMatcher, type FindRequest, type FindStatus } from './find'
 import { SidenoteRail } from './SidenoteRail'
@@ -111,6 +112,10 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
   const programmatic = useRef(0)
   const texts = useRef<string[]>()
   const [annotations, setAnnotations] = useState<PdfAnnotation[]>([])
+  // Stored records are in PDF page space; each page's PDF.js transform converts them.
+  const [records, setRecords] = useState<PdfAnnotationRecord[] | null>(null)
+  const geometries = useRef<PageGeometry[]>([])
+  const unplacedRecords = useRef<PdfAnnotationRecord[]>([])
   const history = useRef<{ undo: PdfAnnotation[][]; redo: PdfAnnotation[][] }>({ undo: [], redo: [] })
   const [renderedPages, setRenderedPages] = useState(0)
   const panDrag = useRef<{ pointerId: number; x: number; y: number; left: number; top: number }>()
@@ -129,11 +134,20 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     let cancelled = false
     handle.promise.then(async (loaded) => {
       const loadedSizes: PageSize[] = []
+      const loadedGeometries: PageGeometry[] = []
       for (let index = 1; index <= loaded.numPages; index += 1) {
         const viewport = (await loaded.getPage(index)).getViewport({ scale: 1 })
         loadedSizes.push({ width: viewport.width, height: viewport.height })
+        loadedGeometries.push({
+          toNormalized: (x, y) => {
+            const [left, top] = viewport.convertToViewportPoint(x, y) as [number, number]
+            return [left / viewport.width, top / viewport.height]
+          },
+          toPDF: (x, y) => viewport.convertToPdfPoint(x * viewport.width, y * viewport.height) as [number, number]
+        })
       }
       if (!cancelled) {
+        geometries.current = loadedGeometries
         setDocument(loaded)
         setSizes(loadedSizes)
       }
@@ -149,12 +163,36 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
   useEffect(() => {
     let cancelled = false
     history.current = { undo: [], redo: [] }
+    setRecords(null)
     void window.freddie.annotations.list(paperId, attachmentId).then((list) => {
-      if (!cancelled) setAnnotations(list)
+      if (!cancelled) setRecords(list)
     })
     return () => {
       cancelled = true
     }
+    // A new URL is a reloaded file, possibly with synced annotations.
+  }, [paperId, attachmentId, url])
+
+  useEffect(() => {
+    if (!records || !sizes.length) return
+    const placed: PdfAnnotation[] = []
+    const unplaced: PdfAnnotationRecord[] = []
+    for (const record of records) {
+      const geometry = geometries.current[record.pageIndex]
+      if (geometry) placed.push(recordToAnnotation(record, attachmentId, geometry))
+      else unplaced.push(record)
+    }
+    // Records for pages this file lacks (a partial translation) are kept, not shown.
+    unplacedRecords.current = unplaced
+    setAnnotations(placed)
+  }, [records, sizes, attachmentId])
+
+  const saveAnnotations = useCallback((list: PdfAnnotation[]) => {
+    const stored = list.flatMap((annotation) => {
+      const geometry = geometries.current[annotation.pageIndex]
+      return geometry ? [annotationToRecord(annotation, geometry)] : annotation.record ? [annotation.record] : []
+    })
+    void window.freddie.annotations.save(paperId, attachmentId, [...stored, ...unplacedRecords.current])
   }, [paperId, attachmentId])
 
   useLayoutEffect(() => {
@@ -579,11 +617,11 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     setAnnotations((previous) => {
       history.current.undo.push(previous)
       history.current.redo = []
-      void window.freddie.annotations.save(paperId, attachmentId, next)
+      saveAnnotations(next)
       return next
     })
     requestAnimationFrame(() => props.onAnnotationState?.({ ...annotationState(), hasTextSelection: Boolean(window.getSelection()?.toString()) }))
-  }, [paperId, attachmentId])
+  }, [saveAnnotations])
 
   useImperativeHandle(ref, () => ({
     scrollAnchor: () => {
@@ -633,15 +671,16 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
         }])
       }
       if (!byPage.size) return false
-      const created: PdfAnnotation[] = [...byPage.entries()].map(([pageIndex, rects]) => ({
+      // One annotation per line, as native Freddie stores text markup.
+      const created: PdfAnnotation[] = [...byPage.entries()].flatMap(([pageIndex, rects]) => mergeLineRects(rects).map((rect) => ({
         id: crypto.randomUUID(),
         attachmentId,
         pageIndex,
         type,
         color: props.tool?.color ?? '#ffd60a',
-        rects: mergeLineRects(rects),
+        rects: [rect],
         createdAt: new Date().toISOString()
-      }))
+      })))
       commitAnnotations([...annotations, ...created])
       selection.removeAllRanges()
       props.onSelection?.(null)
@@ -652,7 +691,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
       if (!previous) return
       history.current.redo.push(annotations)
       setAnnotations(previous)
-      void window.freddie.annotations.save(paperId, attachmentId, previous)
+      saveAnnotations(previous)
       props.onAnnotationState?.({ ...annotationState(), hasTextSelection: false })
     },
     redo: () => {
@@ -660,7 +699,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
       if (!next) return
       history.current.undo.push(annotations)
       setAnnotations(next)
-      void window.freddie.annotations.save(paperId, attachmentId, next)
+      saveAnnotations(next)
       props.onAnnotationState?.({ ...annotationState(), hasTextSelection: false })
     },
     addTextNote: (pageIndex, point, contents) => {
@@ -675,7 +714,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
         createdAt: new Date().toISOString()
       }])
     }
-  }), [sizes, tops, scale, pageAt, scrollToPage, updateVisible, annotations, commitAnnotations, attachmentId, props.tool?.color])
+  }), [sizes, tops, scale, pageAt, scrollToPage, updateVisible, annotations, commitAnnotations, saveAnnotations, attachmentId, props.tool?.color])
 
   const pageCount = sizes.length
   const totalHeight = tops[pageCount] ?? 0

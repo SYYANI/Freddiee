@@ -32,6 +32,7 @@ import { prepareBabelDocSemanticHints } from './babeldocSemanticHints'
 import { pdfPageCount } from './importer'
 import type { FreddieStore } from './store'
 import type { SecretStore } from './secrets'
+import { matchesRoute, newSegment, translationCacheIdentity, TranslationSegmentStore, type TranslationSegment } from './translationSegments'
 
 // MARK: Prompt
 
@@ -273,16 +274,6 @@ export function applyTranslation($: CheerioAPI, candidate: HTMLCandidate, transl
   source.after(renderTranslation(translation, candidate))
 }
 
-interface CacheEntry {
-  sourceHash: string
-  targetLanguage: string
-  providerId: string
-  modelId: string
-  identity: string
-  text: string
-  createdAt: string
-}
-
 // MARK: Service
 
 interface RunningJob {
@@ -292,6 +283,7 @@ interface RunningJob {
 
 export class TranslationService {
   private readonly jobs = new Map<string, RunningJob>()
+  private readonly segments: TranslationSegmentStore
 
   constructor(
     private readonly store: FreddieStore,
@@ -299,7 +291,9 @@ export class TranslationService {
     private readonly emit: (event: TranslationEvent) => void,
     private readonly translator: () => Translator,
     private readonly appPath: () => string = () => process.cwd()
-  ) {}
+  ) {
+    this.segments = new TranslationSegmentStore(store)
+  }
 
   isRunning(paperId: string): boolean {
     return this.jobs.has(paperId)
@@ -314,6 +308,10 @@ export class TranslationService {
 
   hasRunningJobs(): boolean {
     return this.jobs.size > 0
+  }
+
+  runningPaperIds(): Set<string> {
+    return new Set(this.jobs.keys())
   }
 
   /**
@@ -360,29 +358,12 @@ export class TranslationService {
     this.emit({ paperId, kind, type: 'failed', message, needsSetup: error instanceof RouteError, logPath })
   }
 
-  cachePath(paperId: string): string {
-    return join(this.store.paperDirectory(paperId), 'translations', 'html-cache.json')
-  }
-
   async htmlTranslatedPaperIds(): Promise<string[]> {
     const ids: string[] = []
     for (const paper of this.store.database.papers) {
-      try {
-        const cache = JSON.parse(await readFile(this.cachePath(paper.id), 'utf8')) as { entries?: CacheEntry[] }
-        if (cache.entries?.length) ids.push(paper.id)
-      } catch {
-        // No cache.
-      }
+      if ((await this.segments.read(paper.id)).some((segment) => segment.sourceType === 'html')) ids.push(paper.id)
     }
     return ids
-  }
-
-  private async readCache(paperId: string): Promise<CacheEntry[]> {
-    try {
-      return (JSON.parse(await readFile(this.cachePath(paperId), 'utf8')) as { entries?: CacheEntry[] }).entries ?? []
-    } catch {
-      return []
-    }
   }
 
   async translateHTML(paperId: string): Promise<void> {
@@ -396,19 +377,17 @@ export class TranslationService {
       const route = await resolveRoute('html', this.store, this.secrets, t)
       const settings = this.store.database.settings
       const glossary = normalizedGlossary(settings.translationGlossary)
-      const identity = `${promptVersion}|${route.modelName}|t=${route.temperature ?? ''}|p=${route.topP ?? ''}${glossary ? `|glossary=${sha256(glossary)}` : ''}`
+      const identity = translationCacheIdentity(route, glossary)
       const path = this.store.attachmentPath(paperId, attachment.id)
       const $ = cheerio.load(await readFile(path, 'utf8'))
       const candidates = prepareHTML($)
       const write = (): Promise<void> => atomicWriteFile(path, $.html())
       await write()
 
-      const cache = await this.readCache(paperId)
+      // One read of the paper's cache, shared with native Freddie's format and identity.
       const usable = new Map<string, string>()
-      for (const entry of cache) {
-        if (entry.targetLanguage === settings.targetLanguage && entry.providerId === route.providerId && entry.modelId === route.modelId && entry.identity === identity) {
-          usable.set(entry.sourceHash, entry.text)
-        }
+      for (const segment of await this.segments.read(paperId)) {
+        if (matchesRoute(segment, 'html', settings.targetLanguage, route, identity) && !usable.has(segment.sourceHash)) usable.set(segment.sourceHash, segment.translatedText)
       }
       let processed = 0
       const pending: HTMLCandidate[] = []
@@ -425,7 +404,7 @@ export class TranslationService {
 
       const paper = this.store.paper(paperId)
       let failed = 0
-      const newEntries: CacheEntry[] = []
+      const newSegments: TranslationSegment[] = []
       const concurrency = Math.max(1, Math.min(16, settings.htmlTranslationConcurrency))
       for (let offset = 0; offset < pending.length; offset += concurrency) {
         signal.throwIfAborted()
@@ -453,11 +432,12 @@ export class TranslationService {
             continue
           }
           applyTranslation($, candidate, text)
-          newEntries.push({ sourceHash: candidate.sourceHash, targetLanguage: settings.targetLanguage, providerId: route.providerId, modelId: route.modelId, identity, text, createdAt: new Date().toISOString() })
+          newSegments.push(newSegment({ sourceType: 'html', targetLanguage: settings.targetLanguage, sourceHash: candidate.sourceHash, sourceText: candidate.sourceText, translatedText: text, modelName: identity }, route))
           this.emit({ paperId, kind: 'html', type: 'segment', segmentId: candidate.segmentId, translatedHTML: renderTranslation(text, candidate) })
         }
         await write()
-        await this.writeCache(paperId, cache, newEntries)
+        const added = newSegments.splice(0)
+        if (added.length) await this.segments.update(paperId, (current) => [...current, ...added])
         this.emit({ paperId, kind: 'html', type: 'progress', completed: processed, total: candidates.length, summary: `${processed}/${candidates.length}`, message: t('Translating HTML...') })
       }
       this.emit({
@@ -471,12 +451,6 @@ export class TranslationService {
     } finally {
       this.end(paperId)
     }
-  }
-
-  private async writeCache(paperId: string, existing: CacheEntry[], added: CacheEntry[]): Promise<void> {
-    const byKey = new Map<string, CacheEntry>()
-    for (const entry of [...existing, ...added]) byKey.set(`${entry.sourceHash}|${entry.targetLanguage}|${entry.providerId}|${entry.modelId}|${entry.identity}`, entry)
-    await atomicWriteFile(this.cachePath(paperId), `${JSON.stringify({ version: 1, entries: [...byKey.values()] })}\n`)
   }
 
   async translateAbstract(paperId: string): Promise<string> {

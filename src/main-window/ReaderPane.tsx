@@ -213,6 +213,13 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
 
   // MARK: Translation events
 
+  // Sync replaced this paper's files with a version from another device.
+  useEffect(() => window.freddie.sync.onApplied((change) => {
+    if (!paper || !change.paperIds.includes(paper.id)) return
+    setHtmlReload((value) => value + 1)
+    setPdfReload((value) => value + 1)
+  }), [paper?.id])
+
   useEffect(() => window.freddie.translation.onEvent((event: TranslationEvent) => {
     setRuns((current) => {
       const previous = current[event.paperId] ?? { working: false, cancelling: false }

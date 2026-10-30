@@ -7,17 +7,12 @@ import { standardFontDataURL } from './importer'
 import { complete, requestFor, routeFor, type ResolvedRoute } from './llm'
 import type { SecretStore } from './secrets'
 import type { FreddieStore } from './store'
+import { matchesRoute, newSegment, translationCacheIdentity, TranslationSegmentStore, type TranslationSegment } from './translationSegments'
 
 const hidden: PaperAbstractContent = { kind: 'hidden' }
 const characterLimit = 140
 const characters = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
 const splitCharacters = (text: string): string[] => Array.from(characters.segment(text), (item) => item.segment)
-
-interface SummaryCacheEntry {
-  identity: string
-  sourceHash: string
-  text: string
-}
 
 interface SummaryJob {
   paperId: string
@@ -60,13 +55,15 @@ export class PaperSummaryService {
   private readonly jobs = new Map<string, SummaryJob>()
   private readonly pendingJobs = new Map<AbortController, SummaryJob>()
   private readonly operations = new Map<string, SummaryOperation>()
-  private readonly cacheWrites = new Map<string, Promise<void>>()
+  private readonly segments: TranslationSegmentStore
 
   constructor(
     private readonly store: FreddieStore,
     private readonly secrets: SecretStore,
     private readonly completion: typeof complete = complete
-  ) {}
+  ) {
+    this.segments = new TranslationSegmentStore(store)
+  }
 
   async cancelPaper(paperId: string): Promise<void> {
     const jobs = [...this.pendingJobs.values()].filter((job) => job.paperId === paperId)
@@ -127,7 +124,7 @@ export class PaperSummaryService {
       let job = this.jobs.get(jobKey)
       if (!job || job.controller.signal.aborted) {
         const controller = new AbortController()
-        const result = this.generate(paperId, paper.title, paper.abstract, pdf.id, route, language, identity, controller.signal)
+        const result = this.generate(paperId, paper.title, paper.abstract, pdf.id, route, language, controller.signal)
           .finally(() => {
             // An old cancelled job can finish after its replacement starts.
             if (this.jobs.get(jobKey)?.controller === controller) this.jobs.delete(jobKey)
@@ -151,38 +148,7 @@ export class PaperSummaryService {
     }
   }
 
-  private async readCache(path: string): Promise<SummaryCacheEntry[]> {
-    try {
-      const cache = JSON.parse(await readFile(path, 'utf8')) as { version?: unknown; entries?: unknown }
-      // Preserve the previous single-entry cache when first writing version 2.
-      const entries = cache.version === 2 && Array.isArray(cache.entries) ? cache.entries : cache.version === 1 ? [cache] : []
-      return entries.filter((entry): entry is SummaryCacheEntry => entry && typeof entry === 'object' &&
-        typeof entry.identity === 'string' && typeof entry.sourceHash === 'string' &&
-        typeof entry.text === 'string' && entry.text.trim() && splitCharacters(entry.text).length <= characterLimit)
-    } catch {
-      return []
-    }
-  }
-
-  private async writeCache(paperId: string, path: string, entry: SummaryCacheEntry, signal: AbortSignal): Promise<void> {
-    // Different identities may finish together; merge them in a per-paper queue.
-    const write = (this.cacheWrites.get(paperId) ?? Promise.resolve()).catch(() => undefined).then(async () => {
-      signal.throwIfAborted()
-      const entries = await this.readCache(path)
-      signal.throwIfAborted()
-      if (!this.store.database.papers.some((item) => item.id === paperId)) return
-      const retained = entries.filter((item) => item.identity !== entry.identity || item.sourceHash !== entry.sourceHash)
-      await atomicWriteFile(path, `${JSON.stringify({ version: 2, entries: [...retained, entry] })}\n`)
-    })
-    this.cacheWrites.set(paperId, write)
-    try {
-      await write
-    } finally {
-      if (this.cacheWrites.get(paperId) === write) this.cacheWrites.delete(paperId)
-    }
-  }
-
-  private async generate(paperId: string, title: string, abstract: string, pdfId: string, route: ResolvedRoute, language: string, identity: string, signal: AbortSignal): Promise<PaperAbstractContent> {
+  private async generate(paperId: string, title: string, abstract: string, pdfId: string, route: ResolvedRoute, language: string, signal: AbortSignal): Promise<PaperAbstractContent> {
     signal.throwIfAborted()
     let source = abstract.slice(0, 12_000)
     if (!source.trim()) {
@@ -195,10 +161,12 @@ export class PaperSummaryService {
     signal.throwIfAborted()
     if (!source.trim()) return hidden
     const sourceHash = createHash('sha256').update(`${title}\n${source}`).digest('hex')
-    const cachePath = join(this.store.paperDirectory(paperId), 'translations', 'pdf-summary.json')
-    const cached = (await this.readCache(cachePath)).find((entry) => entry.identity === identity && entry.sourceHash === sourceHash)
+    // Cached in the paper's translation segments with native Freddie's summary identity.
+    const identity = `${translationCacheIdentity(route)}|summary=1|limit=${characterLimit}`
+    const matches = (segment: TranslationSegment): boolean => matchesRoute(segment, 'pdf-summary', language, route, identity) && segment.sourceHash === sourceHash
+    const cached = (await this.segments.read(paperId)).find((segment) => matches(segment) && segment.translatedText.trim() && splitCharacters(segment.translatedText).length <= characterLimit)
     signal.throwIfAborted()
-    if (cached) return { kind: 'summary', text: cached.text }
+    if (cached) return { kind: 'summary', text: cached.translatedText }
     const apiKey = (await this.secrets.key(route.providerId))?.trim()
     signal.throwIfAborted()
     if (!apiKey) return hidden
@@ -216,7 +184,9 @@ Return only the summary, with no heading, labels, Markdown, or commentary.` },
     const units = splitCharacters(text)
     const summary = units.length <= characterLimit ? text : `${units.slice(0, characterLimit - 1).join('').trimEnd()}…`
     if (!this.store.database.papers.some((item) => item.id === paperId)) return hidden
-    await this.writeCache(paperId, cachePath, { identity, sourceHash, text: summary }, signal)
+    signal.throwIfAborted()
+    const segment = newSegment({ sourceType: 'pdf-summary', targetLanguage: language, sourceHash, sourceText: source, translatedText: summary, modelName: identity }, route)
+    await this.segments.update(paperId, (current) => [...current.filter((item) => !matches(item)), segment])
     signal.throwIfAborted()
     return { kind: 'summary', text: summary }
   }

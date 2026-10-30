@@ -35,7 +35,7 @@ async function fixture(options: { kind?: 'pdf' | 'html'; abstract?: string; conf
   const secrets = { key, configuredProviderIds: vi.fn(async () => configured) } as unknown as SecretStore
   const completion = vi.fn(async (_request: CompletionRequest) => ({ text: '论文探讨研究问题、方法及主要发现。', sources: [] }))
   const service = new PaperSummaryService(store, secrets, completion)
-  const cachePath = join(directory, 'translations', 'pdf-summary.json')
+  const cachePath = join(directory, 'translations', 'segments.json')
   return { store, paper, attachment, directory, configured, key, secrets, completion, service, cachePath }
 }
 
@@ -192,23 +192,8 @@ describe('PDF inspector summaries', () => {
     expect(f.completion).toHaveBeenCalledTimes(3)
     expect(f.key).toHaveBeenCalledTimes(3)
     const cache = JSON.parse(await readFile(f.cachePath, 'utf8'))
-    expect(cache.version).toBe(2)
-    expect(cache.entries).toHaveLength(3)
-  })
-
-  it('reads a legacy single-entry cache and preserves it when adding a second identity', async () => {
-    const f = await fixture()
-    const original = await f.service.content(f.paper.id)
-    const { entries } = JSON.parse(await readFile(f.cachePath, 'utf8'))
-    await writeFile(f.cachePath, JSON.stringify({ version: 1, ...entries[0] }))
-    await expect(f.service.content(f.paper.id)).resolves.toEqual(original)
-    expect(f.completion).toHaveBeenCalledOnce()
-    await f.store.saveSettings({ targetLanguage: 'EN' })
-    await f.service.content(f.paper.id)
-    expect(JSON.parse(await readFile(f.cachePath, 'utf8')).entries).toHaveLength(2)
-    await f.store.saveSettings({ targetLanguage: 'zh-CN' })
-    await expect(f.service.content(f.paper.id)).resolves.toEqual(original)
-    expect(f.completion).toHaveBeenCalledTimes(2)
+    expect(cache.segments).toHaveLength(3)
+    expect(cache.segments.every((segment: { sourceType: string }) => segment.sourceType === 'pdf-summary')).toBe(true)
   })
 
   it('preserves both identities when their cache writes finish together', async () => {
@@ -229,7 +214,7 @@ describe('PDF inspector summaries', () => {
     await secondStarted.promise
     release.resolve()
     await Promise.all([first, second])
-    expect(JSON.parse(await readFile(f.cachePath, 'utf8')).entries).toHaveLength(2)
+    expect(JSON.parse(await readFile(f.cachePath, 'utf8')).segments).toHaveLength(2)
     await f.service.content(f.paper.id)
     await f.store.saveSettings({ targetLanguage: 'zh-CN' })
     await f.service.content(f.paper.id)
@@ -257,8 +242,8 @@ describe('PDF inspector summaries', () => {
     expect(oldRequest.signal!.aborted).toBe(true)
     await expect(replacement).resolves.toMatchObject({ kind: 'summary' })
     const cache = JSON.parse(await readFile(f.cachePath, 'utf8'))
-    expect(cache.entries).toHaveLength(1)
-    expect(cache.entries[0].identity).toContain('"language":"EN"')
+    expect(cache.segments).toHaveLength(1)
+    expect(cache.segments[0]).toEqual(expect.objectContaining({ sourceType: 'pdf-summary', targetLanguage: 'EN' }))
   })
 
   it('cancels before route lookup completes without starting a model request', async () => {
@@ -320,8 +305,8 @@ describe('PDF inspector summaries', () => {
     release.resolve()
     await cancelled
     const cache = JSON.parse(await readFile(f.cachePath, 'utf8'))
-    expect(cache.entries).toHaveLength(1)
-    expect(cache.entries[0].text).toBe('论文探讨研究问题、方法及主要发现。')
+    expect(cache.segments).toHaveLength(1)
+    expect(cache.segments[0].translatedText).toBe('论文探讨研究问题、方法及主要发现。')
     expect(f.completion).toHaveBeenCalledTimes(2)
   })
 

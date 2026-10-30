@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { SyncConflictChoice, SyncStatus } from '../../shared/sync'
 import type { AppSettings, LatexToolchainStatus, LLMAPIStyle, LLMReasoningEffort, LLMThinkingMode, ModelProfile, ProviderProfile } from '../../shared/types'
 import { defaultDigestTemplate, digestPlaceholders } from '../../shared/digest'
 import { formatDate, useApp } from '../app/context'
 import { confirmDestructive, errorText, popupMenu } from '../app/native'
-import { Button, Checkbox, Spinner, Switch } from '../ui/controls'
+import { Button, Checkbox, ProgressBar, Spinner, Switch } from '../ui/controls'
 import { Disclosure, FieldRow, FormNote, FormRow, FormSection, MenuPicker, Stepper, TextInput } from '../ui/form'
 import { Icon } from '../ui/Icon'
 import { InfoLabel } from '../ui/InfoButton'
 
-type Tab = 'general' | 'reader' | 'latex' | 'digest' | 'providers' | 'models'
+type Tab = 'general' | 'reader' | 'latex' | 'digest' | 'providers' | 'models' | 'sync'
 
 const tabs: Array<{ id: Tab; title: string; icon: string }> = [
   { id: 'general', title: 'General', icon: 'gearshape' },
@@ -16,7 +17,8 @@ const tabs: Array<{ id: Tab; title: string; icon: string }> = [
   { id: 'latex', title: 'LaTeX', icon: 'text.document' },
   { id: 'digest', title: 'Digest', icon: 'doc.plaintext' },
   { id: 'providers', title: 'Providers', icon: 'network' },
-  { id: 'models', title: 'Models', icon: 'sparkles.rectangle.stack' }
+  { id: 'models', title: 'Models', icon: 'sparkles.rectangle.stack' },
+  { id: 'sync', title: 'Sync', icon: 'arrow.triangle.2.circlepath' }
 ]
 
 // Built-in providers, in the order the quick setup lists them.
@@ -75,6 +77,7 @@ export function SettingsWindow(): JSX.Element {
         {tab === 'digest' && <DigestTab />}
         {tab === 'providers' && <ProvidersTab />}
         {tab === 'models' && <ModelsTab />}
+        {tab === 'sync' && <SyncTab />}
       </div>
     </div>
   )
@@ -741,3 +744,120 @@ function ModelsTab(): JSX.Element {
   )
 }
 
+// MARK: Sync
+
+function SyncTab(): JSX.Element {
+  const { t, language } = useApp()
+  const [status, setStatus] = useState<SyncStatus | null>(null)
+
+  useEffect(() => {
+    void window.freddie.sync.status().then(setStatus)
+    return window.freddie.sync.onStatus(setStatus)
+  }, [])
+
+  if (!status) return <div className="settings-form" />
+  const busy = status.isSyncing
+  const resolve = (id: string, choice: SyncConflictChoice): void => void window.freddie.sync.resolve(id, choice)
+  const reviewHistory = async (): Promise<void> => {
+    const response = await window.freddie.shell.messageBox({
+      type: 'warning',
+      message: t('Review Server History?'),
+      detail: t('Your local library will be kept. Freddie will fetch the server history again and ask you to review conflicting changes.'),
+      buttons: [t('Review Changes'), t('Cancel')],
+      defaultId: 0,
+      cancelId: 1
+    })
+    if (response !== 0) return
+    await window.freddie.sync.reviewHistory()
+    await window.freddie.sync.syncNow()
+  }
+  const reasons = { missing: 'Missing on this device', unreadable: 'Link or unreadable', outsideLibrary: 'Outside the Freddie library' } as const
+
+  return (
+    <div className="settings-form">
+      <FormSection title={t('Library Sync')}>
+        <FormRow stacked>
+          <FormNote>{t('Syncs papers, files, reading positions, and writings across your own devices. Use a separate device credential on each device; your library stays available offline. Credentials are encrypted by the operating system, and LLM API keys and device preferences are not synced. The sync server can read uploaded content.')}</FormNote>
+        </FormRow>
+        {status.configuration ? (
+          <>
+            <FormRow label={t('Server')}><span className="selectable truncate">{status.configuration.server}</span></FormRow>
+            <FormRow label={t('This device')}><span className="truncate">{status.configuration.label}</span></FormRow>
+            <FormRow label={t('Automatically sync')}>
+              <Switch label={t('Automatically sync')} checked={status.configuration.isEnabled} disabled={busy} onChange={(value) => void window.freddie.sync.setAutomatic(value)} />
+            </FormRow>
+            <FormRow>
+              <Button disabled={busy} onClick={() => void window.freddie.sync.importCredential()}>{t('Change Device Credential…')}</Button>
+            </FormRow>
+          </>
+        ) : (
+          <FormRow>
+            <Button prominent disabled={busy} onClick={() => void window.freddie.sync.importCredential()}>{t('Import Device Credential and Connect…')}</Button>
+          </FormRow>
+        )}
+        {!status.configuration && (
+          <FormRow stacked>
+            <FormNote>{t('Freddie does not include a sync server. Whoever runs a Freddie Sync Server for you issues a credential file for each device.')}</FormNote>
+          </FormRow>
+        )}
+      </FormSection>
+
+      {(status.configuration || status.errorMessage) && (
+        <FormSection title={t('Status')}>
+          {status.configuration && (
+            <>
+              <FormRow label={<span className="inline-icon">{busy && status.progressTotal === 0 && <Spinner size={12} />}{t(status.statusKey)}</span>}>
+                <Button disabled={busy} onClick={() => void window.freddie.sync.syncNow()}><Icon name="arrow.triangle.2.circlepath" size={14} />{t('Sync Now')}</Button>
+              </FormRow>
+              {busy && status.progressTotal > 0 && (
+                <FormRow stacked>
+                  <div className="sync-progress">
+                    <ProgressBar value={status.progressCompleted / status.progressTotal} />
+                    <span className="secondary">{status.progressCompleted} / {status.progressTotal}</span>
+                  </div>
+                </FormRow>
+              )}
+              {status.lastSuccess && <FormRow label={t('Last successful sync')}>{formatDate(status.lastSuccess, language)}</FormRow>}
+              {status.pendingCount > 0 && <FormRow label={t('Pending changes')}>{status.pendingCount}</FormRow>}
+            </>
+          )}
+          {status.errorMessage && <FormRow stacked><FormNote error>{status.errorMessage}</FormNote></FormRow>}
+          {status.needsHistoryReview && (
+            <FormRow><Button disabled={busy} onClick={() => void reviewHistory()}>{t('Review Changed Server History…')}</Button></FormRow>
+          )}
+        </FormSection>
+      )}
+
+      {status.unavailableAttachments.length > 0 && (
+        <FormSection title={t('Attachments Not Synced')} footer={t('These attachments are skipped while their files are unavailable. Copies on other devices are kept, and a newer version from another device restores the file here.')}>
+          {status.unavailableAttachments.map((item) => (
+            <FormRow key={item.id} label={<span><strong>{item.filename}</strong>{item.paperTitle && <span className="secondary truncate"> — {item.paperTitle}</span>}<br /><span className="secondary">{t(reasons[item.reason])}</span></span>}>
+              {item.reason !== 'missing' && <Button small onClick={() => void window.freddie.sync.revealUnavailable(item.id)}>{t('Show in File Manager')}</Button>}
+            </FormRow>
+          ))}
+        </FormSection>
+      )}
+
+      {status.conflicts.length > 0 && (
+        <FormSection title={t('Changes to Review')} footer={t('Both versions are preserved until you choose. Replacing local changes also keeps a recovery copy on this device.')}>
+          {status.conflicts.map((conflict) => (
+            <FormRow key={conflict.id} stacked>
+              <div className="sync-conflict">
+                <strong>{conflict.title}</strong>
+                {conflict.remoteDeleted && <span className="secondary">{t('This item was deleted on another device.')}</span>}
+                {!conflict.remoteDeleted && conflict.localDeleted && <span className="secondary">{t('This item was deleted here and changed on another device.')}</span>}
+                <div className="button-row">
+                  <Button disabled={busy} onClick={() => resolve(conflict.id, 'thisDevice')}>{t('Keep This Device')}</Button>
+                  {conflict.remoteDeleted
+                    ? <Button destructive disabled={busy} onClick={() => resolve(conflict.id, 'server')}>{t('Accept Deletion')}</Button>
+                    : <Button disabled={busy} onClick={() => resolve(conflict.id, 'server')}>{t('Use Server Version')}</Button>}
+                  {conflict.isWriting && <Button disabled={busy} onClick={() => resolve(conflict.id, 'keepBoth')}>{t('Keep Both Writings')}</Button>}
+                </div>
+              </div>
+            </FormRow>
+          ))}
+        </FormSection>
+      )}
+    </div>
+  )
+}
