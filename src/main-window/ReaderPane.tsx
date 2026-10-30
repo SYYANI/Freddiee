@@ -3,6 +3,7 @@ import type { Attachment, AssistantHistoryAnchor, AssistantSource, Note, NoteNav
 import { firstAttachment, isCompleteTranslation, isPartialTranslation, latestAttachment, resolvedReaderMode } from '../../shared/library'
 import { sourceMetadata } from '../../shared/digest'
 import { useApp } from '../app/context'
+import { useSyncReaderActivity } from '../app/syncActivity'
 import { alertError, errorText, messageBox, popupMenu } from '../app/native'
 import { Button, IconButton, PromptSheet, SegmentedPicker, Toast, ToolbarGroup, UnavailableView } from '../ui/controls'
 import { Icon } from '../ui/Icon'
@@ -110,6 +111,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
   const assistantPinned = useRef(false)
   const dismissTimer = useRef<ReturnType<typeof setTimeout>>()
   const [regionEditing, setRegionEditing] = useState(false)
+  useSyncReaderActivity(paper?.id, regionEditing || tool.mode !== 'browse')
   const [regionState, setRegionState] = useState<RegionEditState>({ hiddenCount: 0, canUndo: false, canRedo: false })
   const [regionCommand, setRegionCommand] = useState<{ action: 'undo' | 'redo' | 'restoreAll'; token: number } | null>(null)
   const [exportingPDF, setExportingPDF] = useState(false)

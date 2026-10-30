@@ -3,6 +3,7 @@ import type { InspectorMode, Note, NoteSelectionContext, Paper, PaperAbstractCon
 import { commonItemTypes, decodeEditableAuthors, displayAuthors, editableAuthorsText, itemTypeTitle, itemTypeTitles, metadataIdentifierText, sortedItemTypes, type ItemTypeResolution } from '../../shared/library'
 import { formatDate, useApp } from '../app/context'
 import { confirmDestructive, errorText, popupMenu } from '../app/native'
+import { useSyncNoteEditing, useSyncReaderActivity } from '../app/syncActivity'
 import { IconButton, SegmentedPicker, Spinner } from '../ui/controls'
 import { Icon } from '../ui/Icon'
 import { NoteMarkdown } from '../ui/NoteMarkdown'
@@ -73,6 +74,7 @@ function SectionHeader({ title, children }: { title: string; children?: React.Re
 function MetadataSection({ collapsed, paper, itemTypes }: { collapsed: boolean; paper: Paper; itemTypes: ItemTypeResolution }): JSX.Element {
   const { t, snapshot } = useApp()
   const [editingAuthors, setEditingAuthors] = useState(false)
+  useSyncReaderActivity(paper.id, editingAuthors)
   const [authorsDraft, setAuthorsDraft] = useState('')
   const [error, setError] = useState<string>()
   const [abstractExpanded, setAbstractExpanded] = useState(false)
@@ -251,6 +253,7 @@ function NotesSection({ notes, selection, focusedNoteId, onFocusHandled, onCreat
 function NoteEditor({ note, focus, onFocusHandled, onOpenAnchor }: { note: Note; focus: boolean; onFocusHandled: () => void; onOpenAnchor?: () => void }): JSX.Element {
   const { t, language } = useApp()
   const [editing, setEditing] = useState(false)
+  useSyncNoteEditing(note.id, note.paperId, editing)
   const [draft, setDraft] = useState(note.body)
   const editor = useRef<HTMLTextAreaElement>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout>>()

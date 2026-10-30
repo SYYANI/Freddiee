@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Note } from '../../shared/types'
 import { useApp } from '../app/context'
 import { confirmDestructive } from '../app/native'
+import { useSyncNoteEditing } from '../app/syncActivity'
 import { Icon } from '../ui/Icon'
 import { NoteMarkdown } from '../ui/NoteMarkdown'
 
@@ -62,6 +63,7 @@ export function SidenoteCard({ note, top, focus, onFocusHandled, onHeight }: {
   const { t } = useApp()
   const card = useRef<HTMLDivElement>(null)
   const [editing, setEditing] = useState(false)
+  useSyncNoteEditing(note.id, note.paperId, editing)
   const [draft, setDraft] = useState(note.body)
   const editor = useRef<HTMLTextAreaElement>(null)
 

@@ -39,10 +39,14 @@ export interface SyncHost {
   writings: WritingStore
   tokens: SyncTokenStore
   translator: () => Translator
-  /** Papers with running translations; their records wait until the work ends. */
+  /** Papers being translated, annotated or edited; their records wait until the work ends. */
   busyPapers: () => Set<string>
   /** Writings with unsaved edits in an editor. */
   busyWritings: () => Set<string>
+  /** Papers shown in a reader or the Inspector; deletions of them wait until they close. */
+  openPapers: () => Set<string>
+  /** Notes being edited; neither they nor their paper are replaced meanwhile. */
+  editingNotes: () => Set<string>
   onStatus: (status: SyncStatus) => void
   onApplied: (paperIds: string[], writingIds: string[]) => void
   makeTransport?: (baseURL: string, token: string) => SyncTransport
@@ -416,6 +420,12 @@ export class SyncController {
     const deletedPapers = new Set(Object.values(this.state.conflicts).filter((conflict) => conflict.remote.kind === 'paper' && conflict.remote.deleted).map((conflict) => localUUID(conflict.remote.id)))
     for (const [key, known] of Object.entries(this.state.known)) if (known.scope.paperId && deletedPapers.has(known.scope.paperId)) keys.add(key)
     for (const [key, entry] of snapshot.entries) if (entry.scope.paperId && deletedPapers.has(entry.scope.paperId)) keys.add(key)
+    for (const id of this.host.editingNotes()) {
+      const key = `note/${id}`
+      keys.add(key)
+      const paperId = snapshot.entries.get(key)?.scope.paperId ?? this.state.known[key]?.scope.paperId
+      if (paperId) keys.add(`paper/${paperId}`)
+    }
     return keys
   }
 
@@ -460,6 +470,8 @@ export class SyncController {
         const key = recordKey(record)
         const known = this.state.known[key]
         if (this.blocked(known?.scope)) continue
+        // Readers still show an open paper; delete it once it is closed.
+        if (record.deleted && known?.scope.paperId && this.host.openPapers().has(known.scope.paperId)) continue
         if (record.revision <= (known?.revision ?? 0)) {
           delete this.state.incoming[key]
           madeProgress = true
@@ -592,6 +604,9 @@ export class SyncController {
       const own = local.entries.get(id)
       const scope = document ? documentScope(document) : own?.scope ?? this.state.known[id]?.scope ?? {}
       if (this.blocked(scope)) throw new SyncError('Finish editing this document before resolving its sync conflict.')
+      if (choice !== 'thisDevice' && conflict.remote.deleted && scope.paperId && this.host.openPapers().has(scope.paperId)) {
+        throw new SyncError('Close this paper before accepting this deletion.')
+      }
       if (choice !== 'thisDevice' && document && !this.repository.canApply(document, new Set(), new Set())) {
         throw new SyncError("This change belongs to a paper or writing deleted on this device. Keep this device's version to discard it.")
       }

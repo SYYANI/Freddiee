@@ -131,6 +131,8 @@ const api: FreddieAPI = {
     reviewHistory: () => invoke('sync:review-history'),
     revealUnavailable: (attachmentId) => invoke('sync:reveal-unavailable', attachmentId),
     setWritingDirty: (writingId, dirty) => ipcRenderer.send('sync:writing-dirty', writingId, dirty),
+    setReaderActivity: (editorId, activity) => ipcRenderer.send('sync:reader-activity', editorId, activity?.paperId ?? null, activity?.busy ?? false),
+    setNoteEditing: (editorId, note) => ipcRenderer.send('sync:note-editing', editorId, note?.noteId ?? null, note?.paperId ?? null),
     onApplied: (listener) => subscribe('sync:applied', listener)
   },
   digest: {

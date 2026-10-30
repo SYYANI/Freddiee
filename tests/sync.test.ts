@@ -9,6 +9,7 @@ import type { SyncStatus } from '../shared/sync'
 import { FreddieStore } from '../electron/main/store'
 import { WritingStore } from '../electron/main/writings'
 import type { SyncPage, SyncPush, SyncReceipt, SyncTransport } from '../electron/main/sync/client'
+import { SyncActivity } from '../electron/main/sync/activity'
 import { SyncController } from '../electron/main/sync/controller'
 import { formatSwiftDouble } from '../electron/main/sync/swiftJSON'
 import { AnnotationStore } from '../electron/main/annotations'
@@ -106,6 +107,7 @@ interface Device {
   controller: SyncController
   status: () => SyncStatus
   dirty: Set<string>
+  activity: SyncActivity
 }
 
 async function device(server: TestServer): Promise<Device> {
@@ -117,6 +119,7 @@ async function device(server: TestServer): Promise<Device> {
   const tokens = new Map<string, string>()
   const deviceID = randomUUID()
   const dirty = new Set<string>()
+  const activity = new SyncActivity()
   let status: SyncStatus | undefined
   const controller = new SyncController({
     root,
@@ -124,8 +127,10 @@ async function device(server: TestServer): Promise<Device> {
     writings,
     tokens: { setSyncToken: async (account, token) => void tokens.set(account, token), syncToken: async (account) => tokens.get(account) },
     translator: () => createTranslator('en'),
-    busyPapers: () => new Set(),
+    busyPapers: () => activity.busyPaperIds(),
     busyWritings: () => dirty,
+    openPapers: () => activity.openPaperIds(),
+    editingNotes: () => activity.editingNoteIds(),
     onStatus: (value) => {
       status = value
     },
@@ -139,7 +144,7 @@ async function device(server: TestServer): Promise<Device> {
     device: { id: deviceID, libraryID: server.libraryID, label: 'Test device' }
   }))
   expect(connected).toBe(true)
-  return { root, store, writings, controller, status: () => status!, dirty }
+  return { root, store, writings, controller, status: () => status!, dirty, activity }
 }
 
 async function sync(device: Device): Promise<void> {
@@ -378,6 +383,106 @@ describe('library sync', () => {
     b.dirty.clear()
     await sync(b)
     expect(await b.writings.loadMarkdown(writing.id)).toBe('second from A')
+  })
+
+  it('leaves a note being edited and its paper alone until editing ends', async () => {
+    const server = new TestServer()
+    const a = await device(server)
+    const b = await device(server)
+    const { paperId, attachmentId } = await addPaper(a)
+    const note = await a.store.createNote(paperId, { attachmentId, quote: '', pageIndex: 0 }, 'first')
+    await sync(a)
+    await sync(b)
+    await a.store.updateNote(note.id, 'second from A')
+    await writeFile(join(a.store.paperDirectory(paperId), 'paper.pdf'), '%PDF-1.7\nupdated')
+    await sync(a)
+    b.activity.setNoteEditor('editor', { noteId: note.id, paperId })
+    await sync(b)
+    expect(b.store.database.notes.find((item) => item.id === note.id)?.body).toBe('first')
+    expect(await readFile(join(b.store.paperDirectory(paperId), 'paper.pdf'), 'utf8')).toBe('%PDF-1.7\nfixture')
+    expect(b.status().statusKey).toBe('Waiting for open documents…')
+    b.activity.setNoteEditor('editor', undefined)
+    await sync(b)
+    expect(b.store.database.notes.find((item) => item.id === note.id)?.body).toBe('second from A')
+    expect(await readFile(join(b.store.paperDirectory(paperId), 'paper.pdf'), 'utf8')).toBe('%PDF-1.7\nupdated')
+  })
+
+  it('defers a busy paper, also while work outlives its reader', async () => {
+    const server = new TestServer()
+    const a = await device(server)
+    const b = await device(server)
+    const { paperId } = await addPaper(a)
+    await sync(a)
+    await sync(b)
+    const title = (): string | undefined => b.store.database.papers.find((item) => item.id === paperId)?.title
+    b.activity.setReader('reader', { paperId, busy: true })
+    await a.store.updatePaper(paperId, { title: 'Annotated elsewhere' })
+    await sync(a)
+    await sync(b)
+    expect(title()).toBe('A paper')
+    b.activity.setReader('reader', { paperId, busy: false })
+    await sync(b)
+    expect(title()).toBe('Annotated elsewhere')
+
+    const work = b.activity.beginWork(paperId)
+    b.activity.setReader('reader', undefined)
+    await a.store.updatePaper(paperId, { title: 'Changed on the other device' })
+    await sync(a)
+    await sync(b)
+    expect(title()).toBe('Annotated elsewhere')
+    b.activity.endWork(work)
+    await sync(b)
+    expect(title()).toBe('Changed on the other device')
+  })
+
+  it('deletes a remotely deleted paper once no view shows it', async () => {
+    const server = new TestServer()
+    const a = await device(server)
+    const b = await device(server)
+    const { paperId } = await addPaper(a)
+    await sync(a)
+    await sync(b)
+    b.activity.setReader('inspector', { paperId, busy: false })
+    // An open paper still receives changes; only its deletion waits.
+    await a.store.updatePaper(paperId, { title: 'Renamed' })
+    await sync(a)
+    await sync(b)
+    expect(b.store.database.papers.find((item) => item.id === paperId)?.title).toBe('Renamed')
+    await a.store.deletePaper(paperId)
+    await sync(a)
+    await sync(b)
+    expect(b.store.database.papers).toHaveLength(1)
+    expect(b.store.database.attachments).toHaveLength(1)
+    expect(b.status().statusKey).toBe('Waiting for open documents…')
+    b.activity.removeOwners('insp')
+    await sync(b)
+    expect(b.store.database.papers).toHaveLength(0)
+    expect(b.store.database.attachments).toHaveLength(0)
+    expect(b.status().pendingCount).toBe(0)
+  })
+
+  it('accepts a conflicting remote deletion only after the paper is closed', async () => {
+    const server = new TestServer()
+    const a = await device(server)
+    const b = await device(server)
+    const { paperId, attachmentId } = await addPaper(a)
+    await sync(a)
+    await sync(b)
+    await b.store.createNote(paperId, { attachmentId, quote: '', pageIndex: 0 }, 'not synced yet')
+    await a.store.deletePaper(paperId)
+    await sync(a)
+    await sync(b)
+    const conflict = b.status().conflicts.find((item) => item.remoteDeleted)
+    expect(conflict).toBeDefined()
+    expect(b.store.database.papers).toHaveLength(1)
+    b.activity.setReader('reader', { paperId, busy: false })
+    await b.controller.resolve(conflict!.id, 'server')
+    expect(b.status().errorMessage).toContain('Close this paper before accepting this deletion.')
+    expect(b.store.database.papers).toHaveLength(1)
+    b.activity.setReader('reader', undefined)
+    await b.controller.resolve(conflict!.id, 'server')
+    expect(b.status().errorMessage).toBeUndefined()
+    expect(b.store.database.papers).toHaveLength(0)
   })
 
   it('stops when the server history changes', async () => {

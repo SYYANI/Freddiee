@@ -26,7 +26,7 @@ beforeEach(() => {
   } as unknown as LibrarySnapshot
   abstractContent = vi.fn(async () => ({ kind: 'summary', text: 'A short summary.' }))
   cancelAbstractContent = vi.fn(async () => {})
-  Object.defineProperty(window, 'freddie', { configurable: true, value: { translation: { abstractContent, cancelAbstractContent } } })
+  Object.defineProperty(window, 'freddie', { configurable: true, value: { translation: { abstractContent, cancelAbstractContent }, sync: { setReaderActivity: vi.fn(), setNoteEditing: vi.fn() } } })
   container = document.createElement('div')
   document.body.append(container)
   root = createRoot(container)

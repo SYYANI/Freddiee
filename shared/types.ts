@@ -570,6 +570,10 @@ export interface FreddieAPI {
     revealUnavailable(attachmentId: string): Promise<void>
     /** Writings with unsaved edits are left alone by sync until they are saved. */
     setWritingDirty(writingId: string, dirty: boolean): void
+    /** The paper a reader or Inspector shows, or null when it closes. Deletions of open papers wait. */
+    setReaderActivity(editorId: string, activity: { paperId: string; busy: boolean } | null): void
+    /** The note an editor is editing, or null. Sync does not replace it or its paper meanwhile. */
+    setNoteEditing(editorId: string, note: { noteId: string; paperId: string } | null): void
     onApplied(listener: (change: SyncAppliedChange) => void): () => void
   }
   digest: {

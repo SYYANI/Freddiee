@@ -41,6 +41,7 @@ import { builtInProviders, FreddieStore } from './store'
 import { TranslationService, translationDisplayCSS } from './translation'
 import { latestLatexSourcePath } from '../../LaTeXTransKit'
 import { WritingStore } from './writings'
+import { SyncActivity } from './sync/activity'
 import { SyncController } from './sync/controller'
 import type { SyncConflictChoice } from '../../shared/sync'
 import { importNativeLibrary, nativeLibraryExists, type NativeImportStage, type NativeImportUpdate } from './nativeLibrary'
@@ -84,6 +85,9 @@ let annotations: AnnotationStore
 let sync: SyncController
 /** Writings with unsaved edits in an editor; sync leaves them alone until they are saved. */
 const dirtyWritings = new Map<number, Set<string>>()
+/** Readers, Inspectors and note editors in every window, keyed by `{webContents id}:{editor id}`. */
+const syncActivity = new SyncActivity()
+const syncActivitySenders = new Set<number>()
 let outlines: DocumentOutlineService
 let translator: Translator = createTranslator('en')
 let htmlTranslatedPaperIds: string[] = []
@@ -134,8 +138,10 @@ app.whenReady().then(async () => {
     writings,
     tokens: secrets,
     translator: () => translator,
-    busyPapers: () => translations.runningPaperIds(),
+    busyPapers: () => new Set([...translations.runningPaperIds(), ...syncActivity.busyPaperIds()]),
     busyWritings: () => new Set([...dirtyWritings.values()].flatMap((ids) => [...ids])),
+    openPapers: () => syncActivity.openPaperIds(),
+    editingNotes: () => syncActivity.editingNoteIds(),
     onStatus: (status) => broadcast('sync:status', status),
     onApplied: (paperIds, writingIds) => {
       broadcast('sync:applied', { paperIds, writingIds })
@@ -562,10 +568,16 @@ function registerIpc(): void {
     const attachment = store.attachment(requireUUID(paperId), requireUUID(attachmentId))
     if (attachment.kind !== 'html') throw new Error('Not an HTML attachment')
     if (translations.isRunning(paperId)) throw new Error(translator("Regions can't be edited while a translation is running."))
-    const path = store.attachmentPath(paperId, attachmentId)
-    const $ = cheerio.load(await readFile(path, 'utf8'))
-    applyHiddenRegions($, (Array.isArray(paths) ? paths : []).map(String))
-    await atomicWriteFile(path, $.html())
+    // Sync must not replace the file between reading and writing it, even after editing ends.
+    const work = syncActivity.beginWork(attachment.paperId)
+    try {
+      const path = store.attachmentPath(paperId, attachmentId)
+      const $ = cheerio.load(await readFile(path, 'utf8'))
+      applyHiddenRegions($, (Array.isArray(paths) ? paths : []).map(String))
+      await atomicWriteFile(path, $.html())
+    } finally {
+      syncActivity.endWork(work)
+    }
   })
   handle('library:page-count', async (_event, paperId: string, attachmentId: string) => {
     const metadata = await readPDFMetadata(new Uint8Array(await readFile(store.attachmentPath(requireUUID(paperId), requireUUID(attachmentId)))))
@@ -888,6 +900,27 @@ function registerIpc(): void {
     if (dirty) dirtyWritings.get(id)!.add(writingId.toLowerCase())
     else dirtyWritings.get(id)!.delete(writingId.toLowerCase())
   })
+  ipcMain.on('sync:reader-activity', (event, editorId: string, paperId: string | null, busy: boolean) => {
+    if (!windowFor(event.sender) || !isUUID(editorId) || (paperId !== null && !isUUID(paperId))) return
+    syncActivity.setReader(syncActivityOwner(event.sender, editorId), paperId ? { paperId: paperId.toLowerCase(), busy: busy === true } : undefined)
+  })
+  ipcMain.on('sync:note-editing', (event, editorId: string, noteId: string | null, paperId: string | null) => {
+    if (!windowFor(event.sender) || !isUUID(editorId) || (noteId !== null && !(isUUID(noteId) && isUUID(paperId)))) return
+    syncActivity.setNoteEditor(syncActivityOwner(event.sender, editorId), noteId ? { noteId: noteId.toLowerCase(), paperId: paperId!.toLowerCase() } : undefined)
+  })
+}
+
+/** The activity key of an editor in a window; a closed window's editors are forgotten. */
+function syncActivityOwner(sender: WebContents, editorId: string): string {
+  const id = sender.id
+  if (!syncActivitySenders.has(id)) {
+    syncActivitySenders.add(id)
+    sender.once('destroyed', () => {
+      syncActivitySenders.delete(id)
+      syncActivity.removeOwners(`${id}:`)
+    })
+  }
+  return `${id}:${editorId.toLowerCase()}`
 }
 
 /**

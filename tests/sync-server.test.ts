@@ -68,6 +68,8 @@ describe.skipIf(!binary)('library sync with the Freddie Sync Server', () => {
       translator: () => createTranslator('en'),
       busyPapers: () => new Set(),
       busyWritings: () => new Set(),
+      openPapers: () => new Set(),
+      editingNotes: () => new Set(),
       onStatus: (value) => {
         status = value
       },

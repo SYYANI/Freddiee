@@ -4,7 +4,7 @@ import { Icon } from './Icon'
 import { InfoLabel } from './InfoButton'
 
 /** A grouped form section: a title above a rounded, translucent group of rows. */
-export function FormSection({ title, children, footer }: { title?: string; children: ReactNode; footer?: ReactNode }): JSX.Element {
+export function FormSection({ title, children, footer }: { title?: ReactNode; children: ReactNode; footer?: ReactNode }): JSX.Element {
   return (
     <section className="form-section">
       {title && <h3 className="form-section-title">{title}</h3>}

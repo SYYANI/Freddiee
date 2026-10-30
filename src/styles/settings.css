@@ -337,6 +337,13 @@ html[data-appearance="paper"] .settings-tab.selected {
   font-size: 12px;
 }
 
+.sync-attachment {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
 .sync-conflict {
   display: flex;
   flex-direction: column;
