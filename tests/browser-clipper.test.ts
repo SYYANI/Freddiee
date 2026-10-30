@@ -6,7 +6,7 @@ import { PDFDocument } from 'pdf-lib'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createTranslator } from '../shared/i18n'
 import { InvalidClipError, parseBrowserClip, parseClipDate } from '../electron/main/browserClip'
-import { clipperAPIVersion, clipperRejection, handleClipperRequest, startClipperServer, type ClipperContext, type ClipperRequest } from '../electron/main/clipperServer'
+import { clipperAPIVersion, clipperRejection, handleClipperRequest, paperOpenURL, readpaperLink, startClipperServer, type ClipperContext, type ClipperRequest } from '../electron/main/clipperServer'
 import { PaperImporter } from '../electron/main/importer'
 import { FreddieStore } from '../electron/main/store'
 
@@ -91,10 +91,18 @@ describe('clipper server', () => {
     expect((await handleClipperRequest(request('GET', '/ping'), context)).body).toEqual({ app: 'Freddie', version: '0.4.2', api: clipperAPIVersion })
     expect((await handleClipperRequest(request('GET', '/folders'), context)).body).toEqual({ folders: [{ id: '1', name: 'Archive' }, { id: '2', name: 'Reading' }] })
     expect(await handleClipperRequest(request('POST', '/save', { kind: 'html', url: 'https://example.com', html: '<p>x</p>' }), context))
-      .toEqual({ status: 200, body: { status: 'saved', paperID: 'p', title: 'Saved' } })
+      .toEqual({ status: 200, body: { status: 'saved', paperID: 'p', title: 'Saved', openURL: paperOpenURL('p') } })
     expect((await handleClipperRequest(request('GET', '/save'), context)).status).toBe(405)
     expect((await handleClipperRequest(request('GET', '/open'), context)).status).toBe(404)
     expect((await handleClipperRequest({ ...request('POST', '/save'), body: Buffer.from('{') }, context)).status).toBe(400)
+  })
+
+  it('opens saved papers in this app even beside native Freddie on macOS', () => {
+    expect(paperOpenURL('p', 'darwin')).toBe('freddie-general://paper/p')
+    expect(paperOpenURL('p', 'win32')).toBe('readpaper://paper/p')
+    expect(paperOpenURL('p', 'linux')).toBe('readpaper://paper/p')
+    expect(readpaperLink('Freddie-General://paper/p?p=2')).toBe('readpaper://paper/p?p=2')
+    expect(readpaperLink('readpaper://paper/p')).toBe('readpaper://paper/p')
   })
 
   it('listens on the loopback interface', async () => {

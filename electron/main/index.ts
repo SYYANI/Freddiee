@@ -48,7 +48,7 @@ import { applyHiddenRegions, readableProseColorCSS, readableProseLayoutCSS } fro
 import { detectLatexToolchainStatus } from './latexToolchain'
 import { AuthorExtractionService } from './authorExtraction'
 import { PaperSummaryService } from './paperSummary'
-import { clipperPort, startClipperServer } from './clipperServer'
+import { clipperPort, macLinkScheme, readpaperLink, startClipperServer } from './clipperServer'
 import * as cheerio from 'cheerio'
 
 const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, net, protocol, shell, systemPreferences } = electron
@@ -1132,11 +1132,14 @@ function showFatalError(error: unknown): void {
 }
 
 // Citation links (readpaper://) clicked in other apps open the cited paper, as does the
-// browser extension's "Open in Freddie".
-app.setAsDefaultProtocolClient('readpaper')
+// browser extension's "Open in Freddie". On macOS the bundle declares both schemes; claiming
+// readpaper:// at every launch would take it from native Freddie, so this app only claims its
+// own scheme, which the clipper hands the extension.
+if (isMac) app.setAsDefaultProtocolClient(macLinkScheme)
+else app.setAsDefaultProtocolClient('readpaper')
 app.on('open-url', (event, url) => {
   event.preventDefault()
-  openCitationLink(url)
+  openCitationLink(readpaperLink(url))
 })
 
 app.on('second-instance', (_event, argv) => {

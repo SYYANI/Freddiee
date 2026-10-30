@@ -76,6 +76,15 @@
   "build": {
     "appId": "com.yiyan.Freddie",
     "productName": "Freddie",
+    "protocols": [
+      {
+        "name": "Freddie Link",
+        "schemes": [
+          "readpaper",
+          "freddie-general"
+        ]
+      }
+    ],
     "asar": true,
     "directories": {
       "output": "release"

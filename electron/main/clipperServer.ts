@@ -16,6 +16,22 @@ export const clipperAPIVersion = 1
 const clipperHeader = 'x-freddie-clipper'
 /** Origins of extension pages; a web page's origin is refused even with the header. */
 const extensionOriginPrefixes = ['chrome-extension://', 'moz-extension://', 'safari-web-extension://']
+/**
+ * Native Freddie, which only runs on macOS, also handles readpaper:// links, and only one of
+ * the two apps can be the system's handler. On macOS this app therefore answers a save with
+ * its own scheme, so "Open in Freddie" shows the paper in the app whose library has it.
+ */
+export const macLinkScheme = 'freddie-general'
+
+export function paperOpenURL(paperId: string, platform: NodeJS.Platform = process.platform): string {
+  return `${platform === 'darwin' ? macLinkScheme : 'readpaper'}://paper/${paperId}`
+}
+
+/** A link in this app's own scheme as the readpaper:// link it stands for. */
+export function readpaperLink(url: string): string {
+  return url.replace(new RegExp(`^${macLinkScheme}:`, 'i'), 'readpaper:')
+}
+
 /** Large enough for a base64 PDF of about 100 MB. */
 const maxBodyBytes = 140 * 1024 * 1024
 
@@ -71,7 +87,10 @@ export async function handleClipperRequest(request: ClipperRequest, context: Cli
       }
       try {
         const result = await context.save(clip)
-        return { status: 200, body: { status: result.existing ? 'exists' : 'saved', paperID: result.paper.id, title: result.paper.title } }
+        return {
+          status: 200,
+          body: { status: result.existing ? 'exists' : 'saved', paperID: result.paper.id, title: result.paper.title, openURL: paperOpenURL(result.paper.id) }
+        }
       } catch (error) {
         return { status: 500, body: { error: error instanceof Error ? error.message : String(error) } }
       }
