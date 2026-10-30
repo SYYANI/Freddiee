@@ -20,8 +20,10 @@ html[data-rp-display-mode='bilingual'] .rp-readability-content [data-rp-source='
 .rp-readability-content [data-rp-source='true'] + .rp-translation-block { font-size: inherit !important; line-height: inherit !important; margin-left: 0 !important; margin-right: 0 !important; margin-top: 0 !important; margin-bottom: 1.1em !important; }
 .rp-translation-block:is(h1, h2, h3, h4, h5, h6) { line-height: 1.45 !important; margin-top: 0.35em !important; margin-bottom: 0.75em !important; }`
 
+// `!important` because sites like `html[data-theme="dark"] { color-scheme: dark }` outrank :root, and
+// Chromium then paints an opaque dark backdrop behind the transparent iframe.
 const typography = (fontSize: number): string => `
-:root { --rp-reader-font-size: ${fontSize}px; color-scheme: light; }
+:root { --rp-reader-font-size: ${fontSize}px; color-scheme: light !important; }
 body.rp-readability-body .rp-readability-content { font-size: var(--rp-reader-font-size) !important; }
 body.rp-readability-body .rp-readability-content p.rp-readability-prose-paragraph,
 body.rp-readability-body .rp-readability-content [data-rp-source='true'],
