@@ -692,6 +692,7 @@
  "The translated PDF could not be saved.": "无法保存译文 PDF。",
  "The web search completed, but the provider did not generate an answer.": "网页搜索已完成，但服务提供方没有生成答案。",
  "The web server returned an error (status %d).": "网页服务器返回了错误（状态码 %d）。",
+ "This page requires browser verification. Open it in your browser, complete verification, then save it with the Freddie browser extension.": "此页面需要浏览器验证。请在浏览器中打开并完成验证，再使用 Freddie 浏览器扩展保存。",
  "The writing’s file could not be read.": "无法读取写作稿文件。",
  "Thesis": "学位论文",
  "Thick": "粗",

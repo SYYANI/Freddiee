@@ -142,6 +142,7 @@ export async function localizeHTML(source: string, pageURL: URL, options: Locali
   const extraction = options.extraction ?? 'readable'
   const dom = new JSDOM(source, { url: pageURL.toString() })
   const document = dom.window.document
+  if (extraction === 'readable') revealWeChatArticle(document, pageURL)
   const documentTitle = normalizeSpace(document.title)
   let article: ReturnType<Readability<string>['parse']> = null
   if (extraction === 'readable' || extraction === 'simplifiedClip') {
@@ -178,6 +179,53 @@ export async function localizeHTML(source: string, pageURL: URL, options: Locali
   sanitize($, pageURL)
   await localizeResources($, pageURL, options)
   return { title, byline: normalizeSpace(article?.byline), excerpt: normalizeSpace(article?.excerpt), html: $.html() }
+}
+
+/** WeChat's complete article is hidden until its scripts run; only reveal that known root. */
+function revealWeChatArticle(document: Document, pageURL: URL): void {
+  if (pageURL.hostname !== 'mp.weixin.qq.com') return
+  const article = document.querySelector<HTMLElement>('#js_content.rich_media_content')
+  if (!article) return
+  for (const property of ['visibility', 'opacity', 'display']) article.style.removeProperty(property)
+  article.removeAttribute('hidden')
+  article.removeAttribute('aria-hidden')
+  // These CDN URLs end in /640?wx_fmt=..., which Readability's image-extension
+  // heuristic misses. Promote them before extraction so figures survive cleanup.
+  for (const image of article.querySelectorAll<HTMLImageElement>('img[data-src]')) {
+    try {
+      const url = new URL(image.getAttribute('data-src')!, pageURL)
+      if (url.protocol === 'http:' || url.protocol === 'https:') image.src = url.toString()
+    } catch {
+      // Leave malformed sources for the sanitizer.
+    }
+  }
+}
+
+export function isWeChatVerificationPage(source: string, pageURL: URL): boolean {
+  if (pageURL.hostname !== 'mp.weixin.qq.com') return false
+  if (pageURL.pathname === '/mp/wappoc_appmsgcaptcha') return true
+  const $ = cheerio.load(source)
+  return $('#js_verify').length > 0 && ($('.weui-msg').length > 0 || $('script[src*="captcha.gtimg.com/TCaptcha.js"]').length > 0)
+}
+
+/** Earlier imports saved either the hidden page or just its surrounding account metadata. */
+export function needsWeChatArticleRepair(source: string, pageURL: URL): boolean {
+  if (pageURL.hostname !== 'mp.weixin.qq.com') return false
+  if (isWeChatVerificationPage(source, pageURL)) return true
+  const $ = cheerio.load(source)
+  const article = $('#js_content.rich_media_content').first()
+  if (article.length) {
+    const style = article.attr('style') ?? ''
+    return article.is('[hidden], [aria-hidden="true"]') ||
+      /(?:^|;)\s*(?:visibility\s*:\s*hidden|display\s*:\s*none|opacity\s*:\s*0(?:\.0+)?)(?:\s*!important)?\s*(?:;|$)/i.test(style)
+  }
+  // Readability can collapse the article root into its parent. Only treat that
+  // parent as incomplete when it contains account metadata and no article prose.
+  const wrapper = $('#img-content').first()
+  if (!wrapper.find('.rich_media_meta').length) return false
+  const remaining = wrapper.clone()
+  remaining.find('.rich_media_meta, .rich_media_tool_area, #meta_content_hide_info').remove()
+  return remaining.text().trim().length < 40 && remaining.find('img, video, math').length === 0
 }
 
 /** Readability sometimes keeps one short block of a long article; use the main element then. */

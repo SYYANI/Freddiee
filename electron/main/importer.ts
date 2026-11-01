@@ -16,7 +16,7 @@ import {
 } from '../../shared/identifiers'
 import { clipExtraction, parseClipDate, type BrowserClip, type ClipMetadata } from './browserClip'
 import { atomicWriteFile } from './files'
-import { localizeHTML } from './localizer'
+import { isWeChatVerificationPage, localizeHTML, needsWeChatArticleRepair } from './localizer'
 import { pdfjsResourceBase } from './pdfjsResources'
 import type { FreddieStore } from './store'
 
@@ -232,12 +232,25 @@ export class PaperImporter {
         }
       }
       const existing = this.store.database.papers.find((paper) => paper.htmlUrl === url.toString() || paper.pdfUrl === url.toString())
-      if (existing && this.store.attachments(existing.id).some((item) => item.kind === 'html' || item.kind === 'pdf')) return existing
+      let repairAttachment: Attachment | undefined
+      if (existing) {
+        const attachments = this.store.attachments(existing.id)
+        if (attachments.some((item) => item.kind === 'pdf')) return existing
+        const htmlAttachment = attachments.find((item) => item.kind === 'html')
+        if (htmlAttachment) {
+          if (url.hostname !== 'mp.weixin.qq.com' || htmlAttachment.source !== 'webPage') return existing
+          // A missing file is as incomplete as a hidden article.
+          const savedHTML = await readFile(this.store.attachmentPath(existing.id, htmlAttachment.id), 'utf8').catch(() => undefined)
+          if (savedHTML !== undefined && !needsWeChatArticleRepair(savedHTML, url)) return existing
+          repairAttachment = htmlAttachment
+        }
+      }
 
       this.emit(operationId, 2, 4, 0.35, t('Fetching web page'), t('Downloading %@, extracting the readable article body, and localizing linked resources.', url.hostname))
       const response = await this.fetchOK(url.toString(), 'document', controller.signal, (status) => new ImportError(t('The web server returned an error (status %d).', status)))
       const contentType = (response.headers.get('content-type') ?? '').toLowerCase()
-      const id = randomUUID()
+      const repairingHTML = repairAttachment !== undefined && !contentType.includes('application/pdf')
+      const id = repairingHTML ? repairAttachment!.paperId : randomUUID()
       const directory = await this.store.ensurePaperDirectory(id)
       try {
         if (contentType.includes('application/pdf')) {
@@ -257,17 +270,30 @@ export class PaperImporter {
           await this.store.addPaper(paper, [{ id: randomUUID(), paperId: id, kind: 'pdf', source: 'webPage', filename: 'paper.pdf', createdAt: timestamp }])
           return paper
         }
-        const page = await localizeHTML(await response.text(), new URL(response.url || url.toString()), {
+        const source = await response.text()
+        const responseURL = new URL(response.url || url.toString())
+        if (isWeChatVerificationPage(source, responseURL)) {
+          throw new ImportError(t('This page requires browser verification. Open it in your browser, complete verification, then save it with the Freddie browser extension.'))
+        }
+        const page = await localizeHTML(source, responseURL, {
           directory,
           signal: controller.signal,
           fetchResource: (resourceURL, signal) => this.fetchResource(resourceURL, signal)
         })
-        const title = page.title || fallbackWebPageTitle(url, t('Untitled Web Page'))
+        const title = page.title || (repairingHTML ? existing?.title : undefined) || fallbackWebPageTitle(url, t('Untitled Web Page'))
         this.emit(operationId, 3, 4, 0.78, t('Creating library entry'), t('Preparing local storage for "%@".', title))
-        await atomicWriteFile(join(directory, 'paper.html'), page.html)
         controller.signal.throwIfAborted()
+        const file = repairingHTML && repairAttachment ? this.store.attachmentPath(id, repairAttachment.id) : join(directory, 'paper.html')
+        await atomicWriteFile(file, page.html)
         this.emit(operationId, 4, 4, 0.92, t('Finalizing import'), t('Saving the paper and localized HTML to your library.'))
         const timestamp = now()
+        if (repairingHTML && repairAttachment && existing) {
+          await this.store.batch(async () => {
+            await this.store.updateAttachment(id, repairAttachment.id, { createdAt: timestamp })
+            await this.store.updatePaper(id, { title, abstract: existing.abstract || page.excerpt || '' })
+          })
+          return this.store.paper(id)
+        }
         const paper: Paper = {
           id, title, abstract: page.excerpt ?? '', authors: [], categories: [], tags: [], isFavorite: false,
           htmlUrl: url.toString(), createdAt: timestamp, modifiedAt: timestamp
@@ -275,7 +301,7 @@ export class PaperImporter {
         await this.store.addPaper(paper, [{ id: randomUUID(), paperId: id, kind: 'html', source: 'webPage', filename: 'paper.html', createdAt: timestamp }])
         return paper
       } catch (error) {
-        await rm(directory, { recursive: true, force: true })
+        if (!repairingHTML) await rm(directory, { recursive: true, force: true })
         throw error
       }
     } finally {
