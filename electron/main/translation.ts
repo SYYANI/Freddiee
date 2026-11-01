@@ -10,7 +10,7 @@ import type { BabelDocTranslationDiagnostics, TranslationEvent } from '../../sha
 import type { Translator } from '../../shared/i18n'
 import { firstAttachment, latestAttachment } from '../../shared/library'
 import { atomicWriteFile } from './files'
-import { complete, requestFor, resolveRoute, RouteError, type ResolvedRoute } from './llm'
+import { complete, OutputTokenLimitError, outputTokenLimitReason, requestFor, resolveRoute, RouteError, type ResolvedRoute } from './llm'
 import { runLatexTranslation } from '../../LaTeXTransKit'
 import { runScannedTranslation } from '../../RebuildPDFKit'
 import {
@@ -110,6 +110,10 @@ export function outputIssue(translation: string, source: string, context: Transl
 
 export class InvalidOutputError extends Error {}
 
+export function outputTokenLimitMessage(error: OutputTokenLimitError, t: Translator): string {
+  return t('The model reached its output token limit before finishing (%@). Increase Max tokens in Settings > Models > Advanced Parameters. Reasoning tokens also count toward this limit; lowering Reasoning Effort may help.', error.reason)
+}
+
 /** Retries unusable output; a placeholder mismatch is accepted as a last resort. */
 export async function translateSegment(route: ResolvedRoute, text: string, targetLanguage: string, context: TranslationContext, signal?: AbortSignal): Promise<string> {
   let lastIssue: OutputIssue | undefined
@@ -119,6 +123,9 @@ export async function translateSegment(route: ResolvedRoute, text: string, targe
       { role: 'system', content: systemPrompt(targetLanguage) },
       { role: 'user', content: userPrompt(text, context) }
     ], { defaultTemperature: 0.2, signal }))
+    // A cut-off answer can pass every output check and would be cached as complete;
+    // asking again with the same budget stops at the same place.
+    if (response.finishReason === 'length') throw new OutputTokenLimitError(outputTokenLimitReason(route.apiStyle), route.modelId)
     const output = response.text.trim()
     if (!output) {
       lastIssue = 'sourceEcho'
@@ -354,8 +361,11 @@ export class TranslationService {
       this.emit({ paperId, kind, type: 'cancelled', message: t('Translation cancelled.') })
       return
     }
-    const message = error instanceof Error ? error.message : String(error)
-    this.emit({ paperId, kind, type: 'failed', message, needsSetup: error instanceof RouteError, logPath })
+    const message = error instanceof OutputTokenLimitError ? outputTokenLimitMessage(error, t) : error instanceof Error ? error.message : String(error)
+    this.emit({
+      paperId, kind, type: 'failed', message, needsSetup: error instanceof RouteError, logPath,
+      outputLimitModelId: error instanceof OutputTokenLimitError ? error.modelId : undefined
+    })
   }
 
   async htmlTranslatedPaperIds(): Promise<string[]> {
@@ -459,7 +469,12 @@ export class TranslationService {
     if (!paper.abstract.trim()) throw new Error(t('This paper has no abstract to translate.'))
     const route = await resolveRoute('html', this.store, this.secrets, t)
     const settings = this.store.database.settings
-    return translateSegment(route, paper.abstract, settings.targetLanguage, { documentTitle: paper.title, glossary: normalizedGlossary(settings.translationGlossary) })
+    try {
+      return await translateSegment(route, paper.abstract, settings.targetLanguage, { documentTitle: paper.title, glossary: normalizedGlossary(settings.translationGlossary) })
+    } catch (error) {
+      if (error instanceof OutputTokenLimitError) throw new Error(outputTokenLimitMessage(error, t))
+      throw error
+    }
   }
 
   async translateLatex(paperId: string, latexmkPath: string): Promise<void> {

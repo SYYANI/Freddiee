@@ -302,14 +302,15 @@ function createMainWindow(): void {
   loadRoute(window, route)
 }
 
-function openSettingsWindow(tab?: string): void {
+function openSettingsWindow(tab?: string, modelId?: string): void {
   if (windows.settings && !windows.settings.isDestroyed()) {
     if (tab) windows.settings.webContents.send('settings:select-tab', tab)
+    if (modelId) windows.settings.webContents.send('settings:reveal-model', modelId)
     windows.settings.show()
     windows.settings.focus()
     return
   }
-  const route: WindowRoute = { kind: 'settings', settingsTab: tab }
+  const route: WindowRoute = { kind: 'settings', settingsTab: tab, settingsModelId: modelId }
   const window = new BrowserWindow({ width: 920, height: 720, minWidth: 840, minHeight: 520, title: translator('Settings'), fullscreenable: false, ...baseWindowOptions(route, 'under-window') })
   windows.settings = window
   if (supportsLiquidGlass() && !applyLiquidGlass(window)) window.setVibrancy('under-window')
@@ -700,7 +701,7 @@ function registerIpc(): void {
     return path
   })
   handle('settings:latex-status', () => latexStatus())
-  handle('settings:open', (_event, tab?: string) => openSettingsWindow(typeof tab === 'string' ? tab : undefined))
+  handle('settings:open', (_event, tab?: string, modelId?: string) => openSettingsWindow(typeof tab === 'string' ? tab : undefined, isUUID(modelId) ? modelId : undefined))
   handle('about:open', () => openAboutWindow())
 
   // Translation

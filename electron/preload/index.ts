@@ -69,7 +69,7 @@ const api: FreddieAPI = {
     quickSetup: (providerId, apiKey) => invoke('settings:quick-setup', providerId, apiKey),
     chooseDirectory: (purpose) => invoke('settings:choose-directory', purpose),
     latexStatus: () => invoke('settings:latex-status'),
-    openSettings: (tab) => invoke('settings:open', tab),
+    openSettings: (tab, modelId) => invoke('settings:open', tab, modelId),
     openAbout: () => invoke('about:open')
   },
   outline: {
@@ -156,5 +156,6 @@ const api: FreddieAPI = {
 
 contextBridge.exposeInMainWorld('freddie', api)
 contextBridge.exposeInMainWorld('freddieSettingsTab', {
-  onSelect: (listener: (tab: string) => void) => subscribe('settings:select-tab', listener)
+  onSelect: (listener: (tab: string) => void) => subscribe('settings:select-tab', listener),
+  onRevealModel: (listener: (modelId: string) => void) => subscribe('settings:reveal-model', listener)
 })

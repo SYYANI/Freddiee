@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as cheerio from 'cheerio'
-import { applyTranslation, babelDocOutputLabel, describeBabelDocPages, isMathOnly, outputIssue, parseBabelDocPageRange, prepareHTML, renderTranslation, userPrompt } from '../electron/main/translation'
+import { applyTranslation, babelDocOutputLabel, InvalidOutputError, translateSegment, describeBabelDocPages, isMathOnly, outputIssue, parseBabelDocPageRange, prepareHTML, renderTranslation, userPrompt } from '../electron/main/translation'
 import { applyHiddenRegions, sanitize } from '../electron/main/localizer'
 import { parseArxivAtom } from '../electron/main/importer'
-import { parseResponse } from '../electron/main/llm'
+import { OutputTokenLimitError, parseResponse, type ResolvedRoute } from '../electron/main/llm'
 import { assistantMessages } from '../electron/main/assistant'
 import { semanticDocumentFromParsedProject } from '../electron/main/babeldocSemanticHints'
 import { FreddieRebuildModelClient, lastRebuiltPage } from '../RebuildPDFKit'
@@ -165,6 +165,39 @@ describe('LLM wire protocols', () => {
     expect(responses).toEqual({ text: 'a', sources: [{ url: 'https://x', title: 'X' }] })
     const anthropic = parseResponse('anthropic-messages', { content: [{ type: 'web_search_tool_result', content: [{ type: 'web_search_result', url: 'https://y' }] }, { type: 'text', text: 'b' }] })
     expect(anthropic).toEqual({ text: 'b', sources: [{ url: 'https://y', title: undefined }] })
+  })
+
+  it('treats only the output token limit as truncation', () => {
+    expect(parseResponse('responses', { status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' }, output: [] }).finishReason).toBe('length')
+    expect(parseResponse('responses', { status: 'incomplete', incomplete_details: { reason: 'content_filter' }, output: [] }).finishReason).toBe('other')
+    expect(parseResponse('chat-completions', { choices: [{ message: { content: 'a' }, finish_reason: 'length' }] }).finishReason).toBe('length')
+    expect(parseResponse('anthropic-messages', { content: [{ type: 'text', text: 'a' }], stop_reason: 'max_tokens' }).finishReason).toBe('length')
+  })
+})
+
+describe('segment translation', () => {
+  afterEach(() => vi.restoreAllMocks())
+  const route = (apiStyle: ResolvedRoute['apiStyle']): ResolvedRoute => ({ providerId: 'p', providerName: 'P', modelId: 'model-1', modelName: 'm', baseURL: 'https://example.com/v1', apiStyle, apiKey: 'k', maxTokens: 256 })
+  const reply = (body: unknown) => vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }))
+
+  it.each([
+    ['chat-completions', { choices: [{ message: { content: '部分译文' }, finish_reason: 'length' }] }, 'length'],
+    ['responses', { status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' }, output: [{ type: 'message', content: [{ type: 'output_text', text: '部分译文' }] }] }, 'max_output_tokens'],
+    // Reasoning can use the whole budget before any visible text.
+    ['responses', { status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' }, output: [] }, 'max_output_tokens'],
+    ['anthropic-messages', { content: [{ type: 'text', text: '部分译文' }], stop_reason: 'max_tokens' }, 'max_tokens']
+  ] as const)('rejects a %s answer cut off by the token limit without retrying', async (apiStyle, body, reason) => {
+    const fetchMock = reply(body)
+    const error = await translateSegment(route(apiStyle), 'A complete source paragraph.', 'zh-Hans', {}).catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(OutputTokenLimitError)
+    expect(error).not.toBeInstanceOf(InvalidOutputError)
+    expect(error).toMatchObject({ reason, modelId: 'model-1' })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns a finished answer', async () => {
+    reply({ choices: [{ message: { content: '  完整译文。  ' }, finish_reason: 'stop' }] })
+    await expect(translateSegment(route('chat-completions'), 'Complete source.', 'zh-Hans', {})).resolves.toBe('完整译文。')
   })
 })
 

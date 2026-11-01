@@ -30,6 +30,7 @@ interface TranslationRun {
   summary?: string
   outcome?: CapsulePhase
   needsSetup?: boolean
+  outputLimitModelId?: string
   logPath?: string
   kind?: 'html' | 'latex' | 'scan' | 'babeldoc'
 }
@@ -232,7 +233,7 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
       if (event.type === 'progress_update') next = { ...next, working: true, message: event.message, completed: event.completed, total: event.total, summary: event.summary }
       if (event.type === 'finished') next = { working: false, cancelling: false, message: event.message, outcome: { kind: 'completed' }, kind: next.kind }
       if (event.type === 'cancelled') next = { working: false, cancelling: false, message: event.message, outcome: { kind: 'cancelled' }, kind: next.kind }
-      if (event.type === 'failed') next = { working: false, cancelling: false, message: event.message, needsSetup: event.needsSetup, logPath: event.logPath, kind: next.kind }
+      if (event.type === 'failed') next = { working: false, cancelling: false, message: event.message, needsSetup: event.needsSetup, outputLimitModelId: event.outputLimitModelId, logPath: event.logPath, kind: next.kind }
       return { ...current, [event.paperId]: next }
     })
     if (event.paperId !== paper?.id) return
@@ -903,9 +904,10 @@ export function ReaderPane(props: ReaderPaneProps): JSX.Element {
         )}
         {!isWorking && statusMessage && (
           <div className="status-row">
-            <span className={`status-message ${run?.logPath || run?.needsSetup || /error|错误|failed|失败|无法|Unable/i.test(statusMessage) ? 'error' : ''}`}>{statusMessage}</span>
+            <span className={`status-message ${run?.logPath || run?.needsSetup || run?.outputLimitModelId || /error|错误|failed|失败|无法|Unable/i.test(statusMessage) ? 'error' : ''}`}>{statusMessage}</span>
             <span className="spacer" />
             {run?.needsSetup && <button type="button" className="link-button" onClick={() => void window.freddie.settings.openSettings('general')}>{t('Set Up Translation…')}</button>}
+            {run?.outputLimitModelId && <button type="button" className="link-button" onClick={() => void window.freddie.settings.openSettings('models', run.outputLimitModelId)}>{t('Model Settings…')}</button>}
             {run?.logPath && <IconButton icon="doc.text" size={14} label={t('Show LaTeX Compilation Log')} onClick={() => void window.freddie.translation.revealLog(run.logPath!)} />}
             {paper && hasLatexSource && <IconButton icon="folder" size={14} label={t('Reveal Translated LaTeX Source')} onClick={() => void window.freddie.translation.revealLatexSource(paper.id)} />}
             <IconButton icon="doc.on.doc" size={14} label={t('Copy Message')} onClick={() => void window.freddie.shell.copyText(statusMessage)} />

@@ -301,6 +301,8 @@ export interface TranslationEvent {
   diagnostics?: BabelDocTranslationDiagnostics
   /** Set when a run stopped because no usable model is configured. */
   needsSetup?: boolean
+  /** Set when a run stopped at this model's output token limit. */
+  outputLimitModelId?: string
   logPath?: string
 }
 
@@ -458,6 +460,8 @@ export type MenuAction =
 export interface WindowRoute {
   kind: 'main' | 'settings' | 'writing' | 'about'
   settingsTab?: string
+  /** A model whose Advanced Parameters the Models tab opens on. */
+  settingsModelId?: string
 }
 
 export interface FreddieAPI {
@@ -505,7 +509,7 @@ export interface FreddieAPI {
     quickSetup(providerId: string, apiKey: string): Promise<ProviderTestResult>
     chooseDirectory(purpose: 'digest' | 'latex'): Promise<string | null>
     latexStatus(): Promise<LatexToolchainStatus>
-    openSettings(tab?: string): Promise<void>
+    openSettings(tab?: string, modelId?: string): Promise<void>
     openAbout(): Promise<void>
   }
   outline: {

@@ -44,12 +44,21 @@ function StatusLabel({ message }: { message?: string | null }): JSX.Element | nu
 export function SettingsWindow(): JSX.Element {
   const { t } = useApp()
   const [tab, setTab] = useState<Tab>(() => (tabs.some((item) => item.id === window.freddie.route.settingsTab) ? window.freddie.route.settingsTab as Tab : 'general'))
+  const [modelReveal, setModelReveal] = useState<ModelReveal | undefined>(() => {
+    const modelId = window.freddie.route.settingsModelId
+    return modelId ? { modelId, token: 1 } : undefined
+  })
 
   useEffect(() => {
-    const bridge = (window as unknown as { freddieSettingsTab?: { onSelect(listener: (tab: string) => void): () => void } }).freddieSettingsTab
-    return bridge?.onSelect((value) => {
+    const bridge = (window as unknown as { freddieSettingsTab?: { onSelect(listener: (tab: string) => void): () => void; onRevealModel(listener: (modelId: string) => void): () => void } }).freddieSettingsTab
+    const unsubscribeTab = bridge?.onSelect((value) => {
       if (tabs.some((item) => item.id === value)) setTab(value as Tab)
     })
+    const unsubscribeModel = bridge?.onRevealModel((modelId) => setModelReveal((current) => ({ modelId, token: (current?.token ?? 0) + 1 })))
+    return () => {
+      unsubscribeTab?.()
+      unsubscribeModel?.()
+    }
   }, [])
 
   const title = t(tabs.find((item) => item.id === tab)!.title)
@@ -77,7 +86,7 @@ export function SettingsWindow(): JSX.Element {
         {tab === 'latex' && <LatexTab />}
         {tab === 'digest' && <DigestTab />}
         {tab === 'providers' && <ProvidersTab />}
-        {tab === 'models' && <ModelsTab />}
+        {tab === 'models' && <ModelsTab reveal={modelReveal} />}
       </div>
     </div>
   )
@@ -602,7 +611,13 @@ function ProvidersTab(): JSX.Element {
 
 // MARK: Models
 
-function ModelsTab(): JSX.Element {
+/** A request from the reader to show one model's Advanced Parameters; `token` repeats it. */
+interface ModelReveal {
+  modelId: string
+  token: number
+}
+
+function ModelsTab({ reveal }: { reveal?: ModelReveal }): JSX.Element {
   const { snapshot, t, language } = useApp()
   const providerName = (id: string): string => snapshot.providers.find((provider) => provider.id === id)?.name ?? t('Unknown Provider')
   const models = useMemo(() => [...snapshot.models].sort((a, b) => `${providerName(a.providerId)} ${a.name}`.localeCompare(`${providerName(b.providerId)} ${b.name}`)), [snapshot.models, snapshot.providers])
@@ -630,6 +645,11 @@ function ModelsTab(): JSX.Element {
   }
 
   useEffect(() => apply(selected), [selectedId])
+
+  // Selecting the model that is already selected keeps unsaved edits in the form.
+  useEffect(() => {
+    if (reveal && models.some((model) => model.id === reveal.modelId)) setSelectedId(reveal.modelId)
+  }, [reveal?.token])
 
   const parsed = (): Omit<ModelProfile, 'id' | 'createdAt' | 'modifiedAt' | 'lastTestedAt'> => {
     const number = (value: string, label: string, integer: boolean): number | undefined => {
@@ -715,7 +735,7 @@ function ModelsTab(): JSX.Element {
           <FormRow stacked><FieldRow label={t('Model name')} help={t('Profile name is only for display inside Freddie. Model name must match the real model identifier accepted by your provider.')}><TextInput label={t('Model name')} value={form.modelName} onChange={(modelName) => setForm({ ...form, modelName })} /></FieldRow></FormRow>
           <FormRow stacked><FieldRow label={t('Enabled')}><Checkbox label={t('Enabled')} checked={form.isEnabled} onChange={(isEnabled) => setForm({ ...form, isEnabled })} /></FieldRow></FormRow>
           <FormRow stacked>
-            <Disclosure title={t('Advanced Parameters')}>
+            <Disclosure key={reveal?.token ?? 0} title={t('Advanced Parameters')} initiallyOpen={reveal !== undefined}>
               <FieldRow label={t('Thinking Mode')}>
                 <MenuPicker label={t('Thinking Mode')} value={form.thinkingMode} onChange={(thinkingMode) => setForm({ ...form, thinkingMode })} options={[{ value: '', title: t('Default') }, { value: 'enabled', title: t('Enabled') }, { value: 'disabled', title: t('Disabled') }]} />
               </FieldRow>
@@ -724,7 +744,7 @@ function ModelsTab(): JSX.Element {
               </FieldRow>
               <FieldRow label={t('Temperature')}><TextInput label={t('Temperature')} value={form.temperature} onChange={(temperature) => setForm({ ...form, temperature })} /></FieldRow>
               <FieldRow label={t('Top-P')}><TextInput label={t('Top-P')} value={form.topP} onChange={(topP) => setForm({ ...form, topP })} /></FieldRow>
-              <FieldRow label={t('Max tokens')}><TextInput label={t('Max tokens')} value={form.maxTokens} onChange={(maxTokens) => setForm({ ...form, maxTokens })} /></FieldRow>
+              <FieldRow label={t('Max tokens')} help={t('Limits output tokens, including reasoning tokens. Leave blank to use the default limit. If a response is cut off, increase this value or lower Reasoning Effort.')}><TextInput label={t('Max tokens')} value={form.maxTokens} onChange={(maxTokens) => setForm({ ...form, maxTokens })} /></FieldRow>
             </Disclosure>
           </FormRow>
         </FormSection>

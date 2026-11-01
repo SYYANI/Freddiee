@@ -43,6 +43,17 @@ export class LLMError extends Error {
   }
 }
 
+/** The model stopped at its output token limit; `reason` is the provider's own term for it. */
+export class OutputTokenLimitError extends LLMError {
+  constructor(readonly reason: string, readonly modelId?: string) {
+    super(`The model reached its output token limit before finishing (${reason}).`)
+  }
+}
+
+export function outputTokenLimitReason(apiStyle: LLMAPIStyle): string {
+  return apiStyle === 'chat-completions' ? 'length' : apiStyle === 'responses' ? 'max_output_tokens' : 'max_tokens'
+}
+
 export class RouteError extends Error {}
 
 export interface ResolvedRoute {
@@ -287,7 +298,10 @@ export function parseResponse(apiStyle: LLMAPIStyle, json: Record<string, unknow
   const finish = apiStyle === 'chat-completions'
     ? (json.choices as Array<{ finish_reason?: string }> | undefined)?.[0]?.finish_reason
     : apiStyle === 'responses'
-      ? (json.status === 'incomplete' ? 'length' : json.status === 'completed' ? 'stop' : undefined)
+      // Only the token limit truncates; other incomplete reasons (content_filter) do not.
+      ? (json.status === 'incomplete'
+          ? ((json.incomplete_details as { reason?: string } | undefined)?.reason === 'max_output_tokens' ? 'length' : 'incomplete')
+          : json.status === 'completed' ? 'stop' : undefined)
       : json.stop_reason
   const usage = json.usage as { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; input_tokens?: number; output_tokens?: number } | undefined
   return {
