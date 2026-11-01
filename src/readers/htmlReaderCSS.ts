@@ -1,6 +1,8 @@
 // Styles the reader injects into saved HTML pages. They mirror native Freddie's
 // HTMLReaderTypography, the appearance CSS, and the saved-document repairs.
 
+import { readableProseLayoutCSS } from '../../shared/htmlReaderLayout'
+
 const proseColor = `
 body.rp-readability-body { color: var(--rp-reader-text, #1f1f1f) !important; background: transparent !important; }
 body.rp-readability-body .rp-readability-shell,
@@ -8,9 +10,7 @@ body.rp-readability-body .rp-readability-shell :where(article, section, main, he
 body.rp-readability-body .rp-readability-header, body.rp-readability-body .rp-readability-content { color: var(--rp-reader-text, #1f1f1f) !important; }
 body.rp-readability-body .rp-readability-byline, body.rp-readability-body .rp-readability-excerpt { color: var(--rp-reader-muted, #5f6368) !important; }
 body.rp-readability-body .rp-readability-shell a:not(:where(pre *, code *, svg *, math *)) { color: var(--rp-reader-link, #335c85) !important; }
-body.rp-readability-body .rp-readability-shell .rp-translation-block { color: var(--rp-reader-translation, #1f4d3a) !important; }
-html:has(> body.rp-readability-body) { max-width: none !important; }
-body.rp-readability-body :is(.rp-readability-header, .rp-readability-content) :is(p, h1, h2, h3, h4, h5, h6):not(svg *, math *) { width: 100% !important; min-width: 0 !important; max-width: 100% !important; margin-inline: 0 !important; padding-inline: 0 !important; box-sizing: border-box !important; }`
+body.rp-readability-body .rp-readability-shell .rp-translation-block { color: var(--rp-reader-translation, #1f4d3a) !important; }`
 
 const translationDisplay = `
 html[data-rp-display-mode='original'] .rp-translation-block { display: none !important; }
@@ -69,5 +69,5 @@ html[data-rp-region-editing] a { pointer-events: none; }
 img { max-width: 100%; height: auto; }`
 
 export function readerCSS(fontSize: number, appearance: 'default' | 'paper'): string {
-  return [proseColor, translationDisplay, typography(fontSize), appearance === 'paper' ? paperAppearance : defaultAppearance, readerChrome].join('\n')
+  return [proseColor, readableProseLayoutCSS, translationDisplay, typography(fontSize), appearance === 'paper' ? paperAppearance : defaultAppearance, readerChrome].join('\n')
 }

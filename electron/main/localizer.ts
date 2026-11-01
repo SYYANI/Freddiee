@@ -5,6 +5,7 @@ import { JSDOM } from 'jsdom'
 import { Readability } from '@mozilla/readability'
 import * as cheerio from 'cheerio'
 import type { CheerioAPI } from 'cheerio'
+import { readableProseLayoutCSS } from '../../shared/htmlReaderLayout'
 
 // Shared with the reader so saved documents get the same repairs as new imports.
 export const readableProseColorCSS = `
@@ -35,18 +36,7 @@ body.rp-readability-body .rp-readability-shell .rp-translation-block {
     color: var(--rp-reader-translation, #1f4d3a) !important;
 }`
 
-export const readableProseLayoutCSS = `
-html:has(> body.rp-readability-body) {
-    max-width: none !important;
-}
-body.rp-readability-body :is(.rp-readability-header, .rp-readability-content) :is(p, h1, h2, h3, h4, h5, h6):not(svg *, math *) {
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    margin-inline: 0 !important;
-    padding-inline: 0 !important;
-    box-sizing: border-box !important;
-}`
+export { readableProseLayoutCSS }
 
 export const readabilityCSS = `
 :where(body.rp-readability-body) { margin: 0; }
