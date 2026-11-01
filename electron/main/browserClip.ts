@@ -1,8 +1,8 @@
 import type { ContentExtraction } from './localizer'
 
 /**
- * A page saved by the browser extension (`BrowserExtension/` in the native Freddie
- * repository), as it posts it to the clipper server. The extension captures the page as the
+ * A page saved by the browser extension (its own repository, `../freddie-clipper`), as it
+ * posts it to the clipper server. The extension captures the page as the
  * reader sees it, signed in and after scripts have run, which a download by URL often cannot.
  */
 export interface BrowserClip {

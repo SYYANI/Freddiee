@@ -28,7 +28,7 @@ Electron main process
   └─ freddie://          contained, read-only delivery of paper and writing files
 ```
 
-This applies the DeepSeek Harness desktop separation to a document application: Electron packages the complete web client, while the privileged process owns native integrations. The renderer needs no listening port: the narrow IPC facade and the custom read-only protocol give the same separation with a smaller attack surface. The one port is the browser clipper's, for the extension in native Freddie's repository (`BrowserExtension/`); it is the same API on the same port as native Freddie, so one extension works with either app, and whichever starts first owns the port.
+This applies the DeepSeek Harness desktop separation to a document application: Electron packages the complete web client, while the privileged process owns native integrations. The renderer needs no listening port: the narrow IPC facade and the custom read-only protocol give the same separation with a smaller attack surface. The one port is the browser clipper's, for the extension in its own repository (`../freddie-clipper`); it is the same API on the same port as native Freddie, so one extension works with either app, and whichever starts first owns the port.
 
 The windows match native Freddie's scenes. Each is the same renderer bundle opened with a route (`main`, `settings`, `writing`, `about`) and, on Windows, whether a native backdrop is active, both passed through `additionalArguments`. Main-process changes are broadcast as `library:changed`, and every window reloads its snapshot from the main-process authority.
 
