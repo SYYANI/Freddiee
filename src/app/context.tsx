@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { LibrarySnapshot } from '../../shared/types'
 import { createTranslator, resolveLanguage, type Translator } from '../../shared/i18n'
+import { SnapshotLoader } from './snapshotLoader'
 
 interface AppContextValue {
   snapshot: LibrarySnapshot
@@ -10,26 +11,31 @@ interface AppContextValue {
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
+const TranslationContext = createContext<Translator | null>(null)
 
 /** Keeps a projection of the main-process library and reloads it whenever the library changes. */
 export function AppProvider({ children, fallback }: { children: ReactNode; fallback?: ReactNode }): JSX.Element {
   const [snapshot, setSnapshot] = useState<LibrarySnapshot>()
-  const reload = useCallback(async () => {
-    setSnapshot(await window.freddie.library.snapshot())
-  }, [])
+  const loader = useMemo(() => new SnapshotLoader((since) => window.freddie.library.snapshot(since), setSnapshot), [])
+  const reload = loader.reload
 
   useEffect(() => {
     void reload()
     let scheduled = false
-    return window.freddie.library.onChanged(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const unsubscribe = window.freddie.library.onChanged(() => {
       if (scheduled) return
       scheduled = true
       // Coalesce bursts, such as several saves from one action.
-      setTimeout(() => {
+      timer = setTimeout(() => {
         scheduled = false
         void reload()
       }, 30)
     })
+    return () => {
+      unsubscribe()
+      clearTimeout(timer)
+    }
   }, [reload])
 
   const language = resolveLanguage(snapshot?.settings.appLanguage, navigator.language)
@@ -42,8 +48,9 @@ export function AppProvider({ children, fallback }: { children: ReactNode; fallb
     document.documentElement.dataset.appearance = snapshot?.settings.readerAppearance ?? 'default'
   }, [language, snapshot?.settings.readerAppearance])
 
-  if (!snapshot) return <>{fallback ?? null}</>
-  return <AppContext.Provider value={{ snapshot, reload, t, language }}>{children}</AppContext.Provider>
+  const value = useMemo(() => snapshot ? { snapshot, reload, t, language } : null, [snapshot, reload, t, language])
+  if (!value) return <>{fallback ?? null}</>
+  return <TranslationContext.Provider value={t}><AppContext.Provider value={value}>{children}</AppContext.Provider></TranslationContext.Provider>
 }
 
 export function useApp(): AppContextValue {
@@ -53,7 +60,9 @@ export function useApp(): AppContextValue {
 }
 
 export function useT(): Translator {
-  return useApp().t
+  const t = useContext(TranslationContext)
+  if (!t) throw new Error('useT outside AppProvider')
+  return t
 }
 
 export function formatDate(value: string, language: 'en' | 'zh-Hans', options: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' }): string {

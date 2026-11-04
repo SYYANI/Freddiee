@@ -4,6 +4,7 @@ import { emptyFilter, filterGrouping, groupLibrary, isFilterActive, matchesFilte
 import { citationFromSelection, citationLabel, escapeInlineMarkdown, inlineCitationMarkdown, parseCitation, quoteCitationMarkdown } from '../../shared/writing'
 import { normalizeArxivIdentifier, arxivQueryId } from '../../shared/identifiers'
 import { useApp } from '../app/context'
+import { frameTask } from '../app/frameTask'
 import { alertError, confirmDestructive, errorText, messageBox } from '../app/native'
 import { Button, IconButton, PromptSheet, Sheet, ToolbarGroup } from '../ui/controls'
 import { Icon } from '../ui/Icon'
@@ -81,7 +82,7 @@ export function MainWindow(): JSX.Element {
     // The open paper stays listed even when it stops matching.
     return filterGrouping(grouping, (paper) => paper.id === selectedPaper?.id || matchesFilter(paper, filter, { translatedPaperIds: translated, notedPaperIds: noted, itemTypes }))
   }, [grouping, filter, snapshot.htmlTranslatedPaperIds, snapshot.attachments, snapshot.notes, itemTypes, selectedPaper?.id])
-  const visibleIds = orderedPaperIds(visibleGrouping)
+  const visibleIds = useMemo(() => orderedPaperIds(visibleGrouping), [visibleGrouping])
 
   const notes = useMemo(() => snapshot.notes.filter((note) => note.paperId === selectedPaper?.id), [snapshot.notes, selectedPaper?.id])
   const attachments = useMemo(() => snapshot.attachments.filter((item) => item.paperId === selectedPaper?.id), [snapshot.attachments, selectedPaper?.id])
@@ -160,6 +161,17 @@ export function MainWindow(): JSX.Element {
       await window.freddie.folders.remove(folderId)
     }
   }
+
+  // The sidebar is memoized: give it stable actions that call the latest handlers.
+  const sidebarCallbacks = useRef({ deletePaper, deleteFolder })
+  sidebarCallbacks.current = { deletePaper, deleteFolder }
+  const sidebarActions = useMemo(() => ({
+    onSelect: select,
+    onDeletePaper: (paper: Paper) => void sidebarCallbacks.current.deletePaper(paper),
+    onNewFolder: (paperId?: string) => setFolderPrompt({ kind: 'create', paperId }),
+    onRenameFolder: (folderId: string, name: string) => setFolderPrompt({ kind: 'rename', folderId, name }),
+    onDeleteFolder: (folderId: string, name: string) => void sidebarCallbacks.current.deleteFolder(folderId, name)
+  }), [select])
 
   // MARK: Inspector
 
@@ -367,26 +379,32 @@ export function MainWindow(): JSX.Element {
     event.preventDefault()
     const startX = event.clientX
     const initial = column === 'sidebar' ? sidebarWidth : inspectorWidth
-    const move = (pointer: PointerEvent): void => {
-      const delta = pointer.clientX - startX
+    let finalWidth = initial
+    const update = frameTask((clientX: number) => {
+      const delta = clientX - startX
       if (column === 'sidebar') {
         const next = Math.min(340, Math.max(240, initial + delta))
+        finalWidth = next
         setSidebarWidth(next)
-        storeWidth('freddie.sidebarWidth', next)
       } else {
         const next = Math.min(640, Math.max(280, initial - delta, 0), window.innerWidth - (sidebarOpen ? sidebarWidth : 0) - 520)
+        finalWidth = Math.max(280, next)
         setInspectorWidth(Math.max(280, next))
-        storeWidth('freddie.inspectorWidth', Math.max(280, next))
       }
-    }
+    })
+    const move = (pointer: PointerEvent): void => update.schedule(pointer.clientX)
     const stop = (): void => {
+      update.flush()
+      storeWidth(column === 'sidebar' ? 'freddie.sidebarWidth' : 'freddie.inspectorWidth', finalWidth)
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', stop)
+      window.removeEventListener('pointercancel', stop)
       document.body.classList.remove('resizing-columns')
     }
     document.body.classList.add('resizing-columns')
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', stop)
+    window.addEventListener('pointercancel', stop)
   }
 
   const inspectorOpen = !settings.inspectorCollapsed
@@ -408,19 +426,16 @@ export function MainWindow(): JSX.Element {
       onDrop={(event) => void drop(event)}
     >
       <LibrarySidebar
+        papers={snapshot.papers}
+        folders={snapshot.folders}
+        collapsedFolderIds={snapshot.settings.collapsedFolderIds}
         grouping={visibleGrouping}
         itemTypes={itemTypes}
         filter={filter}
         onFilterChange={setFilter}
         selectedPaper={selectedPaper}
         visibleCount={visibleIds.length}
-        actions={{
-          onSelect: select,
-          onDeletePaper: (paper) => void deletePaper(paper),
-          onNewFolder: (paperId) => setFolderPrompt({ kind: 'create', paperId }),
-          onRenameFolder: (folderId, name) => setFolderPrompt({ kind: 'rename', folderId, name }),
-          onDeleteFolder: (folderId, name) => void deleteFolder(folderId, name)
-        }}
+        actions={sidebarActions}
       />
       {sidebarOpen && <div className="column-resizer sidebar-resizer" onPointerDown={(event) => beginResize(event, 'sidebar')} />}
       <main className="reader-column">

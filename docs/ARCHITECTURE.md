@@ -30,7 +30,7 @@ Electron main process
 
 This applies the DeepSeek Harness desktop separation to a document application: Electron packages the complete web client, while the privileged process owns native integrations. The renderer needs no listening port: the narrow IPC facade and the custom read-only protocol give the same separation with a smaller attack surface. The one port is the browser clipper's, for the extension in its own repository (`../freddie-clipper`); it is the same API on the same port as native Freddie, so one extension works with either app, and whichever starts first owns the port.
 
-The windows match native Freddie's scenes. Each is the same renderer bundle opened with a route (`main`, `settings`, `writing`, `about`) and, on Windows, whether a native backdrop is active, both passed through `additionalArguments`. Main-process changes are broadcast as `library:changed`, and every window reloads its snapshot from the main-process authority.
+The windows match native Freddie's scenes. Each is the same renderer bundle opened with a route (`main`, `settings`, `writing`, `about`) and, on Windows, whether a native backdrop is active, both passed through `additionalArguments`. Main-process changes are broadcast as `library:changed` through `libraryChanged()`, which also marks the shared snapshot stale. Store commits call it; a change outside the store (secrets, writing files, translation caches) must call it explicitly, because an unchanged settings save does not commit. Each window serializes its refresh requests and supplies its last snapshot revision; the main-process authority shares snapshot loading across windows and returns only changed sections, falling back to a full snapshot for a new or older revision. Unchanged renderer records retain their identity, so unrelated changes do not invalidate memoized lists. These revisions are transient IPC state, separate from library sync and its documents.
 
 ## Security invariants
 
@@ -53,6 +53,8 @@ The windows match native Freddie's scenes. Each is the same renderer bundle open
 13. Scanned-page model output is parsed as constrained `<page>` markup: environments are allow-listed and checked, and file access, macro definition, `^^` character codes, `\csname` and similar commands are rejected before XeLaTeX runs (without shell escape, with paranoid file access). Tesseract runs offline from the packaged English model.
 
 ## Persistence
+
+Identical settings and reading positions skip persistence. Saves queued before the next write starts share one serialization and atomic replacement; a save received during I/O waits for the following write. A resolved save still means its data has reached disk. Writing list metadata is cached against both files' inode, size, modification time and change time, so external edits and sync replacements invalidate the cache.
 
 `library.json` is intentionally portable and inspectable. Writes are serialized through one queue and replace the file through a flushed temporary file and a rename. `schemaVersion` is monotonic; `migrateDatabase` brings schemas 1–2 (file names on papers, one provider in settings, writings inside the database) through the later reader-control migrations, schema 6 (bundled BabelDOC page range, rendering mode, QPS and thinking mode), and schema 7 (the opt-in arXiv LaTeX translation route), and refuses a newer schema. Large documents, translation caches, annotations, and assistant conversations live beside each paper so the metadata file stays small. Imports run in `store.batch` and write once.
 

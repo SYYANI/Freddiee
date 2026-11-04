@@ -51,6 +51,7 @@ import { applyHiddenRegions, readableProseColorCSS, readableProseLayoutCSS } fro
 import { detectLatexToolchainStatus } from './latexToolchain'
 import { AuthorExtractionService } from './authorExtraction'
 import { PaperSummaryService } from './paperSummary'
+import { LibrarySnapshotCache } from './librarySnapshot'
 import { clipperPort, macLinkScheme, readpaperLink, startClipperServer } from './clipperServer'
 import * as cheerio from 'cheerio'
 
@@ -93,6 +94,8 @@ let translator: Translator = createTranslator('en')
 let htmlTranslatedPaperIds: string[] = []
 let hasNativeLibrary = false
 let nativeImportRunning = false
+let snapshotInvalidation = 0
+const snapshots = new LibrarySnapshotCache(snapshot, () => `${store.generation}:${snapshotInvalidation}`)
 
 const windows: { main?: Window; settings?: Window; writing?: Window; about?: Window } = {}
 
@@ -145,7 +148,7 @@ app.whenReady().then(async () => {
     onStatus: (status) => broadcast('sync:status', status),
     onApplied: (paperIds, writingIds) => {
       broadcast('sync:applied', { paperIds, writingIds })
-      broadcast('library:changed')
+      libraryChanged()
       void refreshTranslatedIds()
     }
   })
@@ -153,7 +156,7 @@ app.whenReady().then(async () => {
 
   store.onChange(() => {
     updateTranslator()
-    broadcast('library:changed')
+    libraryChanged()
   })
 
   registerProtocol()
@@ -169,7 +172,7 @@ app.whenReady().then(async () => {
   if (isMac) {
     systemPreferences.subscribeNotification('AppleInterfaceThemeChangedNotification', () => {
       synchronizeAppearance()
-      broadcast('library:changed')
+      libraryChanged()
     })
   }
 
@@ -225,7 +228,7 @@ function updateTranslator(): void {
 
 async function refreshTranslatedIds(): Promise<void> {
   htmlTranslatedPaperIds = await translations.htmlTranslatedPaperIds()
-  broadcast('library:changed')
+  libraryChanged()
 }
 
 // MARK: Windows
@@ -359,6 +362,13 @@ function ownedWindows(): Window[] {
   return Object.values(windows).filter((window): window is Window => Boolean(window && !window.isDestroyed()))
 }
 
+/** Marks the cached snapshot stale and tells windows to re-read it. Call it after any change a snapshot shows,
+ *  including ones outside the store (secrets, writing files, translation caches) and ones where a store save was a no-op. */
+function libraryChanged(): void {
+  snapshotInvalidation += 1
+  broadcast('library:changed')
+}
+
 function broadcast(channel: string, payload?: unknown): void {
   for (const window of ownedWindows()) window.webContents.send(channel, payload)
 }
@@ -483,7 +493,10 @@ async function testCompletion(baseURL: string, apiStyle: ProviderProfile['apiSty
 
 function registerIpc(): void {
   // Library
-  handle('library:snapshot', () => snapshot())
+  handle('library:snapshot', (_event, since?: number) => {
+    if (since !== undefined && (!Number.isSafeInteger(since) || since < 0)) throw new Error('Invalid snapshot revision')
+    return snapshots.read(since)
+  })
   handle('library:import', async (event, request: ImportRequest) => {
     try {
       if (request.type === 'arxiv') {
@@ -632,12 +645,13 @@ function registerIpc(): void {
       isEnabled: Boolean(input.isEnabled)
     })
     if (apiKey?.trim()) await secrets.setKey(provider.id, apiKey.trim())
-    broadcast('library:changed')
+    libraryChanged()
     return provider
   })
   handle('settings:delete-provider', async (_event, id: string) => {
     await store.deleteProvider(requireUUID(id))
     await secrets.removeKey(id)
+    libraryChanged()
   })
   handle('settings:test-provider', async (_event, input: ProviderProfile, apiKey?: string, webSearch?: boolean) => {
     const key = apiKey?.trim() || (isUUID(input.id) ? await secrets.key(input.id) : undefined)
@@ -687,6 +701,7 @@ function registerIpc(): void {
     }
     await secrets.setKey(descriptor.id, key)
     await store.saveSettings({ htmlModelId: descriptor.model.id, pdfModelId: descriptor.model.id })
+    libraryChanged()
     return result
   })
   handle('settings:choose-directory', async (event, purpose: 'digest' | 'latex') => {
@@ -788,12 +803,13 @@ function registerIpc(): void {
     const existing = (await writings.loadAll()).find((writing) => writing.id === requireUUID(id))
     if (!existing) return
     await writings.save(id, String(markdown), existing.createdAt)
-    broadcast('library:changed')
+    libraryChanged()
   })
   handle('writings:remove', async (_event, id: string) => {
     await writings.delete(requireUUID(id), (path) => shell.trashItem(path))
     const remaining = await writings.loadAll()
     await store.saveSettings({ currentWritingId: remaining[0]?.id })
+    libraryChanged()
   })
   handle('writings:reveal', (_event, id: string) => shell.showItemInFolder(writings.markdownPath(requireUUID(id))))
   handle('writings:insert-images', async (event, id: string) => {

@@ -30,7 +30,7 @@ const api: FreddieAPI = {
   backdrop: process.argv.includes('--freddie-backdrop=acrylic') ? 'acrylic' : 'none',
   route: readRoute(),
   library: {
-    snapshot: () => invoke('library:snapshot'),
+    snapshot: (since) => invoke('library:snapshot', since),
     onChanged: (listener) => subscribe('library:changed', listener),
     importPaper: (request) => invoke('library:import', request),
     cancelImport: (operationId) => invoke('library:cancel-import', operationId),

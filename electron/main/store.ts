@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { isDeepStrictEqual } from 'node:util'
 import { mkdir, readFile, rm } from 'node:fs/promises'
 import { dirname, join, resolve, sep } from 'node:path'
 import type {
@@ -132,6 +133,7 @@ export class FreddieStore {
   private readonly databasePath: string
   private data: Database = emptyDatabase()
   private writeQueue: Promise<void> = Promise.resolve()
+  private pendingWrite?: Promise<void>
   private readonly listeners = new Set<() => void>()
   private batchDepth = 0
   /** Bumped by every write, so sync can tell whether the library changed while it read it. */
@@ -341,12 +343,14 @@ export class FreddieStore {
     const previous = index >= 0 ? this.data.readingStates[index] : undefined
     if (previous?.htmlAnchor && previous.attachmentId === next.attachmentId && previous.readerMode === next.readerMode &&
       previous.pageIndex === next.pageIndex && previous.scrollRatio === next.scrollRatio) next.htmlAnchor = previous.htmlAnchor
+    if (previous && isDeepStrictEqual({ ...previous, modifiedAt: undefined }, { ...next, modifiedAt: undefined })) return this.writeQueue.catch(() => this.commit(false))
     if (index >= 0) this.data.readingStates[index] = next
     else this.data.readingStates.push(next)
     await this.commit(false)
   }
 
   async saveSettings(patch: Partial<AppSettings>): Promise<void> {
+    if ((Object.keys(patch) as Array<keyof AppSettings>).every((key) => isDeepStrictEqual(this.data.settings[key], patch[key]))) return this.writeQueue.catch(() => this.commit())
     this.data.settings = { ...this.data.settings, ...structuredClone(patch) }
     await this.commit()
   }
@@ -541,14 +545,23 @@ export class FreddieStore {
   }
 
   private persist(): Promise<void> {
-    const serialized = `${JSON.stringify(this.data, null, 2)}\n`
-    this.writeQueue = this.writeQueue
+    // Saves queued before the next write starts share one serialization and atomic replacement.
+    // A save arriving during I/O queues another write and resolves only once that write finishes.
+    if (this.pendingWrite) return this.pendingWrite
+    const write = this.writeQueue
       .catch(() => undefined)
       .then(async () => {
+        this.pendingWrite = undefined
+        // A batch begun since this save was queued holds uncommitted changes. Its closing commit writes
+        // this save's change together with them, so never put a half-finished batch on disk.
+        if (this.batchDepth > 0) return
+        const serialized = `${JSON.stringify(this.data, null, 2)}\n`
         await mkdir(dirname(this.databasePath), { recursive: true })
         await atomicWriteFile(this.databasePath, serialized)
       })
-    return this.writeQueue
+    this.pendingWrite = write
+    this.writeQueue = write
+    return write
   }
 
   private async persistLegacyWritings(writings: Array<{ id: string; markdown: string; createdAt: string; modifiedAt: string }>): Promise<void> {

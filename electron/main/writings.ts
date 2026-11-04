@@ -15,6 +15,7 @@ const stalenessToleranceMs = 2000
  * a writing survives any library schema change; `meta.json` only caches what lists need.
  */
 export class WritingStore {
+  private readonly metadataCache = new Map<string, { fingerprint: string; metadata: WritingMetadata }>()
   constructor(readonly root: string) {}
 
   directory(id: string): string {
@@ -43,10 +44,13 @@ export class WritingStore {
       throw error
     }
     const writings: WritingMetadata[] = []
-    for (const entry of entries) {
-      if (!/^[0-9a-f-]{36}$/i.test(entry)) continue
-      const metadata = await this.loadMetadata(entry).catch(() => undefined)
-      if (metadata) writings.push(metadata)
+    const ids = entries.filter((entry) => /^[0-9a-f-]{36}$/i.test(entry))
+    const present = new Set(ids)
+    for (const id of this.metadataCache.keys()) if (!present.has(id)) this.metadataCache.delete(id)
+    // Bound file concurrency instead of making a snapshot wait for every writing in sequence.
+    for (let offset = 0; offset < ids.length; offset += 8) {
+      const batch = await Promise.all(ids.slice(offset, offset + 8).map((id) => this.loadMetadata(id).catch(() => undefined)))
+      for (const metadata of batch) if (metadata) writings.push(metadata)
     }
     return writings.sort((a, b) => b.modifiedAt.localeCompare(a.modifiedAt))
   }
@@ -57,14 +61,21 @@ export class WritingStore {
     try {
       markdownStat = await stat(markdownPath)
     } catch {
+      this.metadataCache.delete(id)
       return undefined
     }
     try {
       const metadataPath = join(this.directory(id), metadataFilename)
       const metadataStat = await stat(metadataPath)
+      const fingerprint = [markdownStat, metadataStat].map((value) => `${value.ino}:${value.size}:${value.mtimeMs}:${value.ctimeMs}`).join('|')
+      const memory = this.metadataCache.get(id)
+      if (memory?.fingerprint === fingerprint) return memory.metadata
       if (markdownStat.mtimeMs - metadataStat.mtimeMs <= stalenessToleranceMs) {
         const cached = JSON.parse(await readFile(metadataPath, 'utf8')) as WritingMetadata
-        if (cached.id === id && Array.isArray(cached.citations)) return cached
+        if (cached.id === id && Array.isArray(cached.citations)) {
+          this.metadataCache.set(id, { fingerprint, metadata: cached })
+          return cached
+        }
       }
     } catch {
       // Rebuild below.
@@ -72,6 +83,7 @@ export class WritingStore {
     const markdown = await readFile(markdownPath, 'utf8')
     const metadata = makeMetadata(id, markdown, markdownStat.birthtime.toISOString(), markdownStat.mtime.toISOString())
     await atomicWriteFile(join(this.directory(id), metadataFilename), `${JSON.stringify(metadata, null, 2)}\n`)
+    this.metadataCache.delete(id)
     return metadata
   }
 
@@ -85,6 +97,7 @@ export class WritingStore {
   }
 
   async save(id: string, markdown: string, createdAt: string, modifiedAt = new Date()): Promise<WritingMetadata> {
+    this.metadataCache.delete(id)
     const directory = this.directory(id)
     await mkdir(directory, { recursive: true })
     await atomicWriteFile(join(directory, markdownFilename), markdown)
@@ -94,6 +107,7 @@ export class WritingStore {
   }
 
   async delete(id: string, moveToTrash: (path: string) => Promise<void>): Promise<void> {
+    this.metadataCache.delete(id)
     const directory = this.directory(id)
     try {
       await moveToTrash(directory)

@@ -4,6 +4,7 @@ import { buildMatcher, type FindRequest, type FindStatus } from './find'
 import { readerCSS } from './htmlReaderCSS'
 import { elementPath, resolveElementPath } from './htmlAnchors'
 import { headingTranslation, observeHtmlOutline, visibleHeadingTarget } from './htmlOutline'
+import { frameTask } from '../app/frameTask'
 import type { DocumentOutlineEntry } from '../../shared/outline'
 import { bindAssistantHistory, htmlHistoryRange, type HistoryRange } from './assistantHistory'
 export { elementPath, resolveElementPath } from './htmlAnchors'
@@ -53,6 +54,10 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
   const [scrollTop, setScrollTop] = useState(0)
   const [layout, setLayout] = useState<{ left: number; width: number } | null>(null)
   const [positions, setPositions] = useState<Array<{ note: Note; top: number }>>([])
+  const scrollCallbacks = useRef({ onScrollRatio: props.onScrollRatio, hasSidenotes: false })
+  scrollCallbacks.current = { onScrollRatio: props.onScrollRatio, hasSidenotes: layout !== null }
+  const scrollCleanup = useRef<() => void>()
+  useEffect(() => () => scrollCleanup.current?.(), [])
   const regionHistory = useRef<{ undo: string[][]; redo: string[][] }>({ undo: [], redo: [] })
   const [regionRevision, setRegionRevision] = useState(0)
   const historySelectionGraceUntil = useRef(0)
@@ -120,6 +125,7 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
       next.push({ note, top: rect.top + (document.scrollingElement?.scrollTop ?? 0) })
     }
     setPositions(next)
+    if (wide && next.length) setScrollTop(document.scrollingElement?.scrollTop ?? 0)
     setLayout(wide && next.length ? { left: width - 300, width: 280 } : null)
   }, [props.sidenotes, documentOf])
 
@@ -130,6 +136,7 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
 
   // Wire the loaded page: scrolling, selection, links, region editing.
   const onLoad = (): void => {
+    scrollCleanup.current?.()
     const document = documentOf()
     const window_ = frame.current?.contentWindow
     if (!document || !window_) return
@@ -140,17 +147,34 @@ export const HtmlView = forwardRef<HtmlViewHandle, {
     }
     restore()
     // Images may change the height after the first layout.
-    setTimeout(restore, 120)
+    const restoreTimer = setTimeout(restore, 120)
     let scrollTimer: ReturnType<typeof setTimeout> | undefined
-    window_.addEventListener('scroll', () => {
-      setScrollTop(scroller.scrollTop)
+    // Measured on each scroll: by the time an unmount or reload flushes it, this document is gone.
+    let pendingRatio: number | undefined
+    const saveRatio = (): void => {
       clearTimeout(scrollTimer)
-      scrollTimer = setTimeout(() => {
-        const ratio = scroller.scrollTop / Math.max(1, scroller.scrollHeight - scroller.clientHeight)
-        restoredRatio.current = ratio
-        props.onScrollRatio(ratio)
-      }, 200)
-    }, { passive: true })
+      scrollTimer = undefined
+      if (pendingRatio === undefined) return
+      restoredRatio.current = pendingRatio
+      scrollCallbacks.current.onScrollRatio(pendingRatio)
+      pendingRatio = undefined
+    }
+    const update = frameTask(() => setScrollTop(scroller.scrollTop))
+    const onScroll = (): void => {
+      // Most pages have no margin notes; their scroll position does not belong in React state.
+      if (scrollCallbacks.current.hasSidenotes) update.schedule()
+      pendingRatio = scroller.scrollTop / Math.max(1, scroller.scrollHeight - scroller.clientHeight)
+      clearTimeout(scrollTimer)
+      scrollTimer = setTimeout(saveRatio, 200)
+    }
+    window_.addEventListener('scroll', onScroll, { passive: true })
+    scrollCleanup.current = () => {
+      clearTimeout(restoreTimer)
+      // Leaving the paper or reloading within the debounce still saves where the reader stopped.
+      saveRatio()
+      update.cancel()
+      window_.removeEventListener('scroll', onScroll)
+    }
     window_.addEventListener('resize', () => {
       layoutCallbacks.current.applyStyles()
       layoutCallbacks.current.updateSidenotes()

@@ -1,7 +1,8 @@
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import * as files from '../electron/main/files'
 import { builtInProviders, FreddieStore, migrateDatabase, schemaVersion } from '../electron/main/store'
 
 const roots: string[] = []
@@ -13,12 +14,108 @@ async function temporaryRoot(): Promise<string> {
 }
 
 afterEach(async () => {
+  vi.restoreAllMocks()
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })))
 })
 
 const timestamp = '2026-01-01T00:00:00.000Z'
 
 describe('FreddieStore', () => {
+  it('does not rewrite identical settings or normalized reading positions', async () => {
+    const store = new FreddieStore(await temporaryRoot())
+    await store.initialize()
+    const paperId = '11111111-1111-4111-8111-111111111111'
+    await store.addPaper({ id: paperId, title: 'A', abstract: '', authors: [], categories: [], tags: [], isFavorite: false, createdAt: timestamp, modifiedAt: timestamp }, [])
+    const position = { paperId, readerMode: 'html' as const, pageIndex: 0, scrollRatio: 0.5001, zoomScale: 1 }
+    await store.saveReadingState(position)
+    const generation = store.generation
+    const notify = vi.fn()
+    store.onChange(notify)
+    const write = vi.spyOn(files, 'atomicWriteFile')
+    await store.saveReadingState({ ...position, scrollRatio: 0.5002 })
+    await store.saveSettings({ htmlFontSize: store.database.settings.htmlFontSize, collapsedFolderIds: [...store.database.settings.collapsedFolderIds] })
+    expect(store.generation).toBe(generation)
+    expect(notify).not.toHaveBeenCalled()
+    expect(write).not.toHaveBeenCalled()
+  })
+
+  it('coalesces queued saves and waits for changes made during an active write', async () => {
+    const root = await temporaryRoot()
+    const store = new FreddieStore(root)
+    await store.initialize()
+    const atomicWrite = files.atomicWriteFile
+    let release!: () => void
+    let started!: () => void
+    const gate = new Promise<void>((resolve) => { release = resolve })
+    const writing = new Promise<void>((resolve) => { started = resolve })
+    const write = vi.spyOn(files, 'atomicWriteFile').mockImplementationOnce(async (...args) => {
+      started()
+      await gate
+      await atomicWrite(...args)
+    })
+    const first = store.saveSettings({ htmlFontSize: 20 })
+    await writing
+    let finished = false
+    const second = store.saveSettings({ htmlFontSize: 21 }).then(() => { finished = true })
+    const third = store.saveSettings({ inspectorCollapsed: true })
+    let identicalFinished = false
+    const identical = store.saveSettings({ htmlFontSize: 21 }).then(() => { identicalFinished = true })
+    expect(finished).toBe(false)
+    await Promise.resolve()
+    expect(identicalFinished).toBe(false)
+    expect(write).toHaveBeenCalledTimes(1)
+    release()
+    await Promise.all([first, second, third, identical])
+    expect(write).toHaveBeenCalledTimes(2)
+    const saved = JSON.parse(await readFile(join(root, 'library.json'), 'utf8'))
+    expect(saved.settings).toMatchObject({ htmlFontSize: 21, inspectorCollapsed: true })
+    expect(finished).toBe(true)
+    expect(identicalFinished).toBe(true)
+  })
+
+  it('does not write a batch begun while a save was queued until the batch ends', async () => {
+    const root = await temporaryRoot()
+    const store = new FreddieStore(root)
+    await store.initialize()
+    const atomicWrite = files.atomicWriteFile
+    let release!: () => void
+    let started!: () => void
+    const gate = new Promise<void>((resolve) => { release = resolve })
+    const writing = new Promise<void>((resolve) => { started = resolve })
+    vi.spyOn(files, 'atomicWriteFile').mockImplementationOnce(async (...args) => {
+      started()
+      await gate
+      await atomicWrite(...args)
+    })
+    const first = store.saveSettings({ htmlFontSize: 20 })
+    await writing
+    const queued = store.saveSettings({ htmlFontSize: 21 })
+    let finishBatch!: () => void
+    const batchGate = new Promise<void>((resolve) => { finishBatch = resolve })
+    const batch = store.batch(async () => {
+      await store.saveSettings({ inspectorCollapsed: true })
+      await batchGate
+    })
+    release()
+    await Promise.all([first, queued])
+    const during = JSON.parse(await readFile(join(root, 'library.json'), 'utf8'))
+    expect(during.settings.inspectorCollapsed).not.toBe(true)
+    finishBatch()
+    await batch
+    const saved = JSON.parse(await readFile(join(root, 'library.json'), 'utf8'))
+    expect(saved.settings).toMatchObject({ htmlFontSize: 21, inspectorCollapsed: true })
+  })
+
+  it('retries an identical save after a failed atomic replacement', async () => {
+    const root = await temporaryRoot()
+    const store = new FreddieStore(root)
+    await store.initialize()
+    vi.spyOn(files, 'atomicWriteFile').mockRejectedValueOnce(new Error('Disk unavailable'))
+    await expect(store.saveSettings({ htmlFontSize: 23 })).rejects.toThrow('Disk unavailable')
+    await store.saveSettings({ htmlFontSize: 23 })
+    expect(JSON.parse(await readFile(join(root, 'library.json'), 'utf8')).settings.htmlFontSize).toBe(23)
+  })
+
   it('seeds the built-in providers and writes library.json atomically', async () => {
     const root = await temporaryRoot()
     const store = new FreddieStore(root)

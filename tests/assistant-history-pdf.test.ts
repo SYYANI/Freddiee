@@ -1,16 +1,17 @@
 // @vitest-environment jsdom
-import { act, createElement } from 'react'
+import { act, createElement, createRef } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { PdfView, type PdfViewProps } from '../src/readers/PdfView'
+import { PdfView, type PdfViewHandle, type PdfViewProps } from '../src/readers/PdfView'
 import { DualPdfView } from '../src/readers/DualPdfView'
 import type { AssistantHistoryAnchor } from '../shared/types'
 
 // Exercise the actual reader wiring and lazy text-layer lifecycle without a PDF worker or canvas rasterizer.
+const pdfWork = vi.hoisted(() => ({ pages: 6, render: vi.fn() }))
 vi.mock('../src/readers/pdfjs', () => ({
-  openDocument: () => ({ promise: Promise.resolve({ numPages: 6, getPage: async (page: number) => ({
+  openDocument: () => ({ promise: Promise.resolve({ numPages: pdfWork.pages, getPage: async (page: number) => ({
     getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale }),
-    render: () => ({ promise: Promise.resolve(), cancel: () => {} }),
+    render: () => { pdfWork.render(page); return { promise: Promise.resolve(), cancel: () => {} } },
     getTextContent: async () => ({ text: `Saved passage on page ${page}.` }), getAnnotations: async () => []
   }) }), release: () => {} }),
   pageTexts: async () => [],
@@ -31,6 +32,8 @@ const anchor = (id: string, attachmentId = 'pdf', pageIndex = 0): AssistantHisto
   selectionIdentity: id, selection: { attachmentId, pageIndex, quote: `Saved passage on page ${pageIndex + 1}.` }
 })
 beforeEach(() => {
+  pdfWork.pages = 6
+  pdfWork.render.mockClear()
   window.getSelection()?.removeAllRanges()
   vi.useFakeTimers()
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
@@ -63,6 +66,62 @@ const click = async (target: Element) => {
 }
 
 describe('PDF assistant history', () => {
+  it('keeps long documents bounded to nearby pages and navigates to unmounted pages', async () => {
+    pdfWork.pages = 1000
+    const props: PdfViewProps = { paperId: 'paper', attachmentId: 'pdf', url: 'long', pageIndex: 0,
+      onPageChange: vi.fn(), appearance: 'default' }
+    await act(async () => root.render(createElement(PdfView, props)))
+    await tick()
+    expect(container.querySelectorAll('.pdf-page').length).toBeLessThan(6)
+    expect(pdfWork.render.mock.calls.length).toBeLessThan(6)
+    await act(async () => root.render(createElement(PdfView, { ...props, pageIndex: 999 })))
+    await act(async () => container.querySelector('.pdf-scroller')!.dispatchEvent(new Event('scroll')))
+    await tick()
+    expect(container.querySelector('[data-page-index="999"] .textLayer')).not.toBeNull()
+    expect(container.querySelectorAll('.pdf-page').length).toBeLessThan(6)
+  })
+
+  it('merges scroll events into one update at the final position', async () => {
+    const onPageChange = vi.fn(), onUserScroll = vi.fn()
+    await act(async () => root.render(createElement(PdfView, { paperId: 'paper', attachmentId: 'pdf', url: 'scroll', pageIndex: 0,
+      onPageChange, onUserScroll, appearance: 'default' })))
+    await tick()
+    onPageChange.mockClear()
+    onUserScroll.mockClear()
+    await act(async () => {
+      const scroller = container.querySelector<HTMLElement>('.pdf-scroller')!
+      for (const top of [900, 1400, 1700]) {
+        scroller.scrollTop = top
+        scroller.dispatchEvent(new Event('scroll'))
+      }
+    })
+    expect(onPageChange).not.toHaveBeenCalled()
+    await tick()
+    expect(onPageChange.mock.calls).toEqual([[2]])
+    expect(onUserScroll).toHaveBeenCalledTimes(1)
+  })
+
+  it('updates zoom geometry immediately and rasterizes once after resizing settles', async () => {
+    pdfWork.pages = 1
+    const ref = createRef<PdfViewHandle>()
+    await act(async () => root.render(createElement(PdfView, { ref, paperId: 'paper', attachmentId: 'pdf', url: 'resize', pageIndex: 0,
+      onPageChange: vi.fn(), appearance: 'default' })))
+    await tick()
+    expect(pdfWork.render).toHaveBeenCalledTimes(1)
+    const canvas = container.querySelector('canvas')!
+    const originalWidth = canvas.width
+    for (let i = 0; i < 3; i++) {
+      await act(async () => ref.current!.zoomIn())
+      await tick()
+    }
+    expect(parseFloat(canvas.style.width)).toBeGreaterThan(originalWidth)
+    expect(canvas.width).toBe(originalWidth)
+    expect(pdfWork.render).toHaveBeenCalledTimes(1)
+    await act(async () => { await vi.advanceTimersByTimeAsync(150) })
+    expect(pdfWork.render).toHaveBeenCalledTimes(2)
+    expect(canvas.width).toBe(Math.floor(parseFloat(canvas.style.width)))
+  })
+
   it.each([2, 3])('reports a new PDF selection on click %i during history grace', async (detail) => {
     const activate = vi.fn(), select = vi.fn()
     await act(async () => root.render(createElement(PdfView, { paperId: 'paper', attachmentId: 'pdf', url: 'pdf', pageIndex: 0,

@@ -1,7 +1,8 @@
 import { memo, useEffect, useMemo, useState, type DragEvent, type MouseEvent } from 'react'
-import type { Paper } from '../../shared/types'
+import type { Folder, Paper } from '../../shared/types'
 import {
   displayAuthors,
+  sortedFolders,
   isFilterActive,
   sidebarIdentifierText,
   sortedItemTypes,
@@ -10,7 +11,7 @@ import {
   type LibraryFilter,
   type LibraryGrouping
 } from '../../shared/library'
-import { useApp } from '../app/context'
+import { useT } from '../app/context'
 import { popupMenu } from '../app/native'
 import { Button } from '../ui/controls'
 import { Icon } from '../ui/Icon'
@@ -25,7 +26,12 @@ export interface SidebarActions {
   onDeleteFolder: (folderId: string, name: string) => void
 }
 
-export function LibrarySidebar({ grouping, itemTypes, filter, onFilterChange, selectedPaper, visibleCount, actions }: {
+// Takes library slices as props rather than reading the app context, so `memo` can skip
+// re-renders when an unrelated part of the snapshot (reading state, settings) changes.
+export const LibrarySidebar = memo(function LibrarySidebar({ papers, folders, collapsedFolderIds, grouping, itemTypes, filter, onFilterChange, selectedPaper, visibleCount, actions }: {
+  papers: Paper[]
+  folders: Folder[]
+  collapsedFolderIds: string[]
   grouping: LibraryGrouping
   itemTypes: ItemTypeResolution
   filter: LibraryFilter
@@ -34,13 +40,13 @@ export function LibrarySidebar({ grouping, itemTypes, filter, onFilterChange, se
   visibleCount: number
   actions: SidebarActions
 }): JSX.Element {
-  const { snapshot, t } = useApp()
-  const papers = snapshot.papers
-  const collapsed = useMemo(() => new Set(snapshot.settings.collapsedFolderIds), [snapshot.settings.collapsedFolderIds])
+  const t = useT()
+  const collapsed = useMemo(() => new Set(collapsedFolderIds), [collapsedFolderIds])
   const [dropTarget, setDropTarget] = useState<string | null>(null)
   const active = isFilterActive(filter)
   const hasFolders = grouping.folderSections.length > 0
-  const folderChoices = grouping.folderSections.map((section) => ({ id: section.folder.id, name: section.folder.name }))
+  // A paper edit changes the grouping, but the folder menu is still identical for every row.
+  const folderChoices = useMemo(() => sortedFolders(folders).map((folder) => ({ id: folder.id, name: folder.name })), [folders])
 
   // Keep the selected paper visible when it is selected from outside the list.
   useEffect(() => {
@@ -149,24 +155,24 @@ export function LibrarySidebar({ grouping, itemTypes, filter, onFilterChange, se
         </div>
       )}
       {papers.length > 0 && (
-        <FilterBar filter={filter} onChange={onFilterChange} itemTypes={itemTypes} visibleCount={visibleCount} total={papers.length} />
+        <FilterBar papers={papers} filter={filter} onChange={onFilterChange} itemTypes={itemTypes} visibleCount={visibleCount} />
       )}
     </aside>
   )
-}
+})
 
-function FilterBar({ filter, onChange, itemTypes, visibleCount, total }: {
+function FilterBar({ papers, filter, onChange, itemTypes, visibleCount }: {
+  papers: Paper[]
   filter: LibraryFilter
   onChange: (filter: LibraryFilter) => void
   itemTypes: ItemTypeResolution
   visibleCount: number
-  total: number
 }): JSX.Element {
-  const { snapshot, t } = useApp()
+  const t = useT()
   const active = isFilterActive(filter)
   const showMenu = async (anchor: HTMLElement): Promise<void> => {
     const counts = new Map<string, number>()
-    for (const paper of snapshot.papers) counts.set(itemTypes.itemType(paper.id), (counts.get(itemTypes.itemType(paper.id)) ?? 0) + 1)
+    for (const paper of papers) counts.set(itemTypes.itemType(paper.id), (counts.get(itemTypes.itemType(paper.id)) ?? 0) + 1)
     const types = sortedItemTypes(new Set([...counts.keys(), ...filter.itemTypes]), t)
     const criteria: Array<{ id: FilterCriterion; title: string }> = [
       { id: 'favorites', title: t('Favorites') },
@@ -197,7 +203,7 @@ function FilterBar({ filter, onChange, itemTypes, visibleCount, total }: {
       </button>
       {active && (
         <>
-          <span className="filter-count">{t('%1$lld of %2$lld', visibleCount, total)}</span>
+          <span className="filter-count">{t('%1$lld of %2$lld', visibleCount, papers.length)}</span>
           <span className="spacer" />
           <button type="button" className="filter-clear" title={t('Clear Filter')} aria-label={t('Clear Filter')} onClick={() => onChange({ criteria: [], itemTypes: [] })}>
             <Icon name="xmark.circle.fill" size={14} />
@@ -217,7 +223,7 @@ const PaperRow = memo(function PaperRow({ paper, selected, currentFolderId, fold
   onDelete: (paper: Paper) => void
   onNewFolder: (paperId?: string) => void
 }) {
-  const { t } = useApp()
+  const t = useT()
   const identifier = sidebarIdentifierText(paper, t)
 
   const contextMenu = async (event: MouseEvent): Promise<void> => {

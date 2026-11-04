@@ -103,13 +103,18 @@ export interface LibraryGrouping {
   folderIdByPaperId: Map<string, string>
 }
 
-/** Paper order within each group follows `papers`; folders sort by name. */
-export function groupLibrary(papers: Paper[], folders: Folder[], memberships: FolderMembership[]): LibraryGrouping {
-  const sortedFolders = [...folders].sort((lhs, rhs) => {
+/** Folders in display order: by name, then by creation. */
+export function sortedFolders(folders: Folder[]): Folder[] {
+  return [...folders].sort((lhs, rhs) => {
     const order = lhs.name.localeCompare(rhs.name, undefined, { numeric: true, sensitivity: 'base' })
     return order !== 0 ? order : lhs.createdAt.localeCompare(rhs.createdAt)
   })
-  const known = new Set(sortedFolders.map((folder) => folder.id))
+}
+
+/** Paper order within each group follows `papers`; folders sort by name. */
+export function groupLibrary(papers: Paper[], folders: Folder[], memberships: FolderMembership[]): LibraryGrouping {
+  const ordered = sortedFolders(folders)
+  const known = new Set(ordered.map((folder) => folder.id))
   const folderIdByPaperId = new Map<string, string>()
   for (const membership of memberships) {
     if (known.has(membership.folderId)) folderIdByPaperId.set(membership.paperId, membership.folderId)
@@ -118,11 +123,14 @@ export function groupLibrary(papers: Paper[], folders: Folder[], memberships: Fo
   const unfiledPapers: Paper[] = []
   for (const paper of papers) {
     const folderId = folderIdByPaperId.get(paper.id)
-    if (folderId) papersByFolder.set(folderId, [...(papersByFolder.get(folderId) ?? []), paper])
-    else unfiledPapers.push(paper)
+    if (folderId) {
+      const items = papersByFolder.get(folderId)
+      if (items) items.push(paper)
+      else papersByFolder.set(folderId, [paper])
+    } else unfiledPapers.push(paper)
   }
   return {
-    folderSections: sortedFolders.map((folder) => ({ folder, papers: papersByFolder.get(folder.id) ?? [] })),
+    folderSections: ordered.map((folder) => ({ folder, papers: papersByFolder.get(folder.id) ?? [] })),
     unfiledPapers,
     folderIdByPaperId
   }

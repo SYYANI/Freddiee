@@ -3,6 +3,7 @@ import type { AssistantHistoryAnchor, NoteSelectionContext } from '../../shared/
 import { PdfView, type AnnotationState, type AnnotationTool, type PdfViewHandle } from './PdfView'
 import type { FindRequest, FindStatus } from './find'
 import { clampedSplitFraction } from './pdfScaling'
+import { frameTask } from '../app/frameTask'
 
 export type DualSide = 'original' | 'translated'
 
@@ -88,15 +89,19 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
     const startX = event.clientX
     const startWidth = available * clampedSplitFraction(split, available)
     setScalingRestoreToken((token) => token + 1)
-    const move = (pointer: PointerEvent): void => setSplit(clampedSplitFraction((startWidth + pointer.clientX - startX) / available, available))
+    const update = frameTask((clientX: number) => setSplit(clampedSplitFraction((startWidth + clientX - startX) / available, available)))
+    const move = (pointer: PointerEvent): void => update.schedule(pointer.clientX)
     const stop = (): void => {
+      update.flush()
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', stop)
+      window.removeEventListener('pointercancel', stop)
       document.body.classList.remove('resizing-columns')
     }
     document.body.classList.add('resizing-columns')
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', stop)
+    window.addEventListener('pointercancel', stop)
   }
 
   const navigationFor = (side: DualSide): typeof props.navigation => {

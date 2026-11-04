@@ -7,6 +7,7 @@ import { buildMatcher, type FindRequest, type FindStatus } from './find'
 import { SidenoteRail } from './SidenoteRail'
 import { clampScale, fittedScale, pageSideMargin, resolvedScale, scalingAfterDividerGrab, wheelZoomFactor, type PdfScaling } from './pdfScaling'
 import { bindAssistantHistory, historyQuoteRange, type HistoryRange } from './assistantHistory'
+import { frameTask } from '../app/frameTask'
 
 export type AnnotationMode = 'browse' | 'ink' | 'textNote' | 'erase'
 
@@ -46,6 +47,7 @@ interface PageSize {
 const pageGap = 10
 const railWidth = 280
 const minimumReaderWidth = 480
+const noAnnotations: PdfAnnotation[] = []
 
 export interface PdfViewProps {
   paperId: string
@@ -136,6 +138,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
       const loadedSizes: PageSize[] = []
       const loadedGeometries: PageGeometry[] = []
       for (let index = 1; index <= loaded.numPages; index += 1) {
+        if (cancelled) return
         const viewport = (await loaded.getPage(index)).getViewport({ scale: 1 })
         loadedSizes.push({ width: viewport.width, height: viewport.height })
         loadedGeometries.push({
@@ -242,6 +245,13 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
 
   const pageAt = useCallback((offset: number): number => pageIndexAt(tops, sizes.length, offset), [sizes.length, tops])
 
+  // Pages mounted around the viewport: one screen above and two below, so scrolling down finds them ready.
+  const mountRange = useCallback((element: HTMLElement) => {
+    const first = pageAt(element.scrollTop - element.clientHeight)
+    const last = pageAt(element.scrollTop + element.clientHeight * 2)
+    setVisible((current) => (current[0] === first && current[1] === last ? current : [first, last]))
+  }, [pageAt])
+
   // The last scroll position the reader saw; layout changes may clamp `scrollTop` before effects run.
   const scrollPosition = useRef({ top: 0, left: 0 })
   const rememberScrollPosition = (element: HTMLElement): void => {
@@ -254,11 +264,14 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     const index = Math.min(Math.max(pageIndex, 0), sizes.length - 1)
     programmatic.current += 1
     element.scrollTop = tops[index] + sizes[index].height * scale * fraction - (topOffset ?? (fraction === 0 ? pageGap : element.clientHeight / 2))
+    // Navigation can jump beyond the overscan range. Mount the destination immediately,
+    // rather than waiting for the next scroll frame before starting its raster/text work.
+    mountRange(element)
     rememberScrollPosition(element)
     requestAnimationFrame(() => {
       programmatic.current = Math.max(0, programmatic.current - 1)
     })
-  }, [sizes, tops, scale])
+  }, [sizes, tops, scale, mountRange])
 
   const updateVisible = useCallback(() => {
     const element = scroller.current
@@ -266,15 +279,13 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     const trackingY = element.scrollTop + Math.min(100, element.clientHeight * 0.22)
     const trackingPage = pageAt(trackingY)
     props.onOutlineLocation?.(trackingPage, Math.max(0, Math.min(1, (trackingY - tops[trackingPage]) / (sizes[trackingPage].height * scale))))
-    const first = pageAt(element.scrollTop - element.clientHeight)
-    const last = pageAt(element.scrollTop + element.clientHeight * 2)
-    setVisible((current) => (current[0] === first && current[1] === last ? current : [first, last]))
+    mountRange(element)
     const center = pageAt(element.scrollTop + element.clientHeight / 3)
     if (center !== currentPage.current) {
       currentPage.current = center
       onPageChange(center)
     }
-  }, [pageAt, sizes, tops, scale, onPageChange, props.onOutlineLocation])
+  }, [pageAt, mountRange, sizes, tops, scale, onPageChange, props.onOutlineLocation])
 
   // Restore the reading position once per document, then follow outside navigation.
   useLayoutEffect(() => {
@@ -324,10 +335,22 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     updateVisible()
   }, [tops])
 
+  const scrollCallbacks = useRef({ updateVisible, onUserScroll: props.onUserScroll })
+  scrollCallbacks.current = { updateVisible, onUserScroll: props.onUserScroll }
+  const userScrolled = useRef(false)
+  const scrollUpdate = useMemo(() => frameTask(() => {
+    scrollCallbacks.current.updateVisible()
+    if (userScrolled.current) {
+      userScrolled.current = false
+      scrollCallbacks.current.onUserScroll?.()
+    }
+  }), [])
+  useEffect(() => () => scrollUpdate.cancel(), [scrollUpdate])
+
   const onScroll = (): void => {
     if (scroller.current) rememberScrollPosition(scroller.current)
-    updateVisible()
-    if (programmatic.current === 0) props.onUserScroll?.()
+    if (programmatic.current === 0) userScrolled.current = true
+    scrollUpdate.schedule()
   }
 
   const beginPan = (event: ReactPointerEvent<HTMLDivElement>): void => {
@@ -718,6 +741,30 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
 
   const pageCount = sizes.length
   const totalHeight = tops[pageCount] ?? 0
+  const annotationsByPage = useMemo(() => {
+    const pages = new Map<number, PdfAnnotation[]>()
+    for (const annotation of annotations) {
+      const list = pages.get(annotation.pageIndex) ?? []
+      list.push(annotation)
+      pages.set(annotation.pageIndex, list)
+    }
+    return pages
+  }, [annotations])
+  const pageCallbacks = useRef({ annotations, commitAnnotations, tool: props.tool, onRequestTextNote: props.onRequestTextNote, onLinkActivated: props.onLinkActivated, attachmentId })
+  pageCallbacks.current = { annotations, commitAnnotations, tool: props.tool, onRequestTextNote: props.onRequestTextNote, onLinkActivated: props.onLinkActivated, attachmentId }
+  const onRendered = useCallback(() => setRenderedPages((value) => value + 1), [])
+  const onCommitInk = useCallback((pageIndex: number, path: Array<{ x: number; y: number }>) => {
+    const current = pageCallbacks.current
+    current.commitAnnotations([...current.annotations, {
+      id: crypto.randomUUID(), attachmentId: current.attachmentId, pageIndex, type: 'ink', color: current.tool?.color ?? '#ff3b30', lineWidth: current.tool?.lineWidth ?? 2, paths: [path], createdAt: new Date().toISOString()
+    }])
+  }, [])
+  const onErase = useCallback((id: string) => {
+    const current = pageCallbacks.current
+    current.commitAnnotations(current.annotations.filter((annotation) => annotation.id !== id))
+  }, [])
+  const onPlaceNote = useCallback((pageIndex: number, point: { x: number; y: number }) => pageCallbacks.current.onRequestTextNote?.(pageIndex, point), [])
+  const onLink = useCallback((url: string) => pageCallbacks.current.onLinkActivated?.(url), [])
 
   return (
     <div className={`pdf-view appearance-${appearance} mode-${props.tool?.mode ?? 'browse'} ${props.handToolEnabled ? 'hand-tool-enabled' : ''} ${panning ? 'panning' : ''}`}>
@@ -732,8 +779,8 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
       >
         {error && <div className="pdf-error">{error}</div>}
         <div className="pdf-canvas-area" style={{ height: totalHeight, width: showsRail ? readerWidth : Math.max(readerWidth, Math.round(widestPage * scale + 2 * pageSideMargin)) }}>
-          {document && sizes.map((size, index) => {
-            const isVisible = index >= visible[0] && index <= visible[1]
+          {document && sizes.slice(visible[0], visible[1] + 1).map((size, offset) => {
+            const index = visible[0] + offset
             return (
               <PdfPage
                 key={index}
@@ -743,17 +790,14 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
                 scale={scale}
                 top={tops[index]}
                 left={pageLeft(size.width * scale, readerWidth)}
-                visible={isVisible}
                 missing={props.maxPage !== undefined && index >= props.maxPage}
-                annotations={annotations.filter((annotation) => annotation.pageIndex === index)}
+                annotations={annotationsByPage.get(index) ?? noAnnotations}
                 tool={props.tool}
-                onRendered={() => setRenderedPages((value) => value + 1)}
-                onCommitInk={(path) => commitAnnotations([...annotations, {
-                  id: crypto.randomUUID(), attachmentId, pageIndex: index, type: 'ink', color: props.tool?.color ?? '#ff3b30', lineWidth: props.tool?.lineWidth ?? 2, paths: [path], createdAt: new Date().toISOString()
-                }])}
-                onErase={(id) => commitAnnotations(annotations.filter((annotation) => annotation.id !== id))}
-                onPlaceNote={(point) => props.onRequestTextNote?.(index, point)}
-                onLink={props.onLinkActivated}
+                onRendered={onRendered}
+                onCommitInk={onCommitInk}
+                onErase={onErase}
+                onPlaceNote={onPlaceNote}
+                onLink={onLink}
               />
             )
           })}
@@ -775,36 +819,37 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
   )
 })
 
-const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left, visible, missing, annotations, tool, onRendered, onCommitInk, onErase, onPlaceNote, onLink }: {
+/** Mounted only while in the overscan range; leaving it unmounts the page and releases its canvas. */
+const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left, missing, annotations, tool, onRendered, onCommitInk, onErase, onPlaceNote, onLink }: {
   document: PDFDocumentProxy
   index: number
   size: PageSize
   scale: number
   top: number
   left: number
-  visible: boolean
   missing: boolean
   annotations: PdfAnnotation[]
   tool?: AnnotationTool
   onRendered: () => void
-  onCommitInk: (path: Array<{ x: number; y: number }>) => void
+  onCommitInk: (pageIndex: number, path: Array<{ x: number; y: number }>) => void
   onErase: (id: string) => void
-  onPlaceNote: (point: { x: number; y: number }) => void
+  onPlaceNote: (pageIndex: number, point: { x: number; y: number }) => void
   onLink?: (url: string) => void
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const textLayerRef = useRef<HTMLDivElement>(null)
   const linkLayerRef = useRef<HTMLDivElement>(null)
+  const renderedScale = useRef<number>()
   const [drawing, setDrawing] = useState<Array<{ x: number; y: number }> | null>(null)
   const width = size.width * scale
   const height = size.height * scale
 
   useEffect(() => {
-    if (!visible || missing) return
+    if (missing) return
     let cancelled = false
     let renderTask: RenderTask | undefined
     let textLayer: InstanceType<typeof pdfjs.TextLayer> | undefined
-    const timer = setTimeout(async () => {
+    const render = async (): Promise<void> => {
       const page = await document.getPage(index + 1)
       if (cancelled || !canvasRef.current || !textLayerRef.current) return
       const viewport = page.getViewport({ scale })
@@ -824,17 +869,22 @@ const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left,
       canvas.width = offscreen.width
       canvas.height = offscreen.height
       canvas.getContext('2d')?.drawImage(offscreen, 0, 0)
+      renderedScale.current = scale
+      const textContentSource = await page.getTextContent()
+      if (cancelled) return
       const container = textLayerRef.current
       container.replaceChildren()
       container.style.setProperty('--total-scale-factor', String(scale))
-      textLayer = new pdfjs.TextLayer({ textContentSource: await page.getTextContent(), container, viewport })
+      textLayer = new pdfjs.TextLayer({ textContentSource, container, viewport })
       await textLayer.render().catch(() => undefined)
       if (cancelled) return
       // Links become clickable areas; the reader decides where they go.
       const linkLayer = linkLayerRef.current
       if (linkLayer) {
+        const links = await page.getAnnotations()
+        if (cancelled) return
         linkLayer.replaceChildren()
-        for (const annotation of await page.getAnnotations()) {
+        for (const annotation of links) {
           const target = (annotation as { url?: string }).url
           if (annotation.subtype !== 'Link' || !target) continue
           const [x1, y1] = viewport.convertToViewportPoint(annotation.rect[0], annotation.rect[1]) as [number, number]
@@ -851,14 +901,16 @@ const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left,
         }
       }
       onRendered()
-    }, 30)
+    }
+    // Keep the existing bitmap stretched during continuous resizing; rasterize at full quality once it settles.
+    const timer = setTimeout(() => { void render().catch((error) => { if (!cancelled) console.error('Unable to render PDF page', error) }) }, renderedScale.current === undefined ? 30 : 120)
     return () => {
       cancelled = true
       clearTimeout(timer)
       renderTask?.cancel()
       textLayer?.cancel()
     }
-  }, [visible, scale, document, index, missing])
+  }, [scale, document, index, missing])
 
   const normalized = (event: React.PointerEvent): { x: number; y: number } => {
     const box = (event.currentTarget as HTMLElement).getBoundingClientRect()
@@ -868,7 +920,7 @@ const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left,
   const mode = tool?.mode ?? 'browse'
   return (
     <div className={`pdf-page ${missing ? 'missing' : ''}`} data-page-index={index} style={{ top, left, width, height }}>
-      {visible && !missing && (
+      {!missing && (
         <>
           <canvas ref={canvasRef} className="pdf-page-canvas" style={{ width, height }} />
           <div className="paper-tone-overlay" />
@@ -885,13 +937,13 @@ const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left,
           if (mode === 'ink') {
             ;(event.currentTarget as Element).setPointerCapture(event.pointerId)
             setDrawing([normalized(event)])
-          } else if (mode === 'textNote') onPlaceNote(normalized(event))
+          } else if (mode === 'textNote') onPlaceNote(index, normalized(event))
         }}
         onPointerMove={(event) => {
           if (drawing) setDrawing([...drawing, normalized(event)])
         }}
         onPointerUp={() => {
-          if (drawing && drawing.length > 1) onCommitInk(drawing)
+          if (drawing && drawing.length > 1) onCommitInk(index, drawing)
           setDrawing(null)
         }}
       >

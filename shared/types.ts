@@ -219,6 +219,10 @@ export interface LibrarySnapshot {
   systemDarkMode: boolean
 }
 
+export type LibrarySnapshotUpdate =
+  | { revision: number; full: true; changes: LibrarySnapshot }
+  | { revision: number; full: false; changes: Partial<LibrarySnapshot> }
+
 export interface ImportProgress {
   operationId: string
   stepLabel: string
@@ -470,7 +474,7 @@ export interface FreddieAPI {
   backdrop: 'acrylic' | 'none'
   route: WindowRoute
   library: {
-    snapshot(): Promise<LibrarySnapshot>
+    snapshot(since?: number): Promise<LibrarySnapshotUpdate>
     onChanged(listener: () => void): () => void
     importPaper(request: ImportRequest): Promise<Paper | null>
     cancelImport(operationId: string): Promise<void>
