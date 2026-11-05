@@ -135,8 +135,10 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     handle.promise.then(async (loaded) => {
       const loadedSizes: PageSize[] = []
       const loadedGeometries: PageGeometry[] = []
-      for (let index = 1; index <= loaded.numPages; index += 1) {
-        const viewport = (await loaded.getPage(index)).getViewport({ scale: 1 })
+      // Ask for every page at once; awaiting them one by one serializes a worker round trip per page.
+      const pages = await Promise.all(Array.from({ length: loaded.numPages }, (_, index) => loaded.getPage(index + 1)))
+      for (const page of pages) {
+        const viewport = page.getViewport({ scale: 1 })
         loadedSizes.push({ width: viewport.width, height: viewport.height })
         loadedGeometries.push({
           toNormalized: (x, y) => {
@@ -623,6 +625,33 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     requestAnimationFrame(() => props.onAnnotationState?.({ ...annotationState(), hasTextSelection: Boolean(window.getSelection()?.toString()) }))
   }, [saveAnnotations])
 
+  // PdfPage is memoized: give it stable callbacks and per-page annotation lists, so scrolling or a
+  // page finishing its render re-renders only the pages whose props changed, not every page.
+  const pageActions = useRef({ annotations, attachmentId, tool: props.tool, commitAnnotations, onRequestTextNote: props.onRequestTextNote, onLinkActivated: props.onLinkActivated })
+  pageActions.current = { annotations, attachmentId, tool: props.tool, commitAnnotations, onRequestTextNote: props.onRequestTextNote, onLinkActivated: props.onLinkActivated }
+  const onPageRendered = useCallback(() => setRenderedPages((value) => value + 1), [])
+  const onCommitInk = useCallback((pageIndex: number, path: Array<{ x: number; y: number }>) => {
+    const { annotations: current, attachmentId: attachment, tool, commitAnnotations: commit } = pageActions.current
+    commit([...current, {
+      id: crypto.randomUUID(), attachmentId: attachment, pageIndex, type: 'ink', color: tool?.color ?? '#ff3b30', lineWidth: tool?.lineWidth ?? 2, paths: [path], createdAt: new Date().toISOString()
+    }])
+  }, [])
+  const onErase = useCallback((id: string) => {
+    const { annotations: current, commitAnnotations: commit } = pageActions.current
+    commit(current.filter((annotation) => annotation.id !== id))
+  }, [])
+  const onPlaceNote = useCallback((pageIndex: number, point: { x: number; y: number }) => pageActions.current.onRequestTextNote?.(pageIndex, point), [])
+  const onLink = useCallback((target: string) => pageActions.current.onLinkActivated?.(target), [])
+  const annotationsByPage = useMemo(() => {
+    const byPage = new Map<number, PdfAnnotation[]>()
+    for (const annotation of annotations) {
+      const list = byPage.get(annotation.pageIndex)
+      if (list) list.push(annotation)
+      else byPage.set(annotation.pageIndex, [annotation])
+    }
+    return byPage
+  }, [annotations])
+
   useImperativeHandle(ref, () => ({
     scrollAnchor: () => {
       const element = scroller.current
@@ -745,15 +774,14 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
                 left={pageLeft(size.width * scale, readerWidth)}
                 visible={isVisible}
                 missing={props.maxPage !== undefined && index >= props.maxPage}
-                annotations={annotations.filter((annotation) => annotation.pageIndex === index)}
+                paperTone={appearance === 'paper'}
+                annotations={annotationsByPage.get(index) ?? noAnnotations}
                 tool={props.tool}
-                onRendered={() => setRenderedPages((value) => value + 1)}
-                onCommitInk={(path) => commitAnnotations([...annotations, {
-                  id: crypto.randomUUID(), attachmentId, pageIndex: index, type: 'ink', color: props.tool?.color ?? '#ff3b30', lineWidth: props.tool?.lineWidth ?? 2, paths: [path], createdAt: new Date().toISOString()
-                }])}
-                onErase={(id) => commitAnnotations(annotations.filter((annotation) => annotation.id !== id))}
-                onPlaceNote={(point) => props.onRequestTextNote?.(index, point)}
-                onLink={props.onLinkActivated}
+                onRendered={onPageRendered}
+                onCommitInk={onCommitInk}
+                onErase={onErase}
+                onPlaceNote={onPlaceNote}
+                onLink={onLink}
               />
             )
           })}
@@ -775,7 +803,24 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
   )
 })
 
-const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left, visible, missing, annotations, tool, onRendered, onCommitInk, onErase, onPlaceNote, onLink }: {
+const noAnnotations: PdfAnnotation[] = []
+
+/** Paper Tone multiplies the page by (0.96, 0.93, 0.86), like the native color matrix. */
+const paperToneColor = 'rgb(245, 237, 219)'
+
+/**
+ * The most device pixels one page bitmap may hold (about 64 MB). Past it a zoomed page renders
+ * at a lower density and is stretched, as pdf.js's viewer does, instead of filling GPU memory.
+ */
+const maxPagePixels = 2 ** 24
+
+/** Drops a page bitmap's backing store now rather than whenever the canvas is collected. */
+function releaseCanvas(canvas: HTMLCanvasElement): void {
+  canvas.width = 0
+  canvas.height = 0
+}
+
+const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left, visible, missing, paperTone, annotations, tool, onRendered, onCommitInk, onErase, onPlaceNote, onLink }: {
   document: PDFDocumentProxy
   index: number
   size: PageSize
@@ -784,15 +829,16 @@ const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left,
   left: number
   visible: boolean
   missing: boolean
+  paperTone: boolean
   annotations: PdfAnnotation[]
   tool?: AnnotationTool
   onRendered: () => void
-  onCommitInk: (path: Array<{ x: number; y: number }>) => void
+  onCommitInk: (pageIndex: number, path: Array<{ x: number; y: number }>) => void
   onErase: (id: string) => void
-  onPlaceNote: (point: { x: number; y: number }) => void
-  onLink?: (url: string) => void
+  onPlaceNote: (pageIndex: number, point: { x: number; y: number }) => void
+  onLink: (url: string) => void
 }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const canvasHostRef = useRef<HTMLDivElement>(null)
   const textLayerRef = useRef<HTMLDivElement>(null)
   const linkLayerRef = useRef<HTMLDivElement>(null)
   const [drawing, setDrawing] = useState<Array<{ x: number; y: number }> | null>(null)
@@ -806,24 +852,38 @@ const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left,
     let textLayer: InstanceType<typeof pdfjs.TextLayer> | undefined
     const timer = setTimeout(async () => {
       const page = await document.getPage(index + 1)
-      if (cancelled || !canvasRef.current || !textLayerRef.current) return
+      if (cancelled || !canvasHostRef.current || !textLayerRef.current) return
       const viewport = page.getViewport({ scale })
-      const ratio = Math.min(window.devicePixelRatio || 1, 3)
-      // Render off screen so a rescaled page keeps showing its stretched image instead of going blank.
-      const offscreen = window.document.createElement('canvas')
-      offscreen.width = Math.floor(viewport.width * ratio)
-      offscreen.height = Math.floor(viewport.height * ratio)
-      renderTask = page.render({ canvas: offscreen, viewport, transform: ratio !== 1 ? [ratio, 0, 0, ratio, 0, 0] : undefined })
+      const ratio = Math.min(window.devicePixelRatio || 1, 3, Math.sqrt(maxPagePixels / (viewport.width * viewport.height)))
+      // Render into a new canvas so a rescaled page keeps showing its stretched image instead of going
+      // blank, then swap it in: copying it into the old canvas would hold two bitmaps per page.
+      const canvas = window.document.createElement('canvas')
+      canvas.width = Math.floor(viewport.width * ratio)
+      canvas.height = Math.floor(viewport.height * ratio)
+      renderTask = page.render({ canvas, viewport, transform: ratio !== 1 ? [ratio, 0, 0, ratio, 0, 0] : undefined })
       try {
         await renderTask.promise
       } catch {
+        releaseCanvas(canvas)
         return
       }
-      const canvas = canvasRef.current
-      if (cancelled || !canvas || !textLayerRef.current) return
-      canvas.width = offscreen.width
-      canvas.height = offscreen.height
-      canvas.getContext('2d')?.drawImage(offscreen, 0, 0)
+      const host = canvasHostRef.current
+      if (cancelled || !host || !textLayerRef.current) {
+        releaseCanvas(canvas)
+        return
+      }
+      // Tint the bitmap once instead of blending a multiply layer over the page on every frame.
+      if (paperTone) {
+        const context = canvas.getContext('2d')
+        if (context) {
+          context.globalCompositeOperation = 'multiply'
+          context.fillStyle = paperToneColor
+          context.fillRect(0, 0, canvas.width, canvas.height)
+        }
+      }
+      const previous = Array.from(host.children) as HTMLCanvasElement[]
+      host.replaceChildren(canvas)
+      previous.forEach(releaseCanvas)
       const container = textLayerRef.current
       container.replaceChildren()
       container.style.setProperty('--total-scale-factor', String(scale))
@@ -845,7 +905,7 @@ const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left,
           anchor.title = target
           anchor.addEventListener('click', (event) => {
             event.preventDefault()
-            onLink?.(target)
+            onLink(target)
           })
           linkLayer.appendChild(anchor)
         }
@@ -858,7 +918,16 @@ const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left,
       renderTask?.cancel()
       textLayer?.cancel()
     }
-  }, [visible, scale, document, index, missing])
+  }, [visible, scale, document, index, missing, paperTone])
+
+  // Free the bitmap as soon as the page leaves the render window; Intel Macs share it with system memory.
+  useEffect(() => {
+    if (!visible || missing) return
+    const host = canvasHostRef.current
+    return () => {
+      if (host) (Array.from(host.children) as HTMLCanvasElement[]).forEach(releaseCanvas)
+    }
+  }, [visible, missing])
 
   const normalized = (event: React.PointerEvent): { x: number; y: number } => {
     const box = (event.currentTarget as HTMLElement).getBoundingClientRect()
@@ -870,8 +939,7 @@ const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left,
     <div className={`pdf-page ${missing ? 'missing' : ''}`} data-page-index={index} style={{ top, left, width, height }}>
       {visible && !missing && (
         <>
-          <canvas ref={canvasRef} className="pdf-page-canvas" style={{ width, height }} />
-          <div className="paper-tone-overlay" />
+          <div ref={canvasHostRef} className="pdf-page-canvas" />
           <div ref={textLayerRef} className="textLayer" />
           <div ref={linkLayerRef} className="pdf-link-layer" />
         </>
@@ -885,13 +953,13 @@ const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left,
           if (mode === 'ink') {
             ;(event.currentTarget as Element).setPointerCapture(event.pointerId)
             setDrawing([normalized(event)])
-          } else if (mode === 'textNote') onPlaceNote(normalized(event))
+          } else if (mode === 'textNote') onPlaceNote(index, normalized(event))
         }}
         onPointerMove={(event) => {
           if (drawing) setDrawing([...drawing, normalized(event)])
         }}
         onPointerUp={() => {
-          if (drawing && drawing.length > 1) onCommitInk(drawing)
+          if (drawing && drawing.length > 1) onCommitInk(index, drawing)
           setDrawing(null)
         }}
       >

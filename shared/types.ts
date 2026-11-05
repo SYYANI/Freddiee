@@ -466,8 +466,10 @@ export interface WindowRoute {
 
 export interface FreddieAPI {
   platform: string
-  /** Whether a native window material shows through translucent surfaces (Windows only). */
-  backdrop: 'acrylic' | 'none'
+  /** Whether a native window material (macOS vibrancy or Liquid Glass, Windows Acrylic) shows through translucent surfaces. */
+  backdrop: 'material' | 'none'
+  /** Whether this Mac skips the window material and glass blurs to keep scrolling smooth; see `reducedWindowEffects`. */
+  reducedEffects: boolean
   route: WindowRoute
   library: {
     snapshot(): Promise<LibrarySnapshot>

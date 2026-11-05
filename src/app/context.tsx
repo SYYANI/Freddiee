@@ -42,6 +42,17 @@ export function AppProvider({ children, fallback }: { children: ReactNode; fallb
     document.documentElement.dataset.appearance = snapshot?.settings.readerAppearance ?? 'default'
   }, [language, snapshot?.settings.readerAppearance])
 
+  // Glass blurs give way to solid fills on slow Macs and whenever the system asks for less transparency.
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-transparency: reduce)')
+    const update = (): void => {
+      document.documentElement.dataset.effects = window.freddie.reducedEffects || query.matches ? 'reduced' : 'full'
+    }
+    update()
+    query.addEventListener('change', update)
+    return () => query.removeEventListener('change', update)
+  }, [])
+
   if (!snapshot) return <>{fallback ?? null}</>
   return <AppContext.Provider value={{ snapshot, reload, t, language }}>{children}</AppContext.Provider>
 }

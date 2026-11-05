@@ -27,7 +27,8 @@ const invoke = <T>(channel: string, ...args: unknown[]): Promise<T> => ipcRender
 
 const api: FreddieAPI = {
   platform: process.platform,
-  backdrop: process.argv.includes('--freddie-backdrop=acrylic') ? 'acrylic' : 'none',
+  backdrop: process.argv.includes('--freddie-backdrop=material') ? 'material' : 'none',
+  reducedEffects: process.argv.includes('--freddie-effects=reduced'),
   route: readRoute(),
   library: {
     snapshot: () => invoke('library:snapshot'),

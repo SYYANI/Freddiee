@@ -78,7 +78,6 @@ html[data-platform="linux"] .main-window {
   -webkit-backdrop-filter: blur(14px) saturate(1.25);
   opacity: 0;
   transition: opacity 140ms ease-out;
-  will-change: opacity, backdrop-filter;
 }
 
 .pdf-drop-overlay.visible .pdf-drop-veil {
@@ -102,7 +101,6 @@ html[data-platform="linux"] .main-window {
   opacity: 0;
   transform: scale(0.94);
   transition: opacity 110ms ease-in, transform 110ms ease-in;
-  will-change: opacity, transform;
 }
 
 .pdf-drop-overlay.visible .pdf-drop-card {

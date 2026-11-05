@@ -1,7 +1,26 @@
 import { createRequire } from 'node:module'
-import type { BrowserWindow } from 'electron'
+import { app, nativeTheme, type BrowserWindow } from 'electron'
 
 /* Native AppKit treatments that Electron does not expose directly. */
+
+let reducedEffects: boolean | undefined
+
+/** Whether this is an Intel Mac running natively, not an x64 build translated on Apple silicon. */
+export function isIntelMac(): boolean {
+  return process.platform === 'darwin' && process.arch === 'x64' && !app.runningUnderARM64Translation
+}
+
+/**
+ * Whether macOS windows skip the native material: on Intel Macs, whose integrated GPUs drop
+ * frames compositing a transparent, live-blurred window under glass controls, and when the user
+ * turned on Reduce Transparency. Decided once, before any window exists, because a window's
+ * transparency is fixed when it is created.
+ */
+export function reducedWindowEffects(): boolean {
+  if (reducedEffects !== undefined) return reducedEffects
+  reducedEffects = process.platform === 'darwin' && (isIntelMac() || nativeTheme.prefersReducedTransparency)
+  return reducedEffects
+}
 
 type Pointer = unknown
 type Rect = {

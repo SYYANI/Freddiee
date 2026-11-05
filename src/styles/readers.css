@@ -47,24 +47,22 @@
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
 
+/* Paper Tone multiplies the page by (0.96, 0.93, 0.86), like the native color matrix. PdfPage
+   tints the rendered bitmap itself; this is white multiplied by that tint, shown until it renders. */
+.appearance-paper .pdf-page:not(.missing) {
+  background: rgb(245, 237, 219);
+}
+
 .pdf-page-canvas {
   position: absolute;
   inset: 0;
-  display: block;
 }
 
-/* Paper Tone multiplies the page by (0.96, 0.93, 0.86), like the native color matrix. */
-.paper-tone-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  display: none;
-}
-
-.appearance-paper .paper-tone-overlay {
+/* The bitmap fills the page, so a rescaled page stretches its old bitmap until the new one is ready. */
+.pdf-page-canvas > canvas {
   display: block;
-  background: rgb(245, 237, 219);
-  mix-blend-mode: multiply;
+  width: 100%;
+  height: 100%;
 }
 
 .pdf-error {
@@ -401,8 +399,7 @@
 /* A transparent iframe in a transparent macOS or Acrylic window bypasses the
    overlay's backdrop blur. Back only the covered area, behind the iframe's content,
    so HTML and PDF share the same glass without making the whole page opaque. */
-html[data-platform="darwin"]:not([data-appearance="paper"]) .outline-over-html .reader-document::before,
-html[data-platform="win32"][data-backdrop="acrylic"]:not([data-appearance="paper"]) .outline-over-html .reader-document::before {
+html[data-backdrop="material"]:not([data-appearance="paper"]) .outline-over-html .reader-document::before {
   content: "";
   position: absolute;
   top: 8px;
@@ -424,6 +421,8 @@ html[data-platform="win32"][data-backdrop="acrylic"]:not([data-appearance="paper
   border: 0.5px solid var(--glass-border); border-radius: 14px; overflow: hidden;
   box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.9), 0 4px 12px rgba(0, 0, 0, 0.12);
 }
+/* Without the blur, a translucent panel would let the page's text show through. */
+html[data-effects="reduced"] .document-outline { background: var(--glass-bg); }
 .outline-header { display: flex; align-items: center; padding: 8px 10px; gap: 3px; }
 .outline-header strong { font-size: 13px; }
 .outline-source { display: flex; align-items: center; gap: 6px; padding: 0 12px 8px; color: var(--text-secondary); font-size: 11px; }

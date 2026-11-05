@@ -11,7 +11,7 @@ html[data-appearance="paper"] .settings-window {
   background-image: var(--paper-grain);
 }
 
-html[data-platform="darwin"]:not([data-appearance="paper"]) .settings-window {
+html[data-platform="darwin"][data-backdrop="material"]:not([data-appearance="paper"]) .settings-window {
   background: transparent;
 }
 
@@ -498,7 +498,7 @@ html[data-appearance="paper"] .about-window {
   background-image: var(--paper-grain);
 }
 
-html[data-platform="darwin"]:not([data-appearance="paper"]) .about-window {
+html[data-platform="darwin"][data-backdrop="material"]:not([data-appearance="paper"]) .about-window {
   background: transparent;
 }
 

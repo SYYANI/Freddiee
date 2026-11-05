@@ -45,7 +45,7 @@ import { SyncActivity } from './sync/activity'
 import { SyncController } from './sync/controller'
 import type { SyncConflictChoice } from '../../shared/sync'
 import { importNativeLibrary, nativeLibraryExists, type NativeImportStage, type NativeImportUpdate } from './nativeLibrary'
-import { applyLiquidGlass, applyUnifiedToolbar, supportsLiquidGlass } from './windowChrome'
+import { applyLiquidGlass, applyUnifiedToolbar, isIntelMac, reducedWindowEffects, supportsLiquidGlass } from './windowChrome'
 import { applyWindowsBackdrop, windowsBackdrop } from './windowsBackdrop'
 import { applyHiddenRegions, readableProseColorCSS, readableProseLayoutCSS } from './localizer'
 import { detectLatexToolchainStatus } from './latexToolchain'
@@ -62,6 +62,9 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 app.setName('Freddie')
+// Chromium keeps a dual-GPU Intel Mac on its integrated GPU, which cannot keep up with the
+// reader; ask for the discrete GPU. Macs without one ignore the switch.
+if (isIntelMac()) app.commandLine.appendSwitch('force_high_performance_gpu')
 // Freddie, like the native app, always draws a light interface; "Paper Tone" is its dark-room mode.
 nativeTheme.themeSource = 'light'
 
@@ -239,22 +242,26 @@ function rendererURL(route: WindowRoute): { url?: string; file?: string; hash: s
 // Keep the available macOS materials explicit at each window call site.
 type WindowMaterial = 'sidebar' | 'window' | 'under-window'
 
+/** Whether this window gets a native material: Liquid Glass or vibrancy on macOS, Acrylic or blur on Windows. */
+function usesNativeMaterial(): boolean {
+  return isMac ? !reducedWindowEffects() : windowsBackdrop() !== 'none'
+}
+
 function baseWindowOptions(route: WindowRoute, material: WindowMaterial): BrowserWindowConstructorOptions {
-  const useLiquidGlass = supportsLiquidGlass() && (route.kind === 'main' || route.kind === 'settings' || route.kind === 'about')
+  const reduced = reducedWindowEffects()
+  const useLiquidGlass = !reduced && supportsLiquidGlass() && (route.kind === 'main' || route.kind === 'settings' || route.kind === 'about')
   const backdrop = windowsBackdrop()
   return {
     show: false,
-    backgroundColor: process.platform === 'linux' ? '#f3f3f3' : '#00000000',
+    backgroundColor: process.platform === 'linux' ? '#f3f3f3' : isMac && reduced ? '#e9ecef' : '#00000000',
     titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
     // The Accent policy blurs only what Chromium leaves transparent.
     ...(backdrop === 'legacy' ? { transparent: true } : {}),
     ...(isMac ? {
-      transparent: true,
-      ...(!useLiquidGlass ? {
-        vibrancy: material,
-        // Keep sampling the desktop while inactive instead of falling back to flat gray.
-        visualEffectState: 'active' as const
-      } : {}),
+      // An opaque window spares the GPU from blending every frame with the material behind it.
+      ...(!reduced ? { transparent: true } : {}),
+      // The material follows the window's key state, like native apps, so inactive windows stop sampling the desktop.
+      ...(!reduced && !useLiquidGlass ? { vibrancy: material } : {}),
       trafficLightPosition: { x: 18, y: 18 }
     } : {}),
     ...(!isMac ? { titleBarOverlay: { color: '#00000000', symbolColor: '#1d1d1f', height: 52 } } : {}),
@@ -265,7 +272,11 @@ function baseWindowOptions(route: WindowRoute, material: WindowMaterial): Browse
       sandbox: true,
       webSecurity: true,
       spellcheck: true,
-      additionalArguments: [`--freddie-route=${JSON.stringify(route)}`, `--freddie-backdrop=${backdrop === 'none' ? 'none' : 'acrylic'}`]
+      additionalArguments: [
+        `--freddie-route=${JSON.stringify(route)}`,
+        `--freddie-backdrop=${usesNativeMaterial() ? 'material' : 'none'}`,
+        `--freddie-effects=${reducedWindowEffects() ? 'reduced' : 'full'}`
+      ]
     }
   }
 }
@@ -293,7 +304,7 @@ function createMainWindow(): void {
   const route: WindowRoute = { kind: 'main' }
   const window = new BrowserWindow({ width: 1220, height: 780, minWidth: 1040, minHeight: 640, title: 'Freddie', ...baseWindowOptions(route, 'sidebar') })
   windows.main = window
-  if (supportsLiquidGlass() && !applyLiquidGlass(window)) window.setVibrancy('sidebar')
+  if (!reducedWindowEffects() && supportsLiquidGlass() && !applyLiquidGlass(window)) window.setVibrancy('sidebar')
   applyUnifiedToolbar(window)
   hardenWindow(window)
   window.on('closed', () => {
@@ -313,7 +324,7 @@ function openSettingsWindow(tab?: string, modelId?: string): void {
   const route: WindowRoute = { kind: 'settings', settingsTab: tab, settingsModelId: modelId }
   const window = new BrowserWindow({ width: 920, height: 720, minWidth: 840, minHeight: 520, title: translator('Settings'), fullscreenable: false, ...baseWindowOptions(route, 'under-window') })
   windows.settings = window
-  if (supportsLiquidGlass() && !applyLiquidGlass(window)) window.setVibrancy('under-window')
+  if (!reducedWindowEffects() && supportsLiquidGlass() && !applyLiquidGlass(window)) window.setVibrancy('under-window')
   hardenWindow(window)
   window.on('closed', () => {
     windows.settings = undefined
@@ -347,7 +358,7 @@ function openAboutWindow(): void {
   const route: WindowRoute = { kind: 'about' }
   const window = new BrowserWindow({ width: 520, height: 300, resizable: false, minimizable: false, maximizable: false, fullscreenable: false, title: translator('About Freddie'), ...baseWindowOptions(route, 'under-window') })
   windows.about = window
-  if (supportsLiquidGlass() && !applyLiquidGlass(window)) window.setVibrancy('under-window')
+  if (!reducedWindowEffects() && supportsLiquidGlass() && !applyLiquidGlass(window)) window.setVibrancy('under-window')
   hardenWindow(window)
   window.on('closed', () => {
     windows.about = undefined
