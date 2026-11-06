@@ -1,6 +1,5 @@
-// A one-page PDF the raster worker draws when it starts. The first page PDF.js draws in a fresh
-// worker takes several times longer than later ones while V8 compiles its parser and drawing code;
-// drawing this page first moves that cost ahead of the first page a reader asks for.
+// A one-page PDF the raster worker draws when it starts, so MuPDF's one-time setup (standard
+// fonts, image and path drawing code) happens before the first page a reader asks for.
 
 const content = [
   'BT /F1 11 Tf 8 90 Td (Aa 1) Tj ET',

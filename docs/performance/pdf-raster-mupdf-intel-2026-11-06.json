@@ -1,0 +1,4175 @@
+{
+ "date": "2026-11-06",
+ "machine": {
+  "model": "MacBookPro15,1",
+  "cpu": "Intel Core i7-9750H",
+  "memoryGB": 16,
+  "os": "macOS 15.8.1 (Darwin 24.6.0)",
+  "gpu": "AMD Radeon Pro 555X (active; Intel UHD 630 idle)",
+  "display": "Retina 2880x1800, DPR 2",
+  "electron": "44.9.3",
+  "chrome": "152.0.7977.167"
+ },
+ "method": {
+  "window": [
+   1400,
+   860
+  ],
+  "trialsPerScenario": 3,
+  "processPerTrial": true,
+  "scroll": {
+   "distanceCssPx": 6000,
+   "speedsPxPerSecond": [
+    1500,
+    4000
+   ],
+   "gesture": "CDP Input.synthesizeScrollGesture, mouse"
+  },
+  "blankSampling": "every 16 ms: visible part of pages without a finished bitmap",
+  "build": "production (electron-vite build)",
+  "script": "scripts/benchmark-pdf-open.mjs",
+  "blankUnits": "blankSampleRatio and blankAreaRatio are percentages"
+ },
+ "baseline": {
+  "commit": "2943e2f",
+  "raster": "PDF.js 6.4.299 + @napi-rs/canvas 1.0.13 in two Node workers"
+ },
+ "optimized": {
+  "commit": "2943e2f + working tree",
+  "raster": "MuPDF 1.28.1 (mupdf npm package, WebAssembly) in two Node workers",
+  "sourceHashes": {
+   "electron/main/pdfRasterWorker.ts": "bed6d6c518b5182e68eabeb6c18a73b4cf3ff289748726a5c290305c397ad298",
+   "electron/main/pdfRasterWorkerClient.ts": "bac865ed0847f06acdc4287a7ba3e0f49d940b7f1e3d19889f96629ea99fa88e",
+   "electron/main/pdfRasterWarmup.ts": "04f70886911f816b243d96630c563c2b196fd1f21e5b79c0e2a0d229ceecf515",
+   "electron/main/pdfRasterFormat.ts": "739ae452ab091dbee293ee52f09abf927d2298c6caaa3113d2aa3ccb3842db78",
+   "electron/main/pdfRaster.ts": "f8ad0d5f0f6867c937d2de2b53bd6c36d63d11b2fcb8c476d69d4172c1e12ac1",
+   "package.json": "31771f57d35d3df53ca8af71a4e5d02db09b7dc4bfee9eca201ed7e473a53b7e",
+   "package-lock.json": "e87319e0d26dc28d2bdc8953e6115e12018393feebfa3fdbadfa5ff020c68e7d"
+  }
+ },
+ "summary": {
+  "baseline": {
+   "DeepSeek-R1: Incentivizing Reasoning Cap (pdf)": {
+    "trials": 3,
+    "firstPaintMs": 639,
+    "viewportPaintMs": 639,
+    "1500": {
+     "blankSampleRatio": 0,
+     "blankAreaRatio": 0,
+     "p95Frame": 17.6,
+     "maxFrame": 17.8,
+     "longTasks": 0,
+     "rasterMedianMs": 78,
+     "settleMs": 1
+    },
+    "4000": {
+     "blankSampleRatio": 0,
+     "blankAreaRatio": 0,
+     "p95Frame": 18.2,
+     "maxFrame": 18.6,
+     "longTasks": 0,
+     "rasterMedianMs": 76,
+     "settleMs": 1
+    }
+   },
+   "Symbian OS Internals: Real-time Kernel P (pdf)": {
+    "trials": 3,
+    "firstPaintMs": 591,
+    "viewportPaintMs": 636,
+    "1500": {
+     "blankSampleRatio": 0,
+     "blankAreaRatio": 0,
+     "p95Frame": 18.3,
+     "maxFrame": 32.4,
+     "longTasks": 0,
+     "rasterMedianMs": 43,
+     "settleMs": 0
+    },
+    "4000": {
+     "blankSampleRatio": 0,
+     "blankAreaRatio": 0,
+     "p95Frame": 18.2,
+     "maxFrame": 18.4,
+     "longTasks": 0,
+     "rasterMedianMs": 43,
+     "settleMs": 1
+    }
+   },
+   "MinerU2.5-Pro: Pushing the Limits of Dat (pdf)": {
+    "trials": 3,
+    "firstPaintMs": 1232,
+    "viewportPaintMs": 1232,
+    "1500": {
+     "blankSampleRatio": 17.9,
+     "blankAreaRatio": 11.3,
+     "p95Frame": 18.3,
+     "maxFrame": 18.5,
+     "longTasks": 0,
+     "rasterMedianMs": 94,
+     "settleMs": 0
+    },
+    "4000": {
+     "blankSampleRatio": 6.7,
+     "blankAreaRatio": 2,
+     "p95Frame": 18.4,
+     "maxFrame": 18.7,
+     "longTasks": 0,
+     "rasterMedianMs": 81,
+     "settleMs": 0
+    }
+   },
+   "GLM-5: from Vibe Coding to Agentic Engin (bilingualPDF)": {
+    "trials": 3,
+    "firstPaintMs": 1466,
+    "viewportPaintMs": 4225,
+    "1500": {
+     "blankSampleRatio": 95.4,
+     "blankAreaRatio": 93,
+     "p95Frame": 18.4,
+     "maxFrame": 33.2,
+     "longTasks": 0,
+     "rasterMedianMs": 5158.5,
+     "settleMs": 2686
+    },
+    "4000": {
+     "blankSampleRatio": 98.9,
+     "blankAreaRatio": 61,
+     "p95Frame": 18.4,
+     "maxFrame": 34.9,
+     "longTasks": 0,
+     "rasterMedianMs": 237,
+     "settleMs": 1763
+    }
+   },
+   "MAI-Thinking-1: Building a Hill-Climbing (bilingualPDF)": {
+    "trials": 3,
+    "firstPaintMs": 1052,
+    "viewportPaintMs": 1525,
+    "1500": {
+     "blankSampleRatio": 0,
+     "blankAreaRatio": 0,
+     "p95Frame": 18.6,
+     "maxFrame": 81.6,
+     "longTasks": 0,
+     "rasterMedianMs": 72,
+     "settleMs": 14
+    },
+    "4000": {
+     "blankSampleRatio": 7.3,
+     "blankAreaRatio": 1,
+     "p95Frame": 18.4,
+     "maxFrame": 33.4,
+     "longTasks": 0,
+     "rasterMedianMs": 70,
+     "settleMs": 1
+    }
+   }
+  },
+  "optimized": {
+   "DeepSeek-R1: Incentivizing Reasoning Cap (pdf)": {
+    "trials": 3,
+    "firstPaintMs": 581,
+    "viewportPaintMs": 581,
+    "1500": {
+     "blankSampleRatio": 0,
+     "blankAreaRatio": 0,
+     "p95Frame": 18.5,
+     "maxFrame": 18.7,
+     "longTasks": 0,
+     "rasterMedianMs": 36,
+     "settleMs": 0
+    },
+    "4000": {
+     "blankSampleRatio": 0,
+     "blankAreaRatio": 0,
+     "p95Frame": 18.4,
+     "maxFrame": 18.7,
+     "longTasks": 0,
+     "rasterMedianMs": 34,
+     "settleMs": 1
+    }
+   },
+   "Symbian OS Internals: Real-time Kernel P (pdf)": {
+    "trials": 3,
+    "firstPaintMs": 585,
+    "viewportPaintMs": 602,
+    "1500": {
+     "blankSampleRatio": 0,
+     "blankAreaRatio": 0,
+     "p95Frame": 18.4,
+     "maxFrame": 18.7,
+     "longTasks": 0,
+     "rasterMedianMs": 20,
+     "settleMs": 1
+    },
+    "4000": {
+     "blankSampleRatio": 0,
+     "blankAreaRatio": 0,
+     "p95Frame": 18.5,
+     "maxFrame": 18.7,
+     "longTasks": 0,
+     "rasterMedianMs": 18,
+     "settleMs": 0
+    }
+   },
+   "MinerU2.5-Pro: Pushing the Limits of Dat (pdf)": {
+    "trials": 3,
+    "firstPaintMs": 801,
+    "viewportPaintMs": 801,
+    "1500": {
+     "blankSampleRatio": 0,
+     "blankAreaRatio": 0,
+     "p95Frame": 18.4,
+     "maxFrame": 18.7,
+     "longTasks": 0,
+     "rasterMedianMs": 40,
+     "settleMs": 1
+    },
+    "4000": {
+     "blankSampleRatio": 0,
+     "blankAreaRatio": 0,
+     "p95Frame": 18.5,
+     "maxFrame": 18.7,
+     "longTasks": 0,
+     "rasterMedianMs": 38,
+     "settleMs": 1
+    }
+   },
+   "GLM-5: from Vibe Coding to Agentic Engin (bilingualPDF)": {
+    "trials": 3,
+    "firstPaintMs": 668,
+    "viewportPaintMs": 1195,
+    "1500": {
+     "blankSampleRatio": 0,
+     "blankAreaRatio": 0,
+     "p95Frame": 18.4,
+     "maxFrame": 18.7,
+     "longTasks": 0,
+     "rasterMedianMs": 35,
+     "settleMs": 1
+    },
+    "4000": {
+     "blankSampleRatio": 44.8,
+     "blankAreaRatio": 21,
+     "p95Frame": 17.7,
+     "maxFrame": 33.8,
+     "longTasks": 0,
+     "rasterMedianMs": 35,
+     "settleMs": 644
+    }
+   },
+   "MAI-Thinking-1: Building a Hill-Climbing (bilingualPDF)": {
+    "trials": 3,
+    "firstPaintMs": 611,
+    "viewportPaintMs": 697,
+    "1500": {
+     "blankSampleRatio": 0,
+     "blankAreaRatio": 0,
+     "p95Frame": 17.7,
+     "maxFrame": 66.9,
+     "longTasks": 0,
+     "rasterMedianMs": 17,
+     "settleMs": 12
+    },
+    "4000": {
+     "blankSampleRatio": 0,
+     "blankAreaRatio": 0,
+     "p95Frame": 17.5,
+     "maxFrame": 17.7,
+     "longTasks": 0,
+     "rasterMedianMs": 16,
+     "settleMs": 1
+    }
+   }
+  }
+ },
+ "singlePageMs": {
+  "note": "One page, scale 0.7 x DPR 2 (856x1108), first render of the page with the document already open; the warm-up page is a different page. Production path measured with the same Electron as Node (ELECTRON_RUN_AS_NODE) using PDF.js + @napi-rs/canvas; Chromium figures render PDF.js in a renderer Web Worker on OffscreenCanvas (enableHWA true = GPU canvas, AMD Radeon Pro 555X).",
+  "pages": {
+   "GLM-5 original p3": {
+    "pdfjsNapi": 7778,
+    "pdfjsChromiumSoftware": 3822,
+    "pdfjsChromiumGPU": 2447,
+    "mupdfWasm": 484,
+    "mupdfNative": 445,
+    "pdfiumNative": 492,
+    "pdfiumWasm": 1170
+   },
+   "GLM-5 translation p3": {
+    "pdfjsNapi": 7910,
+    "pdfjsChromiumSoftware": 3809,
+    "pdfjsChromiumGPU": 2416,
+    "mupdfWasm": 476,
+    "mupdfNative": 444,
+    "pdfiumNative": 500,
+    "pdfiumWasm": 1113
+   },
+   "GLM-5 original p1": {
+    "pdfjsNapi": 513,
+    "pdfjsChromiumSoftware": 467,
+    "pdfjsChromiumGPU": 261,
+    "mupdfWasm": 145,
+    "mupdfNative": 88,
+    "pdfiumNative": 74,
+    "pdfiumWasm": 111
+   },
+   "MAI-Thinking-1 translation p9": {
+    "pdfjsNapi": 3296,
+    "pdfjsChromiumSoftware": 1474,
+    "pdfjsChromiumGPU": 1529,
+    "mupdfWasm": 388,
+    "mupdfNative": 252,
+    "pdfiumNative": 216,
+    "pdfiumWasm": 246
+   },
+   "MinerU p1": {
+    "pdfjsNapi": 699,
+    "pdfjsChromiumSoftware": 350,
+    "pdfjsChromiumGPU": 261,
+    "mupdfWasm": 123,
+    "mupdfNative": 118,
+    "pdfiumNative": 83,
+    "pdfiumWasm": 153
+   },
+   "MinerU p7": {
+    "pdfjsNapi": 1570,
+    "pdfjsChromiumSoftware": 936,
+    "pdfjsChromiumGPU": 774,
+    "mupdfWasm": 133,
+    "mupdfNative": 119,
+    "pdfiumNative": 162,
+    "pdfiumWasm": 255
+   }
+  },
+  "profileGLM5p3PdfjsNapi": "about 6 s in PDF.js JavaScript image decoding (fillGrayBuffer, getRgbBuffer, JPEG, colour conversion) and about 4 s in Skia drawImage/putImageData (CPU profile, total exceeds wall time because the PDF.js worker runs in the same thread)"
+ },
+ "wasmHeapMiB": {
+  "note": "one worker rendering 15 pages of each test document at scale 2.8; WebAssembly memory is not returned",
+  "start": 22,
+  "afterGLM5Translation45MB": 231,
+  "afterEmptyStorePerDocument": 208
+ },
+ "packaged": "electron-builder --mac --x64 --dir: worker inside app.asar loads MuPDF from app.asar.unpacked; heaviest page 680 ms including worker start; packaged reader drew all 8 mounted pages and both attachments answered raster requests with 200",
+ "trials": {
+  "baseline": [
+   {
+    "paper": "DeepSeek-R1: Incentivizing Reasoning Cap",
+    "paperId": "fcfdbda7-f407-462b-925f-31d49737e7a4",
+    "mode": "pdf",
+    "trial": 1,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 73273,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1628,
+     "reader": 261,
+     "firstPaint": 689,
+     "viewportPaint": 689,
+     "textReady": 747,
+     "ready": 747,
+     "raster": [
+      {
+       "attachment": "624b40f4",
+       "page": 0,
+       "ms": 181,
+       "at": 462,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "624b40f4",
+       "page": 1,
+       "ms": 165,
+       "at": 464,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 246,
+      "meanFrame": 16.7,
+      "p95Frame": 17.6,
+      "maxFrame": 17.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 334,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 7,
+      "rasterMedianMs": 78,
+      "rasterP90Ms": 180
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 95,
+      "meanFrame": 16.7,
+      "p95Frame": 17.6,
+      "maxFrame": 17.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 208,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 7,
+      "rasterMedianMs": 76,
+      "rasterP90Ms": 100
+     }
+    ]
+   },
+   {
+    "paper": "DeepSeek-R1: Incentivizing Reasoning Cap",
+    "paperId": "fcfdbda7-f407-462b-925f-31d49737e7a4",
+    "mode": "pdf",
+    "trial": 2,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 73273,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1303,
+     "reader": 233,
+     "firstPaint": 639,
+     "viewportPaint": 639,
+     "textReady": 703,
+     "ready": 703,
+     "raster": [
+      {
+       "attachment": "624b40f4",
+       "page": 0,
+       "ms": 177,
+       "at": 420,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "624b40f4",
+       "page": 1,
+       "ms": 163,
+       "at": 420,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 246,
+      "meanFrame": 16.7,
+      "p95Frame": 17.6,
+      "maxFrame": 17.8,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 379,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 7,
+      "rasterMedianMs": 78,
+      "rasterP90Ms": 185
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 95,
+      "meanFrame": 16.7,
+      "p95Frame": 18.2,
+      "maxFrame": 18.6,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 215,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 7,
+      "rasterMedianMs": 76,
+      "rasterP90Ms": 118
+     }
+    ]
+   },
+   {
+    "paper": "DeepSeek-R1: Incentivizing Reasoning Cap",
+    "paperId": "fcfdbda7-f407-462b-925f-31d49737e7a4",
+    "mode": "pdf",
+    "trial": 3,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 73273,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1230,
+     "reader": 233,
+     "firstPaint": 636,
+     "viewportPaint": 636,
+     "textReady": 693,
+     "ready": 693,
+     "raster": [
+      {
+       "attachment": "624b40f4",
+       "page": 0,
+       "ms": 157,
+       "at": 429,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "624b40f4",
+       "page": 1,
+       "ms": 143,
+       "at": 429,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 245,
+      "meanFrame": 16.7,
+      "p95Frame": 18.2,
+      "maxFrame": 18.6,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 355,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 7,
+      "rasterMedianMs": 79,
+      "rasterP90Ms": 193
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 95,
+      "meanFrame": 16.7,
+      "p95Frame": 18.2,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 200,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 7,
+      "rasterMedianMs": 73,
+      "rasterP90Ms": 99
+     }
+    ]
+   },
+   {
+    "paper": "Symbian OS Internals: Real-time Kernel P",
+    "paperId": "b7c585c4-9f7d-490a-a4a8-5ad38a1d901b",
+    "mode": "pdf",
+    "trial": 1,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 635565,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1232,
+     "reader": 229,
+     "firstPaint": 591,
+     "viewportPaint": 608,
+     "ready": 3617,
+     "raster": [
+      {
+       "attachment": "fbe412e8",
+       "page": 0,
+       "ms": 111,
+       "at": 469,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "fbe412e8",
+       "page": 1,
+       "ms": 87,
+       "at": 470,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "fbe412e8",
+       "page": 2,
+       "ms": 28,
+       "at": 581,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 244,
+      "meanFrame": 16.8,
+      "p95Frame": 18.3,
+      "maxFrame": 50,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 354,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 8,
+      "rasterMedianMs": 44,
+      "rasterP90Ms": 70
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 95,
+      "meanFrame": 16.7,
+      "p95Frame": 18.2,
+      "maxFrame": 18.3,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 214,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 9,
+      "rasterMedianMs": 43,
+      "rasterP90Ms": 58
+     }
+    ]
+   },
+   {
+    "paper": "Symbian OS Internals: Real-time Kernel P",
+    "paperId": "b7c585c4-9f7d-490a-a4a8-5ad38a1d901b",
+    "mode": "pdf",
+    "trial": 2,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 635565,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1298,
+     "reader": 243,
+     "firstPaint": 610,
+     "viewportPaint": 647,
+     "ready": 3655,
+     "raster": [
+      {
+       "attachment": "fbe412e8",
+       "page": 0,
+       "ms": 108,
+       "at": 488,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "fbe412e8",
+       "page": 1,
+       "ms": 83,
+       "at": 489,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "fbe412e8",
+       "page": 2,
+       "ms": 29,
+       "at": 597,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 246,
+      "meanFrame": 16.7,
+      "p95Frame": 18.2,
+      "maxFrame": 18.6,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 358,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 8,
+      "rasterMedianMs": 43,
+      "rasterP90Ms": 64
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 95,
+      "meanFrame": 16.7,
+      "p95Frame": 17.8,
+      "maxFrame": 18.4,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 210,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 9,
+      "rasterMedianMs": 41,
+      "rasterP90Ms": 54
+     }
+    ]
+   },
+   {
+    "paper": "Symbian OS Internals: Real-time Kernel P",
+    "paperId": "b7c585c4-9f7d-490a-a4a8-5ad38a1d901b",
+    "mode": "pdf",
+    "trial": 3,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 635565,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1217,
+     "reader": 226,
+     "firstPaint": 585,
+     "viewportPaint": 636,
+     "ready": 3647,
+     "raster": [
+      {
+       "attachment": "fbe412e8",
+       "page": 0,
+       "ms": 112,
+       "at": 475,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "fbe412e8",
+       "page": 1,
+       "ms": 86,
+       "at": 476,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "fbe412e8",
+       "page": 2,
+       "ms": 29,
+       "at": 588,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 245,
+      "meanFrame": 16.7,
+      "p95Frame": 18.3,
+      "maxFrame": 32.4,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 360,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 8,
+      "rasterMedianMs": 43,
+      "rasterP90Ms": 69
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 95,
+      "meanFrame": 16.7,
+      "p95Frame": 18.3,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 211,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 9,
+      "rasterMedianMs": 44,
+      "rasterP90Ms": 55
+     }
+    ]
+   },
+   {
+    "paper": "MinerU2.5-Pro: Pushing the Limits of Dat",
+    "paperId": "5b3e077a-dff1-4781-8893-a54ebe392165",
+    "mode": "pdf",
+    "trial": 1,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 34496,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1235,
+     "reader": 231,
+     "firstPaint": 1224,
+     "viewportPaint": 1224,
+     "textReady": 1277,
+     "ready": 1277,
+     "raster": [
+      {
+       "attachment": "8f73d31e",
+       "page": 0,
+       "ms": 677,
+       "at": 524,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "8f73d31e",
+       "page": 1,
+       "ms": 131,
+       "at": 525,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 246,
+      "meanFrame": 16.7,
+      "p95Frame": 18.3,
+      "maxFrame": 18.6,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 357,
+      "blankSampleRatio": 17.1,
+      "blankAreaRatio": 10.7,
+      "rasterRequests": 8,
+      "rasterMedianMs": 91,
+      "rasterP90Ms": 1080
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 95,
+      "meanFrame": 16.7,
+      "p95Frame": 18.4,
+      "maxFrame": 18.5,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 229,
+      "blankSampleRatio": 5.6,
+      "blankAreaRatio": 2,
+      "rasterRequests": 7,
+      "rasterMedianMs": 79,
+      "rasterP90Ms": 214
+     }
+    ]
+   },
+   {
+    "paper": "MinerU2.5-Pro: Pushing the Limits of Dat",
+    "paperId": "5b3e077a-dff1-4781-8893-a54ebe392165",
+    "mode": "pdf",
+    "trial": 2,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 34496,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1229,
+     "reader": 229,
+     "firstPaint": 1232,
+     "viewportPaint": 1232,
+     "textReady": 1303,
+     "ready": 1303,
+     "raster": [
+      {
+       "attachment": "8f73d31e",
+       "page": 0,
+       "ms": 673,
+       "at": 524,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "8f73d31e",
+       "page": 1,
+       "ms": 123,
+       "at": 525,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 246,
+      "meanFrame": 16.7,
+      "p95Frame": 18.3,
+      "maxFrame": 18.5,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 366,
+      "blankSampleRatio": 17.9,
+      "blankAreaRatio": 11.3,
+      "rasterRequests": 8,
+      "rasterMedianMs": 94,
+      "rasterP90Ms": 1125
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 94,
+      "meanFrame": 16.7,
+      "p95Frame": 18.4,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 227,
+      "blankSampleRatio": 6.7,
+      "blankAreaRatio": 1.9,
+      "rasterRequests": 7,
+      "rasterMedianMs": 81,
+      "rasterP90Ms": 215
+     }
+    ]
+   },
+   {
+    "paper": "MinerU2.5-Pro: Pushing the Limits of Dat",
+    "paperId": "5b3e077a-dff1-4781-8893-a54ebe392165",
+    "mode": "pdf",
+    "trial": 3,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 34496,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1407,
+     "reader": 265,
+     "firstPaint": 1420,
+     "viewportPaint": 1420,
+     "textReady": 1473,
+     "ready": 1473,
+     "raster": [
+      {
+       "attachment": "8f73d31e",
+       "page": 0,
+       "ms": 781,
+       "at": 602,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "8f73d31e",
+       "page": 1,
+       "ms": 145,
+       "at": 603,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 246,
+      "meanFrame": 16.7,
+      "p95Frame": 18.3,
+      "maxFrame": 18.5,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 406,
+      "blankSampleRatio": 26.7,
+      "blankAreaRatio": 13.3,
+      "rasterRequests": 8,
+      "rasterMedianMs": 133,
+      "rasterP90Ms": 1556
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 93,
+      "meanFrame": 16.8,
+      "p95Frame": 18.4,
+      "maxFrame": 31.5,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 274,
+      "blankSampleRatio": 20.9,
+      "blankAreaRatio": 10.7,
+      "rasterRequests": 7,
+      "rasterMedianMs": 117,
+      "rasterP90Ms": 339
+     }
+    ]
+   },
+   {
+    "paper": "GLM-5: from Vibe Coding to Agentic Engin",
+    "paperId": "edb20d05-5008-457f-a165-2c3bcd356b5c",
+    "mode": "bilingualPDF",
+    "trial": 1,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 499.75,
+     "y": 436.25,
+     "height": 23859,
+     "viewport": 677,
+     "dpr": 2,
+     "panes": 2
+    },
+    "open": {
+     "launchToNavigation": 2031,
+     "reader": 389,
+     "firstPaint": 1466,
+     "viewportPaint": 4225,
+     "textReady": 5240,
+     "ready": 5240,
+     "raster": [
+      {
+       "attachment": "4a8d7b17",
+       "page": 0,
+       "ms": 1095,
+       "at": 774,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "4a8d7b17",
+       "page": 1,
+       "ms": 654,
+       "at": 776,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 0,
+       "ms": 2750,
+       "at": 1453,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 1,
+       "ms": 1816,
+       "at": 1893,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "4a8d7b17",
+       "page": 2,
+       "at": 3732,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 2,
+       "at": 4230,
+       "ratio": 2,
+       "scale": 0.7
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": null,
+      "frames": 546,
+      "meanFrame": 16.7,
+      "p95Frame": 18.4,
+      "maxFrame": 35,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 818,
+      "blankSampleRatio": 95.6,
+      "blankAreaRatio": 93.1,
+      "rasterRequests": 6,
+      "rasterMedianMs": null,
+      "rasterP90Ms": null
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1763,
+      "frames": 198,
+      "meanFrame": 16.7,
+      "p95Frame": 18.4,
+      "maxFrame": 33.3,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 551,
+      "blankSampleRatio": 98.9,
+      "blankAreaRatio": 81.2,
+      "rasterRequests": 16,
+      "rasterMedianMs": 801,
+      "rasterP90Ms": 1093
+     }
+    ]
+   },
+   {
+    "paper": "GLM-5: from Vibe Coding to Agentic Engin",
+    "paperId": "edb20d05-5008-457f-a165-2c3bcd356b5c",
+    "mode": "bilingualPDF",
+    "trial": 2,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 499.75,
+     "y": 436.25,
+     "height": 23859,
+     "viewport": 677,
+     "dpr": 2,
+     "panes": 2
+    },
+    "open": {
+     "launchToNavigation": 3976,
+     "reader": 650,
+     "firstPaint": 2350,
+     "viewportPaint": 6408,
+     "textReady": 7780,
+     "ready": 7780,
+     "raster": [
+      {
+       "attachment": "4a8d7b17",
+       "page": 0,
+       "ms": 1764,
+       "at": 1233,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "4a8d7b17",
+       "page": 1,
+       "ms": 1069,
+       "at": 1237,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 0,
+       "ms": 4030,
+       "at": 2343,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 1,
+       "ms": 2655,
+       "at": 3033,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "4a8d7b17",
+       "page": 2,
+       "at": 5719,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 2,
+       "at": 6409,
+       "ratio": 2,
+       "scale": 0.7
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": null,
+      "frames": 544,
+      "meanFrame": 16.7,
+      "p95Frame": 18.4,
+      "maxFrame": 33.2,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 813,
+      "blankSampleRatio": 95.4,
+      "blankAreaRatio": 93,
+      "rasterRequests": 6,
+      "rasterMedianMs": 7355,
+      "rasterP90Ms": 7355
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 2495,
+      "frames": 237,
+      "meanFrame": 17.2,
+      "p95Frame": 18.6,
+      "maxFrame": 48.6,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 934,
+      "blankSampleRatio": 99.1,
+      "blankAreaRatio": 61,
+      "rasterRequests": 19,
+      "rasterMedianMs": 237,
+      "rasterP90Ms": 764
+     }
+    ]
+   },
+   {
+    "paper": "GLM-5: from Vibe Coding to Agentic Engin",
+    "paperId": "edb20d05-5008-457f-a165-2c3bcd356b5c",
+    "mode": "bilingualPDF",
+    "trial": 3,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 499.75,
+     "y": 436.25,
+     "height": 23859,
+     "viewport": 677,
+     "dpr": 2,
+     "panes": 2
+    },
+    "open": {
+     "launchToNavigation": 2027,
+     "reader": 374,
+     "firstPaint": 1275,
+     "viewportPaint": 3536,
+     "textReady": 4382,
+     "ready": 4382,
+     "raster": [
+      {
+       "attachment": "4a8d7b17",
+       "page": 0,
+       "ms": 960,
+       "at": 685,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "4a8d7b17",
+       "page": 1,
+       "ms": 564,
+       "at": 687,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 0,
+       "ms": 2244,
+       "at": 1272,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 1,
+       "ms": 1535,
+       "at": 1664,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "4a8d7b17",
+       "page": 2,
+       "at": 3218,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 2,
+       "at": 3536,
+       "ratio": 2,
+       "scale": 0.7
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 2686,
+      "frames": 409,
+      "meanFrame": 16.7,
+      "p95Frame": 18.4,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 654,
+      "blankSampleRatio": 93.8,
+      "blankAreaRatio": 87.2,
+      "rasterRequests": 13,
+      "rasterMedianMs": 2962,
+      "rasterP90Ms": 4245
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1339,
+      "frames": 174,
+      "meanFrame": 16.8,
+      "p95Frame": 18.4,
+      "maxFrame": 34.9,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 676,
+      "blankSampleRatio": 63,
+      "blankAreaRatio": 37.4,
+      "rasterRequests": 20,
+      "rasterMedianMs": 116,
+      "rasterP90Ms": 417
+     }
+    ]
+   },
+   {
+    "paper": "MAI-Thinking-1: Building a Hill-Climbing",
+    "paperId": "c67552c1-38c9-4aa4-88af-3c7803a79366",
+    "mode": "bilingualPDF",
+    "trial": 1,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 499.75,
+     "y": 436.25,
+     "height": 65000,
+     "viewport": 677,
+     "dpr": 2,
+     "panes": 2
+    },
+    "open": {
+     "launchToNavigation": 1450,
+     "reader": 263,
+     "firstPaint": 1104,
+     "viewportPaint": 1576,
+     "ready": 4582,
+     "raster": [
+      {
+       "attachment": "c9e57ac0",
+       "page": 6,
+       "ms": 1031,
+       "at": 527,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 7,
+       "ms": 555,
+       "at": 527,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 6,
+       "ms": 137,
+       "at": 1097,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 7,
+       "ms": 94,
+       "at": 1249,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 4,
+       "ms": 325,
+       "at": 1358,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 5,
+       "ms": 148,
+       "at": 1572,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 8,
+       "at": 1698,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 4,
+       "ms": 129,
+       "at": 1735,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 5,
+       "ms": 99,
+       "at": 1885,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 8,
+       "ms": 114,
+       "at": 1998,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 14,
+      "frames": 236,
+      "meanFrame": 17.8,
+      "p95Frame": 18.6,
+      "maxFrame": 83.6,
+      "over50": 2,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 1921,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 11,
+      "rasterMedianMs": 72,
+      "rasterP90Ms": 340
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 92,
+      "meanFrame": 17,
+      "p95Frame": 18.3,
+      "maxFrame": 34.8,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 701,
+      "blankSampleRatio": 7.3,
+      "blankAreaRatio": 1,
+      "rasterRequests": 10,
+      "rasterMedianMs": 70,
+      "rasterP90Ms": 196
+     }
+    ]
+   },
+   {
+    "paper": "MAI-Thinking-1: Building a Hill-Climbing",
+    "paperId": "c67552c1-38c9-4aa4-88af-3c7803a79366",
+    "mode": "bilingualPDF",
+    "trial": 2,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 499.75,
+     "y": 436.25,
+     "height": 65000,
+     "viewport": 677,
+     "dpr": 2,
+     "panes": 2
+    },
+    "open": {
+     "launchToNavigation": 1363,
+     "reader": 248,
+     "firstPaint": 1052,
+     "viewportPaint": 1503,
+     "ready": 4521,
+     "raster": [
+      {
+       "attachment": "c9e57ac0",
+       "page": 6,
+       "ms": 976,
+       "at": 499,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 7,
+       "ms": 532,
+       "at": 500,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 6,
+       "ms": 124,
+       "at": 1047,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 7,
+       "ms": 104,
+       "at": 1185,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 4,
+       "ms": 304,
+       "at": 1304,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 5,
+       "ms": 139,
+       "at": 1488,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 8,
+       "at": 1627,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 4,
+       "ms": 87,
+       "at": 1640,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 5,
+       "ms": 87,
+       "at": 1744,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 8,
+       "ms": 109,
+       "at": 1847,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 16,
+      "frames": 236,
+      "meanFrame": 17.8,
+      "p95Frame": 18.5,
+      "maxFrame": 66.4,
+      "over50": 2,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 1948,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 11,
+      "rasterMedianMs": 71,
+      "rasterP90Ms": 327
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 93,
+      "meanFrame": 16.8,
+      "p95Frame": 18.4,
+      "maxFrame": 31.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 712,
+      "blankSampleRatio": 8.4,
+      "blankAreaRatio": 1.2,
+      "rasterRequests": 10,
+      "rasterMedianMs": 75,
+      "rasterP90Ms": 197
+     }
+    ]
+   },
+   {
+    "paper": "MAI-Thinking-1: Building a Hill-Climbing",
+    "paperId": "c67552c1-38c9-4aa4-88af-3c7803a79366",
+    "mode": "bilingualPDF",
+    "trial": 3,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 499.75,
+     "y": 436.25,
+     "height": 65000,
+     "viewport": 677,
+     "dpr": 2,
+     "panes": 2
+    },
+    "open": {
+     "launchToNavigation": 1364,
+     "reader": 245,
+     "firstPaint": 1041,
+     "viewportPaint": 1525,
+     "ready": 4534,
+     "raster": [
+      {
+       "attachment": "c9e57ac0",
+       "page": 6,
+       "ms": 1006,
+       "at": 496,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 7,
+       "ms": 517,
+       "at": 497,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 6,
+       "ms": 138,
+       "at": 1028,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 7,
+       "ms": 103,
+       "at": 1183,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 4,
+       "ms": 316,
+       "at": 1302,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 5,
+       "ms": 140,
+       "at": 1516,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 8,
+       "at": 1632,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 4,
+       "ms": 120,
+       "at": 1680,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 5,
+       "ms": 95,
+       "at": 1813,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 8,
+       "ms": 108,
+       "at": 1925,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 11,
+      "frames": 239,
+      "meanFrame": 17.7,
+      "p95Frame": 18.7,
+      "maxFrame": 81.6,
+      "over50": 2,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 1930,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 11,
+      "rasterMedianMs": 73,
+      "rasterP90Ms": 333
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 92,
+      "meanFrame": 17,
+      "p95Frame": 18.5,
+      "maxFrame": 33.4,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 713,
+      "blankSampleRatio": 6.1,
+      "blankAreaRatio": 0.9,
+      "rasterRequests": 10,
+      "rasterMedianMs": 70,
+      "rasterP90Ms": 190
+     }
+    ]
+   }
+  ],
+  "optimized": [
+   {
+    "paper": "DeepSeek-R1: Incentivizing Reasoning Cap",
+    "paperId": "fcfdbda7-f407-462b-925f-31d49737e7a4",
+    "mode": "pdf",
+    "trial": 1,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 73273,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1389,
+     "reader": 251,
+     "firstPaint": 617,
+     "viewportPaint": 617,
+     "textReady": 681,
+     "ready": 681,
+     "raster": [
+      {
+       "attachment": "624b40f4",
+       "page": 0,
+       "ms": 126,
+       "at": 441,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "624b40f4",
+       "page": 1,
+       "ms": 109,
+       "at": 442,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 246,
+      "meanFrame": 16.7,
+      "p95Frame": 18.5,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 344,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 7,
+      "rasterMedianMs": 36,
+      "rasterP90Ms": 189
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 93,
+      "meanFrame": 16.8,
+      "p95Frame": 18.7,
+      "maxFrame": 33.4,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 202,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 7,
+      "rasterMedianMs": 32,
+      "rasterP90Ms": 113
+     }
+    ]
+   },
+   {
+    "paper": "DeepSeek-R1: Incentivizing Reasoning Cap",
+    "paperId": "fcfdbda7-f407-462b-925f-31d49737e7a4",
+    "mode": "pdf",
+    "trial": 2,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 73273,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1272,
+     "reader": 237,
+     "firstPaint": 571,
+     "viewportPaint": 571,
+     "textReady": 634,
+     "ready": 634,
+     "raster": [
+      {
+       "attachment": "624b40f4",
+       "page": 0,
+       "ms": 97,
+       "at": 425,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "624b40f4",
+       "page": 1,
+       "ms": 82,
+       "at": 426,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 246,
+      "meanFrame": 16.7,
+      "p95Frame": 18.5,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 360,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 7,
+      "rasterMedianMs": 36,
+      "rasterP90Ms": 199
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 95,
+      "meanFrame": 16.7,
+      "p95Frame": 18.3,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 207,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 7,
+      "rasterMedianMs": 34,
+      "rasterP90Ms": 110
+     }
+    ]
+   },
+   {
+    "paper": "DeepSeek-R1: Incentivizing Reasoning Cap",
+    "paperId": "fcfdbda7-f407-462b-925f-31d49737e7a4",
+    "mode": "pdf",
+    "trial": 3,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 73273,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1246,
+     "reader": 238,
+     "firstPaint": 581,
+     "viewportPaint": 581,
+     "textReady": 656,
+     "ready": 656,
+     "raster": [
+      {
+       "attachment": "624b40f4",
+       "page": 0,
+       "ms": 100,
+       "at": 438,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "624b40f4",
+       "page": 1,
+       "ms": 85,
+       "at": 438,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 246,
+      "meanFrame": 16.7,
+      "p95Frame": 18.6,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 355,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 7,
+      "rasterMedianMs": 36,
+      "rasterP90Ms": 188
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 95,
+      "meanFrame": 16.6,
+      "p95Frame": 18.4,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 209,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 7,
+      "rasterMedianMs": 34,
+      "rasterP90Ms": 123
+     }
+    ]
+   },
+   {
+    "paper": "Symbian OS Internals: Real-time Kernel P",
+    "paperId": "b7c585c4-9f7d-490a-a4a8-5ad38a1d901b",
+    "mode": "pdf",
+    "trial": 1,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 635565,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1262,
+     "reader": 221,
+     "firstPaint": 548,
+     "viewportPaint": 567,
+     "ready": 3570,
+     "raster": [
+      {
+       "attachment": "fbe412e8",
+       "page": 0,
+       "ms": 86,
+       "at": 450,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "fbe412e8",
+       "page": 1,
+       "ms": 72,
+       "at": 450,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "fbe412e8",
+       "page": 2,
+       "ms": 26,
+       "at": 548,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 246,
+      "meanFrame": 16.7,
+      "p95Frame": 18.6,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 339,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 8,
+      "rasterMedianMs": 20,
+      "rasterP90Ms": 33
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 94,
+      "meanFrame": 16.7,
+      "p95Frame": 18.5,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 216,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 9,
+      "rasterMedianMs": 19,
+      "rasterP90Ms": 20
+     }
+    ]
+   },
+   {
+    "paper": "Symbian OS Internals: Real-time Kernel P",
+    "paperId": "b7c585c4-9f7d-490a-a4a8-5ad38a1d901b",
+    "mode": "pdf",
+    "trial": 2,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 635565,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1247,
+     "reader": 237,
+     "firstPaint": 594,
+     "viewportPaint": 611,
+     "ready": 3623,
+     "raster": [
+      {
+       "attachment": "fbe412e8",
+       "page": 0,
+       "ms": 89,
+       "at": 482,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "fbe412e8",
+       "page": 1,
+       "ms": 75,
+       "at": 483,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "fbe412e8",
+       "page": 2,
+       "ms": 22,
+       "at": 583,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 246,
+      "meanFrame": 16.7,
+      "p95Frame": 18.4,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 354,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 8,
+      "rasterMedianMs": 20,
+      "rasterP90Ms": 32
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 95,
+      "meanFrame": 16.6,
+      "p95Frame": 18.2,
+      "maxFrame": 18.5,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 212,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 9,
+      "rasterMedianMs": 18,
+      "rasterP90Ms": 20
+     }
+    ]
+   },
+   {
+    "paper": "Symbian OS Internals: Real-time Kernel P",
+    "paperId": "b7c585c4-9f7d-490a-a4a8-5ad38a1d901b",
+    "mode": "pdf",
+    "trial": 3,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 635565,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1229,
+     "reader": 242,
+     "firstPaint": 585,
+     "viewportPaint": 602,
+     "ready": 3608,
+     "raster": [
+      {
+       "attachment": "fbe412e8",
+       "page": 0,
+       "ms": 88,
+       "at": 485,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "fbe412e8",
+       "page": 1,
+       "ms": 72,
+       "at": 486,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "fbe412e8",
+       "page": 2,
+       "ms": 20,
+       "at": 586,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 245,
+      "meanFrame": 16.7,
+      "p95Frame": 18.2,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 361,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 8,
+      "rasterMedianMs": 19,
+      "rasterP90Ms": 33
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 94,
+      "meanFrame": 16.7,
+      "p95Frame": 18.6,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 212,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 9,
+      "rasterMedianMs": 18,
+      "rasterP90Ms": 21
+     }
+    ]
+   },
+   {
+    "paper": "MinerU2.5-Pro: Pushing the Limits of Dat",
+    "paperId": "5b3e077a-dff1-4781-8893-a54ebe392165",
+    "mode": "pdf",
+    "trial": 1,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 34496,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1232,
+     "reader": 238,
+     "firstPaint": 784,
+     "viewportPaint": 784,
+     "textReady": 873,
+     "ready": 873,
+     "raster": [
+      {
+       "attachment": "8f73d31e",
+       "page": 0,
+       "ms": 260,
+       "at": 504,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "8f73d31e",
+       "page": 1,
+       "ms": 98,
+       "at": 504,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 246,
+      "meanFrame": 16.7,
+      "p95Frame": 18.2,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 378,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 8,
+      "rasterMedianMs": 40,
+      "rasterP90Ms": 178
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 94,
+      "meanFrame": 16.7,
+      "p95Frame": 18.6,
+      "maxFrame": 18.8,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 234,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 7,
+      "rasterMedianMs": 36,
+      "rasterP90Ms": 52
+     }
+    ]
+   },
+   {
+    "paper": "MinerU2.5-Pro: Pushing the Limits of Dat",
+    "paperId": "5b3e077a-dff1-4781-8893-a54ebe392165",
+    "mode": "pdf",
+    "trial": 2,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 34496,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1248,
+     "reader": 229,
+     "firstPaint": 819,
+     "viewportPaint": 819,
+     "textReady": 871,
+     "ready": 871,
+     "raster": [
+      {
+       "attachment": "8f73d31e",
+       "page": 0,
+       "ms": 256,
+       "at": 539,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "8f73d31e",
+       "page": 1,
+       "ms": 102,
+       "at": 539,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 245,
+      "meanFrame": 16.7,
+      "p95Frame": 18.4,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 388,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 8,
+      "rasterMedianMs": 39,
+      "rasterP90Ms": 215
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 94,
+      "meanFrame": 16.7,
+      "p95Frame": 18.4,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 238,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 7,
+      "rasterMedianMs": 38,
+      "rasterP90Ms": 56
+     }
+    ]
+   },
+   {
+    "paper": "MinerU2.5-Pro: Pushing the Limits of Dat",
+    "paperId": "5b3e077a-dff1-4781-8893-a54ebe392165",
+    "mode": "pdf",
+    "trial": 3,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 740,
+     "y": 436.25,
+     "height": 34496,
+     "viewport": 688,
+     "dpr": 2,
+     "panes": 1
+    },
+    "open": {
+     "launchToNavigation": 1224,
+     "reader": 239,
+     "firstPaint": 801,
+     "viewportPaint": 801,
+     "textReady": 856,
+     "ready": 856,
+     "raster": [
+      {
+       "attachment": "8f73d31e",
+       "page": 0,
+       "ms": 257,
+       "at": 526,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      },
+      {
+       "attachment": "8f73d31e",
+       "page": 1,
+       "ms": 101,
+       "at": 526,
+       "status": 200,
+       "ratio": 2,
+       "scale": 1
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 246,
+      "meanFrame": 16.7,
+      "p95Frame": 18.5,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 414,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 8,
+      "rasterMedianMs": 42,
+      "rasterP90Ms": 186
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 95,
+      "meanFrame": 16.6,
+      "p95Frame": 18.5,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 244,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 7,
+      "rasterMedianMs": 38,
+      "rasterP90Ms": 57
+     }
+    ]
+   },
+   {
+    "paper": "GLM-5: from Vibe Coding to Agentic Engin",
+    "paperId": "edb20d05-5008-457f-a165-2c3bcd356b5c",
+    "mode": "bilingualPDF",
+    "trial": 1,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 499.75,
+     "y": 436.25,
+     "height": 23859,
+     "viewport": 677,
+     "dpr": 2,
+     "panes": 2
+    },
+    "open": {
+     "launchToNavigation": 1222,
+     "reader": 261,
+     "firstPaint": 699,
+     "viewportPaint": 1238,
+     "textReady": 1869,
+     "ready": 1869,
+     "raster": [
+      {
+       "attachment": "4a8d7b17",
+       "page": 0,
+       "ms": 252,
+       "at": 495,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "4a8d7b17",
+       "page": 1,
+       "ms": 186,
+       "at": 497,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 0,
+       "ms": 514,
+       "at": 698,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 1,
+       "ms": 383,
+       "at": 767,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "4a8d7b17",
+       "page": 2,
+       "ms": 519,
+       "at": 1162,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 2,
+       "ms": 520,
+       "at": 1226,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 246,
+      "meanFrame": 16.7,
+      "p95Frame": 18.4,
+      "maxFrame": 18.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 581,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 20,
+      "rasterMedianMs": 35,
+      "rasterP90Ms": 110
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 644,
+      "frames": 131,
+      "meanFrame": 16.9,
+      "p95Frame": 18.5,
+      "maxFrame": 34.6,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 613,
+      "blankSampleRatio": 44.8,
+      "blankAreaRatio": 21,
+      "rasterRequests": 20,
+      "rasterMedianMs": 35,
+      "rasterP90Ms": 210
+     }
+    ]
+   },
+   {
+    "paper": "GLM-5: from Vibe Coding to Agentic Engin",
+    "paperId": "edb20d05-5008-457f-a165-2c3bcd356b5c",
+    "mode": "bilingualPDF",
+    "trial": 2,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 499.75,
+     "y": 436.25,
+     "height": 23859,
+     "viewport": 677,
+     "dpr": 2,
+     "panes": 2
+    },
+    "open": {
+     "launchToNavigation": 1209,
+     "reader": 242,
+     "firstPaint": 654,
+     "viewportPaint": 1185,
+     "textReady": 1841,
+     "ready": 1841,
+     "raster": [
+      {
+       "attachment": "4a8d7b17",
+       "page": 0,
+       "ms": 246,
+       "at": 464,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "4a8d7b17",
+       "page": 1,
+       "ms": 177,
+       "at": 465,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 0,
+       "ms": 506,
+       "at": 660,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 1,
+       "ms": 373,
+       "at": 735,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "4a8d7b17",
+       "page": 2,
+       "ms": 514,
+       "at": 1119,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 2,
+       "ms": 508,
+       "at": 1178,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 244,
+      "meanFrame": 16.9,
+      "p95Frame": 18.4,
+      "maxFrame": 33.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 583,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 20,
+      "rasterMedianMs": 36,
+      "rasterP90Ms": 108
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 610,
+      "frames": 130,
+      "meanFrame": 16.8,
+      "p95Frame": 17.6,
+      "maxFrame": 33.6,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 608,
+      "blankSampleRatio": 40.9,
+      "blankAreaRatio": 8.8,
+      "rasterRequests": 20,
+      "rasterMedianMs": 35,
+      "rasterP90Ms": 255
+     }
+    ]
+   },
+   {
+    "paper": "GLM-5: from Vibe Coding to Agentic Engin",
+    "paperId": "edb20d05-5008-457f-a165-2c3bcd356b5c",
+    "mode": "bilingualPDF",
+    "trial": 3,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 499.75,
+     "y": 436.25,
+     "height": 23859,
+     "viewport": 677,
+     "dpr": 2,
+     "panes": 2
+    },
+    "open": {
+     "launchToNavigation": 1217,
+     "reader": 250,
+     "firstPaint": 668,
+     "viewportPaint": 1195,
+     "textReady": 1865,
+     "ready": 1865,
+     "raster": [
+      {
+       "attachment": "4a8d7b17",
+       "page": 0,
+       "ms": 254,
+       "at": 474,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "4a8d7b17",
+       "page": 1,
+       "ms": 180,
+       "at": 476,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 0,
+       "ms": 502,
+       "at": 670,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 1,
+       "ms": 370,
+       "at": 749,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "4a8d7b17",
+       "page": 2,
+       "ms": 515,
+       "at": 1131,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "26f0cce2",
+       "page": 2,
+       "ms": 513,
+       "at": 1186,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 246,
+      "meanFrame": 16.7,
+      "p95Frame": 17.6,
+      "maxFrame": 17.8,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 577,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 20,
+      "rasterMedianMs": 35,
+      "rasterP90Ms": 110
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 661,
+      "frames": 131,
+      "meanFrame": 16.9,
+      "p95Frame": 17.7,
+      "maxFrame": 33.8,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 606,
+      "blankSampleRatio": 44.9,
+      "blankAreaRatio": 21.8,
+      "rasterRequests": 20,
+      "rasterMedianMs": 35,
+      "rasterP90Ms": 201
+     }
+    ]
+   },
+   {
+    "paper": "MAI-Thinking-1: Building a Hill-Climbing",
+    "paperId": "c67552c1-38c9-4aa4-88af-3c7803a79366",
+    "mode": "bilingualPDF",
+    "trial": 1,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 499.75,
+     "y": 436.25,
+     "height": 65000,
+     "viewport": 677,
+     "dpr": 2,
+     "panes": 2
+    },
+    "open": {
+     "launchToNavigation": 1191,
+     "reader": 250,
+     "firstPaint": 630,
+     "viewportPaint": 697,
+     "ready": 3703,
+     "raster": [
+      {
+       "attachment": "c9e57ac0",
+       "page": 6,
+       "ms": 148,
+       "at": 489,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 7,
+       "ms": 115,
+       "at": 490,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 6,
+       "ms": 37,
+       "at": 618,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 7,
+       "ms": 24,
+       "at": 656,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 4,
+       "ms": 97,
+       "at": 669,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 5,
+       "ms": 48,
+       "at": 696,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 8,
+       "ms": 434,
+       "at": 758,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 4,
+       "ms": 43,
+       "at": 780,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 5,
+       "ms": 21,
+       "at": 835,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 8,
+       "ms": 31,
+       "at": 870,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 11,
+      "frames": 237,
+      "meanFrame": 17.6,
+      "p95Frame": 17.7,
+      "maxFrame": 67,
+      "over50": 2,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 1965,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 11,
+      "rasterMedianMs": 16,
+      "rasterP90Ms": 41
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 0,
+      "frames": 95,
+      "meanFrame": 16.7,
+      "p95Frame": 17.6,
+      "maxFrame": 17.7,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 755,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 10,
+      "rasterMedianMs": 16,
+      "rasterP90Ms": 57
+     }
+    ]
+   },
+   {
+    "paper": "MAI-Thinking-1: Building a Hill-Climbing",
+    "paperId": "c67552c1-38c9-4aa4-88af-3c7803a79366",
+    "mode": "bilingualPDF",
+    "trial": 2,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 499.75,
+     "y": 436.25,
+     "height": 65000,
+     "viewport": 677,
+     "dpr": 2,
+     "panes": 2
+    },
+    "open": {
+     "launchToNavigation": 1228,
+     "reader": 239,
+     "firstPaint": 608,
+     "viewportPaint": 707,
+     "ready": 3730,
+     "raster": [
+      {
+       "attachment": "c9e57ac0",
+       "page": 6,
+       "ms": 144,
+       "at": 478,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 7,
+       "ms": 113,
+       "at": 479,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 6,
+       "ms": 38,
+       "at": 605,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 7,
+       "ms": 56,
+       "at": 636,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 4,
+       "ms": 102,
+       "at": 657,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 5,
+       "ms": 40,
+       "at": 711,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 8,
+       "ms": 464,
+       "at": 767,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 4,
+       "ms": 25,
+       "at": 779,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 5,
+       "ms": 23,
+       "at": 818,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 8,
+       "ms": 28,
+       "at": 872,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 12,
+      "frames": 236,
+      "meanFrame": 17.9,
+      "p95Frame": 32.7,
+      "maxFrame": 66.9,
+      "over50": 2,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 2109,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 11,
+      "rasterMedianMs": 24,
+      "rasterP90Ms": 41
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 94,
+      "meanFrame": 16.7,
+      "p95Frame": 17.4,
+      "maxFrame": 17.6,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 748,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 10,
+      "rasterMedianMs": 17,
+      "rasterP90Ms": 56
+     }
+    ]
+   },
+   {
+    "paper": "MAI-Thinking-1: Building a Hill-Climbing",
+    "paperId": "c67552c1-38c9-4aa4-88af-3c7803a79366",
+    "mode": "bilingualPDF",
+    "trial": 3,
+    "system": {
+     "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+     "memoryGB": 16,
+     "release": "24.6.0",
+     "electron": "44.9.3",
+     "chrome": "152.0.7977.167",
+     "gpu": {
+      "active": true,
+      "deviceId": 26607,
+      "gpuPreference": 3,
+      "vendorId": 4098
+     },
+     "noWorker": false,
+     "window": [
+      1400,
+      860
+     ]
+    },
+    "workers": [
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf.worker.min-CjEcRF4W.mjs",
+     "pdf-raster-fetch"
+    ],
+    "geometry": {
+     "x": 499.75,
+     "y": 436.25,
+     "height": 65000,
+     "viewport": 677,
+     "dpr": 2,
+     "panes": 2
+    },
+    "open": {
+     "launchToNavigation": 1224,
+     "reader": 238,
+     "firstPaint": 611,
+     "viewportPaint": 694,
+     "ready": 3695,
+     "raster": [
+      {
+       "attachment": "c9e57ac0",
+       "page": 6,
+       "ms": 145,
+       "at": 478,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 7,
+       "ms": 112,
+       "at": 479,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 6,
+       "ms": 40,
+       "at": 603,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 7,
+       "ms": 23,
+       "at": 643,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 4,
+       "ms": 92,
+       "at": 666,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 5,
+       "ms": 48,
+       "at": 682,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "c9e57ac0",
+       "page": 8,
+       "ms": 469,
+       "at": 745,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 4,
+       "ms": 43,
+       "at": 773,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 5,
+       "ms": 26,
+       "at": 829,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      },
+      {
+       "attachment": "fdad0a8a",
+       "page": 8,
+       "ms": 28,
+       "at": 872,
+       "status": 200,
+       "ratio": 2,
+       "scale": 0.7
+      }
+     ]
+    },
+    "scrolls": [
+     {
+      "speed": 1500,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 13,
+      "frames": 236,
+      "meanFrame": 17.6,
+      "p95Frame": 17.5,
+      "maxFrame": 66.2,
+      "over50": 3,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 1966,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 11,
+      "rasterMedianMs": 17,
+      "rasterP90Ms": 42
+     },
+     {
+      "speed": 4000,
+      "distance": 6000,
+      "moved": 6000,
+      "settleMs": 1,
+      "frames": 94,
+      "meanFrame": 16.8,
+      "p95Frame": 17.5,
+      "maxFrame": 33,
+      "over50": 0,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "taskMs": 761,
+      "blankSampleRatio": 0,
+      "blankAreaRatio": 0,
+      "rasterRequests": 10,
+      "rasterMedianMs": 16,
+      "rasterP90Ms": 58
+     }
+    ]
+   }
+  ]
+ }
+}

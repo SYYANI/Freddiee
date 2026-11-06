@@ -46,6 +46,7 @@
     "katex": "^0.18.10",
     "koffi": "^3.3.3",
     "lucide-react": "^0.468.0",
+    "mupdf": "1.28.1",
     "onnxruntime-node": "1.23.2",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.4.299",
@@ -94,7 +95,8 @@
       "package.json",
       "BabelDocKit/resources/**",
       "!node_modules/@tesseract.js-data/eng/4.0.0/**",
-      "!node_modules/tesseract.js-core/*-lstm.{js,wasm,wasm.js}"
+      "!node_modules/tesseract.js-core/*-lstm.{js,wasm,wasm.js}",
+      "!node_modules/mupdf/dist/*.br"
     ],
     "extraResources": [
       {
@@ -158,6 +160,7 @@
       "node_modules/pdfjs-dist/cmaps/**",
       "node_modules/pdfjs-dist/wasm/**",
       "node_modules/@napi-rs/canvas*/**",
+      "node_modules/mupdf/**",
       "node_modules/tesseract.js/**",
       "node_modules/tesseract.js-core/**",
       "node_modules/@tesseract.js-data/**",

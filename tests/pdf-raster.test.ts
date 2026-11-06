@@ -24,6 +24,10 @@ beforeAll(async () => {
   page.drawRectangle({ x: 20, y: 20, width: 30, height: 40, color: rgb(1, 0, 0) })
   page.drawText('Selectable original text', { x: 20, y: 200, size: 10, font })
   pdf.addPage([200, 300]).setRotation(degrees(90))
+  // A CropBox away from the origin and fractional page sizes: the bitmap must still be PDF.js's size.
+  const cropped = pdf.addPage([612, 792])
+  cropped.setCropBox(100, 150, 300.5, 400.25)
+  cropped.drawRectangle({ x: 100, y: 150, width: 10, height: 10, color: rgb(0, 0, 1) })
   pdfBytes = await pdf.save()
 })
 afterEach(async () => { await Promise.all(clients.splice(0).map((client) => client.close())); vi.restoreAllMocks() })
@@ -66,6 +70,29 @@ describe('PDF raster worker', () => {
     await expect(raster.render('document', read, { ...parameters, pageIndex: 100 }, signal)).rejects.toThrow('Invalid PDF page')
   }, 15000)
 
+  it('draws at exactly the PDF.js viewport size, from the CropBox origin', async () => {
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    const task = pdfjs.getDocument({ data: pdfBytes.slice(), verbosity: pdfjs.VerbosityLevel.ERRORS })
+    const viewport = (await (await task.promise).getPage(3)).getViewport({ scale: 0.7 })
+    await task.destroy()
+    const image = decode(await client().render('cropped', async () => pdfBytes.slice(), { ...parameters, pageIndex: 2, scale: 0.7 }, new AbortController().signal))
+    expect([image.width, image.height]).toEqual([Math.floor(viewport.width * 2), Math.floor(viewport.height * 2)])
+    // The blue square sits in the CropBox's lower-left corner: 10 pt at 1.4 pixels per point.
+    expect(image.pixel(5, image.height - 5)).toEqual([0, 0, 255, 255])
+    expect(image.pixel(20, image.height - 5)).toEqual([255, 255, 255, 255])
+    expect(image.pixel(5, image.height - 20)).toEqual([255, 255, 255, 255])
+  }, 15000)
+
+  it('retires an idle worker and starts another for the next page', async () => {
+    const raster = new PdfRasterWorkerClient(workerPath, 50), read = vi.fn(async () => pdfBytes.slice()), signal = new AbortController().signal
+    clients.push(raster)
+    await raster.render('idle', read, parameters, signal)
+    expect(raster.holds('idle')).toBe(true)
+    await vi.waitFor(() => expect(raster.holds('idle')).toBe(false))
+    expect(decode(await raster.render('idle', read, parameters, signal)).width).toBe(400)
+    expect(read).toHaveBeenCalledTimes(2)
+  }, 15000)
+
   it('bounds the parsed document cache and reopens an evicted file', async () => {
     const raster = client(), read = vi.fn(async () => pdfBytes.slice()), signal = new AbortController().signal
     for (const key of ['one', 'two', 'three', 'one']) await raster.render(key, read, parameters, signal)
@@ -104,18 +131,17 @@ describe('PDF raster worker', () => {
 })
 
 describe('PDF raster worker warm-up page', () => {
-  it('is a well-formed PDF that PDF.js reads without repairing it', async () => {
-    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
-    const log = vi.spyOn(console, 'log')
-    const task = pdfjs.getDocument({ data: warmupPdf(), verbosity: pdfjs.VerbosityLevel.WARNINGS, useSystemFonts: false,
-      standardFontDataUrl: resolve('node_modules/pdfjs-dist/standard_fonts') + '/' })
+  it('is a well-formed PDF that MuPDF reads without repairing it', async () => {
+    const messages: string[] = []
+    Object.assign(globalThis, { $libmupdf_wasm_Module: { print: (line: string) => messages.push(line), printErr: (line: string) => messages.push(line) } })
+    const mupdf = await import('mupdf')
+    const document = mupdf.Document.openDocument(warmupPdf(), 'application/pdf')
     try {
-      const document = await task.promise
-      expect(document.numPages).toBe(1)
-      const text = await (await document.getPage(1)).getTextContent()
-      expect(text.items.map((item) => ('str' in item ? item.str : '')).join(' ')).toContain('Aa 1')
-      expect(log.mock.calls.flat().join('\n')).not.toMatch(/Warning/)
-    } finally { await task.destroy() }
+      expect(document.countPages()).toBe(1)
+      expect(document.asPDF()?.wasRepaired()).toBe(false)
+      expect(document.loadPage(0).toStructuredText('').asText()).toContain('Aa 1')
+      expect(messages).toEqual([])
+    } finally { document.destroy() }
   })
 })
 

@@ -1,35 +1,35 @@
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { Worker } from 'node:worker_threads'
-import { pdfjsResourceBase } from './pdfjsResources'
 
-export interface PdfRasterResources { pdfjsModuleURL: string; canvasModuleURL: string; standardFontDataURL: string; cMapURL: string; wasmURL: string }
+export interface PdfRasterResources { mupdfModuleURL: string }
 export interface PdfRasterParameters { pageIndex: number; scale: number; ratio: number; paperTone: boolean }
 export type PdfRasterMessage = { type: 'cancel'; id: number } | ({ type: 'render'; id: number; key: string; pdf?: Uint8Array } & PdfRasterParameters)
 export type PdfRasterReply = { id: number; documents: string[] } & ({ type: 'result'; image: Uint8Array } | { type: 'error'; message: string })
 export type PdfRasterWorker = Pick<PdfRasterWorkerClient, 'render' | 'close'> & Partial<Pick<PdfRasterWorkerClient, 'warm' | 'holds'>>
 
-/** One persistent, credential-free worker; only its current request and two parsed PDFs are kept. */
+/**
+ * One credential-free worker drawing with MuPDF; only its current request and two parsed PDFs are
+ * kept. MuPDF's WebAssembly memory never shrinks, so a worker idle for `idleMs` exits and gives it
+ * back; the next request starts another (MuPDF compiles in tens of milliseconds).
+ */
 export class PdfRasterWorkerClient {
   private worker?: Worker
   private documents = new Set<string>()
   private nextID = 0
   private stopped = false
   private busy = false
+  private idle?: NodeJS.Timeout
   private active?: { id: number; finish: (error?: unknown, image?: Uint8Array) => void }
 
-  constructor(private readonly workerPath = join(__dirname, 'pdfRasterWorker.cjs')) {}
+  constructor(private readonly workerPath = join(__dirname, 'pdfRasterWorker.cjs'), private readonly idleMs = 120_000) {}
 
   private start(): Worker {
     if (this.stopped) throw new Error('PDF raster worker is closed')
     if (this.worker) return this.worker
-    const root = dirname(require.resolve('pdfjs-dist/package.json')).replace(/app\.asar([\\/])/, 'app.asar.unpacked$1')
-    const worker = new Worker(this.workerPath, { workerData: {
-      pdfjsModuleURL: pathToFileURL(require.resolve('pdfjs-dist/legacy/build/pdf.mjs')).href,
-      canvasModuleURL: pathToFileURL(require.resolve('@napi-rs/canvas')).href,
-      standardFontDataURL: pdfjsResourceBase(join(root, 'standard_fonts')), cMapURL: pdfjsResourceBase(join(root, 'cmaps')),
-      wasmURL: pdfjsResourceBase(join(root, 'wasm'))
-    } satisfies PdfRasterResources })
+    // Loaded from outside the archive: Emscripten reads mupdf-wasm.wasm beside the module.
+    const mupdf = require.resolve('mupdf').replace(/app\.asar([\\/])/, 'app.asar.unpacked$1')
+    const worker = new Worker(this.workerPath, { workerData: { mupdfModuleURL: pathToFileURL(mupdf).href } satisfies PdfRasterResources })
     this.worker = worker
     const fail = (error: unknown): void => {
       if (this.worker !== worker) return
@@ -49,9 +49,23 @@ export class PdfRasterWorkerClient {
     return worker
   }
 
-  /** Starts the worker and its PDF.js/canvas imports ahead of the first page. */
+  /** Starts the worker and MuPDF's compilation ahead of the first page. */
   warm(): void {
-    if (!this.stopped) this.start()
+    if (this.stopped) return
+    this.start()
+    this.scheduleRetirement()
+  }
+
+  private scheduleRetirement(): void {
+    clearTimeout(this.idle)
+    this.idle = setTimeout(() => {
+      const worker = this.worker
+      if (this.busy || !worker) return
+      this.worker = undefined
+      this.documents.clear()
+      void worker.terminate()
+    }, this.idleMs)
+    this.idle.unref?.()
   }
 
   /** Whether the worker still holds this document parsed, so a request for it skips reading and parsing. */
@@ -63,6 +77,7 @@ export class PdfRasterWorkerClient {
     signal.throwIfAborted()
     if (this.busy) throw new Error('PDF raster worker already busy')
     this.busy = true
+    clearTimeout(this.idle)
     try {
       const worker = this.start()
       const pdf = this.documents.has(key) ? undefined : await read()
@@ -83,11 +98,15 @@ export class PdfRasterWorkerClient {
         catch (error) { this.active.finish(error) }
         if (signal.aborted) abort()
       })
-    } finally { this.busy = false }
+    } finally {
+      this.busy = false
+      if (!this.stopped) this.scheduleRetirement()
+    }
   }
 
   async close(): Promise<void> {
     this.stopped = true
+    clearTimeout(this.idle)
     this.active?.finish(new Error('PDF raster worker is closed'))
     const worker = this.worker
     this.worker = undefined
