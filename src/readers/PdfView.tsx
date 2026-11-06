@@ -7,6 +7,8 @@ import { buildMatcher, type FindRequest, type FindStatus } from './find'
 import { SidenoteRail } from './SidenoteRail'
 import { clampScale, fittedScale, pageSideMargin, resolvedScale, scalingAfterDividerGrab, wheelZoomFactor, type PdfScaling } from './pdfScaling'
 import { bindAssistantHistory, historyQuoteRange, type HistoryRange } from './assistantHistory'
+import { pdfRenderQueue, pdfTextQueue, type QueuedPdfRender } from './pdfRenderQueue'
+import { chunkTextContent } from './pdfTextContent'
 
 export type AnnotationMode = 'browse' | 'ink' | 'textNote' | 'erase'
 
@@ -105,7 +107,8 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
   const [containerWidth, setContainerWidth] = useState(0)
   const initialScaling = (): PdfScaling => (props.automaticScaling ? { mode: 'fit' } : { mode: 'manual', scale: 1 })
   const [scaling, setScaling] = useState<PdfScaling>(initialScaling)
-  const [visible, setVisible] = useState<[number, number]>([0, 2])
+  // Render window followed by the actual viewport, so prefetch never outranks visible pages.
+  const [visible, setVisible] = useState<[number, number, number, number]>([0, 2, 0, 0])
   const [error, setError] = useState<string>()
   const currentPage = useRef(props.pageIndex)
   const restoredFor = useRef<string>()
@@ -270,7 +273,12 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     props.onOutlineLocation?.(trackingPage, Math.max(0, Math.min(1, (trackingY - tops[trackingPage]) / (sizes[trackingPage].height * scale))))
     const first = pageAt(element.scrollTop - element.clientHeight)
     const last = pageAt(element.scrollTop + element.clientHeight * 2)
-    setVisible((current) => (current[0] === first && current[1] === last ? current : [first, last]))
+    let viewportFirst = pageAt(element.scrollTop)
+    // A page ending at the top edge (or above it, in the gap) is prefetch, not visible.
+    if (viewportFirst < sizes.length - 1 && tops[viewportFirst] + sizes[viewportFirst].height * scale <= element.scrollTop) viewportFirst += 1
+    const viewportLast = pageAt(element.scrollTop + element.clientHeight)
+    setVisible((current) => (current[0] === first && current[1] === last && current[2] === viewportFirst && current[3] === viewportLast
+      ? current : [first, last, viewportFirst, viewportLast]))
     const center = pageAt(element.scrollTop + element.clientHeight / 3)
     if (center !== currentPage.current) {
       currentPage.current = center
@@ -291,6 +299,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     if (props.pageIndex !== currentPage.current) {
       currentPage.current = props.pageIndex
       scrollToPage(props.pageIndex)
+      updateVisible()
     }
   }, [props.pageIndex, sizes.length, containerWidth, url])
 
@@ -326,11 +335,24 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
     updateVisible()
   }, [tops])
 
+  const scrollFrame = useRef<number>()
+  const userScrolled = useRef(false)
+  const flushScroll = useRef(() => {})
+  flushScroll.current = () => {
+    scrollFrame.current = undefined
+    updateVisible()
+    const notify = userScrolled.current
+    userScrolled.current = false
+    if (notify) props.onUserScroll?.()
+  }
   const onScroll = (): void => {
     if (scroller.current) rememberScrollPosition(scroller.current)
-    updateVisible()
-    if (programmatic.current === 0) props.onUserScroll?.()
+    userScrolled.current ||= programmatic.current === 0
+    scrollFrame.current ??= requestAnimationFrame(() => flushScroll.current())
   }
+  useEffect(() => () => {
+    if (scrollFrame.current !== undefined) cancelAnimationFrame(scrollFrame.current)
+  }, [])
 
   const beginPan = (event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!props.handToolEnabled || (props.tool?.mode ?? 'browse') !== 'browse' || event.button !== 0) return
@@ -436,7 +458,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
   useEffect(() => {
     const element = scroller.current
     const registry = (CSS as unknown as { highlights?: Map<string, unknown> }).highlights
-    if (!element || !registry) return
+    if (!element || !registry || !matches.length) return
     const all: Range[] = []
     const current: Range[] = []
     matches.forEach((match, index) => {
@@ -761,8 +783,8 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
       >
         {error && <div className="pdf-error">{error}</div>}
         <div className="pdf-canvas-area" style={{ height: totalHeight, width: showsRail ? readerWidth : Math.max(readerWidth, Math.round(widestPage * scale + 2 * pageSideMargin)) }}>
-          {document && sizes.map((size, index) => {
-            const isVisible = index >= visible[0] && index <= visible[1]
+          {document && sizes.slice(visible[0], visible[1] + 1).map((size, offset) => {
+            const index = visible[0] + offset
             return (
               <PdfPage
                 key={index}
@@ -772,7 +794,7 @@ export const PdfView = forwardRef<PdfViewHandle, PdfViewProps>(function PdfView(
                 scale={scale}
                 top={tops[index]}
                 left={pageLeft(size.width * scale, readerWidth)}
-                visible={isVisible}
+                priority={index >= visible[2] && index <= visible[3] ? 0 : 1}
                 missing={props.maxPage !== undefined && index >= props.maxPage}
                 paperTone={appearance === 'paper'}
                 annotations={annotationsByPage.get(index) ?? noAnnotations}
@@ -820,14 +842,14 @@ function releaseCanvas(canvas: HTMLCanvasElement): void {
   canvas.height = 0
 }
 
-const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left, visible, missing, paperTone, annotations, tool, onRendered, onCommitInk, onErase, onPlaceNote, onLink }: {
+const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left, priority, missing, paperTone, annotations, tool, onRendered, onCommitInk, onErase, onPlaceNote, onLink }: {
   document: PDFDocumentProxy
   index: number
   size: PageSize
   scale: number
   top: number
   left: number
-  visible: boolean
+  priority: number
   missing: boolean
   paperTone: boolean
   annotations: PdfAnnotation[]
@@ -841,93 +863,139 @@ const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left,
   const canvasHostRef = useRef<HTMLDivElement>(null)
   const textLayerRef = useRef<HTMLDivElement>(null)
   const linkLayerRef = useRef<HTMLDivElement>(null)
+  const queuedRender = useRef<QueuedPdfRender>()
+  const queuedText = useRef<QueuedPdfRender>()
+  const priorityRef = useRef(priority)
+  priorityRef.current = priority
   const [drawing, setDrawing] = useState<Array<{ x: number; y: number }> | null>(null)
   const width = size.width * scale
   const height = size.height * scale
 
   useEffect(() => {
-    if (!visible || missing) return
+    if (missing) return
     let cancelled = false
     let renderTask: RenderTask | undefined
     let textLayer: InstanceType<typeof pdfjs.TextLayer> | undefined
-    const timer = setTimeout(async () => {
-      const page = await document.getPage(index + 1)
-      if (cancelled || !canvasHostRef.current || !textLayerRef.current) return
-      const viewport = page.getViewport({ scale })
-      const ratio = Math.min(window.devicePixelRatio || 1, 3, Math.sqrt(maxPagePixels / (viewport.width * viewport.height)))
-      // Render into a new canvas so a rescaled page keeps showing its stretched image instead of going
-      // blank, then swap it in: copying it into the old canvas would hold two bitmaps per page.
-      const canvas = window.document.createElement('canvas')
-      canvas.width = Math.floor(viewport.width * ratio)
-      canvas.height = Math.floor(viewport.height * ratio)
-      renderTask = page.render({ canvas, viewport, transform: ratio !== 1 ? [ratio, 0, 0, ratio, 0, 0] : undefined })
-      try {
-        await renderTask.promise
-      } catch {
-        releaseCanvas(canvas)
-        return
-      }
-      const host = canvasHostRef.current
-      if (cancelled || !host || !textLayerRef.current) {
-        releaseCanvas(canvas)
-        return
-      }
-      // Tint the bitmap once instead of blending a multiply layer over the page on every frame.
-      if (paperTone) {
-        const context = canvas.getContext('2d')
-        if (context) {
-          context.globalCompositeOperation = 'multiply'
-          context.fillStyle = paperToneColor
-          context.fillRect(0, 0, canvas.width, canvas.height)
+    let continuationTimer: ReturnType<typeof setTimeout> | undefined
+    const timer = setTimeout(() => {
+      const queued = pdfRenderQueue.enqueue(async () => {
+        if (cancelled) return
+        const page = await document.getPage(index + 1)
+        if (cancelled || !canvasHostRef.current || !textLayerRef.current) return
+        const viewport = page.getViewport({ scale })
+        const ratio = Math.min(window.devicePixelRatio || 1, 3, Math.sqrt(maxPagePixels / (viewport.width * viewport.height)))
+        // Render into a new canvas so a rescaled page keeps showing its stretched image instead of going
+        // blank, then swap it in: copying it into the old canvas would hold two bitmaps per page.
+        const canvas = window.document.createElement('canvas')
+        canvas.width = Math.floor(viewport.width * ratio)
+        canvas.height = Math.floor(viewport.height * ratio)
+        renderTask = page.render({ canvas, viewport, transform: ratio !== 1 ? [ratio, 0, 0, ratio, 0, 0] : undefined })
+        // PDF.js already splits the operator list into chunks. Yield an input turn before its
+        // next animation frame, rather than letting several pages consume the same frame.
+        renderTask.onContinue = (resume: () => void) => {
+          continuationTimer = setTimeout(() => { if (!cancelled) resume() }, 0)
         }
-      }
-      const previous = Array.from(host.children) as HTMLCanvasElement[]
-      host.replaceChildren(canvas)
-      previous.forEach(releaseCanvas)
-      const container = textLayerRef.current
-      container.replaceChildren()
-      container.style.setProperty('--total-scale-factor', String(scale))
-      textLayer = new pdfjs.TextLayer({ textContentSource: await page.getTextContent(), container, viewport })
-      await textLayer.render().catch(() => undefined)
-      if (cancelled) return
-      // Links become clickable areas; the reader decides where they go.
-      const linkLayer = linkLayerRef.current
-      if (linkLayer) {
-        linkLayer.replaceChildren()
-        for (const annotation of await page.getAnnotations()) {
-          const target = (annotation as { url?: string }).url
-          if (annotation.subtype !== 'Link' || !target) continue
-          const [x1, y1] = viewport.convertToViewportPoint(annotation.rect[0], annotation.rect[1]) as [number, number]
-          const [x2, y2] = viewport.convertToViewportPoint(annotation.rect[2], annotation.rect[3]) as [number, number]
-          const anchor = window.document.createElement('a')
-          anchor.className = 'pdf-link'
-          anchor.style.cssText = `left:${Math.min(x1, x2)}px;top:${Math.min(y1, y2)}px;width:${Math.abs(x2 - x1)}px;height:${Math.abs(y2 - y1)}px`
-          anchor.title = target
-          anchor.addEventListener('click', (event) => {
-            event.preventDefault()
-            onLink(target)
-          })
-          linkLayer.appendChild(anchor)
+        try {
+          await renderTask.promise
+        } catch {
+          releaseCanvas(canvas)
+          return
         }
-      }
-      onRendered()
+        const host = canvasHostRef.current
+        if (cancelled || !host || !textLayerRef.current) {
+          releaseCanvas(canvas)
+          return
+        }
+        // Tint the bitmap once instead of blending a multiply layer over the page on every frame.
+        if (paperTone) {
+          const context = canvas.getContext('2d')
+          if (context) {
+            context.globalCompositeOperation = 'multiply'
+            context.fillStyle = paperToneColor
+            context.fillRect(0, 0, canvas.width, canvas.height)
+          }
+        }
+        const previous = Array.from(host.children) as HTMLCanvasElement[]
+        host.replaceChildren(canvas)
+        previous.forEach(releaseCanvas)
+        const layout = pdfTextQueue.enqueue(async () => {
+          if (cancelled || !textLayerRef.current) return
+          // Font measurements must not repeatedly flush layout of a partially appended dense page.
+          // Build selectable text off-DOM in small batches, then attach the completed layer once.
+          const container = textLayerRef.current.cloneNode(false) as HTMLDivElement
+          container.style.setProperty('--total-scale-factor', String(scale))
+          const textContent = await page.getTextContent()
+          if (cancelled) return
+          textLayer = new pdfjs.TextLayer({ textContentSource: chunkTextContent(textContent, () => cancelled), container, viewport })
+          try { await textLayer.render() } catch { return }
+          const liveContainer = textLayerRef.current
+          if (cancelled || !liveContainer) return
+          for (const attribute of Array.from(container.attributes)) liveContainer.setAttribute(attribute.name, attribute.value)
+          const textFragment = window.document.createDocumentFragment()
+          while (container.firstChild) textFragment.appendChild(container.firstChild)
+          liveContainer.replaceChildren(textFragment)
+          // Links become clickable areas; the reader decides where they go.
+          const linkLayer = linkLayerRef.current
+          if (linkLayer) {
+            const links = await page.getAnnotations()
+            if (cancelled) return
+            linkLayer.replaceChildren()
+            const fragment = window.document.createDocumentFragment()
+            for (const annotation of links) {
+              const target = (annotation as { url?: string }).url
+              if (annotation.subtype !== 'Link' || !target) continue
+              const [x1, y1] = viewport.convertToViewportPoint(annotation.rect[0], annotation.rect[1]) as [number, number]
+              const [x2, y2] = viewport.convertToViewportPoint(annotation.rect[2], annotation.rect[3]) as [number, number]
+              const anchor = window.document.createElement('a')
+              anchor.className = 'pdf-link'
+              anchor.style.cssText = `left:${Math.min(x1, x2)}px;top:${Math.min(y1, y2)}px;width:${Math.abs(x2 - x1)}px;height:${Math.abs(y2 - y1)}px`
+              anchor.title = target
+              anchor.addEventListener('click', (event) => {
+                event.preventDefault()
+                onLink(target)
+              })
+              fragment.appendChild(anchor)
+            }
+            linkLayer.appendChild(fragment)
+          }
+          onRendered()
+        }, priorityRef.current)
+        queuedText.current = layout
+        void layout.promise.catch((reason: unknown) => {
+          if (!cancelled) console.error('Unable to lay out PDF text', index + 1, reason)
+        })
+      }, priorityRef.current)
+      queuedRender.current = queued
+      void queued.promise.catch((reason: unknown) => {
+        if (!cancelled) console.error('Unable to render PDF page', index + 1, reason)
+      })
     }, 30)
     return () => {
       cancelled = true
       clearTimeout(timer)
+      clearTimeout(continuationTimer)
+      queuedRender.current?.cancel()
+      queuedRender.current = undefined
+      queuedText.current?.cancel()
+      queuedText.current = undefined
       renderTask?.cancel()
       textLayer?.cancel()
     }
-  }, [visible, scale, document, index, missing, paperTone])
+  }, [scale, document, index, missing, paperTone])
+
+  useEffect(() => {
+    queuedRender.current?.setPriority(priority)
+    queuedText.current?.setPriority(priority)
+  }, [priority])
 
   // Free the bitmap as soon as the page leaves the render window; Intel Macs share it with system memory.
   useEffect(() => {
-    if (!visible || missing) return
+    if (missing) return
     const host = canvasHostRef.current
     return () => {
       if (host) (Array.from(host.children) as HTMLCanvasElement[]).forEach(releaseCanvas)
     }
-  }, [visible, missing])
+  }, [missing])
 
   const normalized = (event: React.PointerEvent): { x: number; y: number } => {
     const box = (event.currentTarget as HTMLElement).getBoundingClientRect()
@@ -937,7 +1005,7 @@ const PdfPage = memo(function PdfPage({ document, index, size, scale, top, left,
   const mode = tool?.mode ?? 'browse'
   return (
     <div className={`pdf-page ${missing ? 'missing' : ''}`} data-page-index={index} style={{ top, left, width, height }}>
-      {visible && !missing && (
+      {!missing && (
         <>
           <div ref={canvasHostRef} className="pdf-page-canvas" />
           <div ref={textLayerRef} className="textLayer" />

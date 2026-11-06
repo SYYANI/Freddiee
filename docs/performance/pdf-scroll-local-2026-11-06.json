@@ -1,0 +1,521 @@
+{
+  "date": "2026-11-06",
+  "baselineCommit": "0341991ef4240908109790b14231402beea1d19d",
+  "system": {
+    "platform": "darwin",
+    "release": "24.6.0",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+    "memoryGB": 16,
+    "electron": "44.9.3",
+    "chrome": "152.0.7977.167",
+    "gpu": {
+      "auxAttributes": {
+        "amdSwitchable": true,
+        "canSupportThreadedTextureMailbox": false,
+        "glImplementationParts": "(gl=none,angle=none)",
+        "glResetNotificationStrategy": 0,
+        "inProcessGpu": true,
+        "initializationTime": 0,
+        "isAsan": false,
+        "isClangCoverage": false,
+        "jpegDecodeAcceleratorSupported": false,
+        "optimus": false,
+        "passthroughCmdDecoder": false,
+        "sandboxed": false,
+        "skiaBackendType": "None",
+        "subpixelFontRendering": true,
+        "targetCpuBits": 64,
+        "visibilityCallbackCallCount": 0
+      },
+      "gpuDevice": [
+        {
+          "active": true,
+          "deviceId": 26607,
+          "gpuPreference": 3,
+          "vendorId": 4098
+        },
+        {
+          "active": false,
+          "deviceId": 16027,
+          "gpuPreference": 2,
+          "vendorId": 32902
+        }
+      ],
+      "machineModelName": "MacBookPro",
+      "machineModelVersion": "15.1"
+    },
+    "gpuFeatures": {
+      "2d_canvas": "enabled",
+      "direct_rendering_display_compositor": "disabled_off_ok",
+      "gpu_compositing": "enabled",
+      "multiple_raster_threads": "enabled_on",
+      "opengl": "enabled_on",
+      "rasterization": "enabled",
+      "raw_draw": "disabled_off_ok",
+      "skia_graphite": "enabled_on",
+      "trees_in_viz": "disabled_off",
+      "video_decode": "enabled",
+      "video_encode": "enabled",
+      "webgl": "enabled",
+      "webgpu": "enabled",
+      "webnn": "disabled_off"
+    }
+  },
+  "rendererHashes": {
+    "baseline": "42992618f903a9d52dc9862ecebcf7fb0bd4a68b1a8e87f8347ad59a7526d002",
+    "optimized": "7c39ecdc9556dbb42d85fdc2398cc82d1a386f5080a4ebbc8107920bad02442f"
+  },
+  "summary": [
+    {
+      "label": "document-1",
+      "variant": "baseline",
+      "mode": "pdf",
+      "trials": 3,
+      "meanIntervalMs": 23.48643678160919,
+      "p95IntervalMs": 50,
+      "mainThreadTaskMs": 4922.400000000001,
+      "longTasks": 1,
+      "longTaskMs": 50,
+      "mountedPages": [
+        522
+      ]
+    },
+    {
+      "label": "document-1",
+      "variant": "optimized",
+      "mode": "pdf",
+      "trials": 3,
+      "meanIntervalMs": 22.306624454148483,
+      "p95IntervalMs": 34,
+      "mainThreadTaskMs": 4050.4109999999996,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "mountedPages": [
+        2
+      ]
+    },
+    {
+      "label": "document-2",
+      "variant": "baseline",
+      "mode": "bilingualPDF",
+      "trials": 3,
+      "meanIntervalMs": 30.722891566265066,
+      "p95IntervalMs": 66.90000000000055,
+      "mainThreadTaskMs": 6425.523,
+      "longTasks": 33,
+      "longTaskMs": 1878,
+      "mountedPages": [
+        288,
+        10
+      ]
+    },
+    {
+      "label": "document-2",
+      "variant": "optimized",
+      "mode": "bilingualPDF",
+      "trials": 3,
+      "meanIntervalMs": 30.722590361445775,
+      "p95IntervalMs": 66.70000000000027,
+      "mainThreadTaskMs": 6144.571999999999,
+      "longTasks": 19,
+      "longTaskMs": 1036,
+      "mountedPages": [
+        3,
+        3
+      ]
+    }
+  ],
+  "trials": [
+    {
+      "label": "document-1",
+      "mode": "pdf",
+      "variant": "baseline",
+      "trial": 1,
+      "geometry": {
+        "x": 740,
+        "y": 436.25,
+        "height": 381070,
+        "viewport": 687.5,
+        "pages": 522,
+        "dpr": 2,
+        "visibility": "visible",
+        "focus": true,
+        "effects": "reduced"
+      },
+      "durationMs": 10201.899999999907,
+      "frames": 431,
+      "meanIntervalMs": 23.665429234338767,
+      "p95IntervalMs": 50,
+      "maxIntervalMs": 66.89999999999986,
+      "over50ms": 20,
+      "longTaskCount": 2,
+      "longTaskMs": 106,
+      "taskDurationMs": 4998.99,
+      "mountedPages": [
+        522
+      ],
+      "canvasPixels": 2903040,
+      "maxScrollTop": 12000,
+      "over51ms": 5
+    },
+    {
+      "label": "document-1",
+      "mode": "pdf",
+      "variant": "optimized",
+      "trial": 1,
+      "geometry": {
+        "x": 740,
+        "y": 436.25,
+        "height": 381070,
+        "viewport": 687.5,
+        "pages": 2,
+        "dpr": 2,
+        "visibility": "visible",
+        "focus": true,
+        "effects": "reduced"
+      },
+      "durationMs": 10202,
+      "frames": 454,
+      "meanIntervalMs": 22.42973568281938,
+      "p95IntervalMs": 34,
+      "maxIntervalMs": 67.69999999999982,
+      "over50ms": 5,
+      "longTaskCount": 0,
+      "longTaskMs": 0,
+      "taskDurationMs": 4067.8450000000003,
+      "mountedPages": [
+        2
+      ],
+      "canvasPixels": 2903040,
+      "maxScrollTop": 12000,
+      "over51ms": 2
+    },
+    {
+      "label": "document-1",
+      "mode": "pdf",
+      "variant": "optimized",
+      "trial": 2,
+      "geometry": {
+        "x": 740,
+        "y": 436.25,
+        "height": 381070,
+        "viewport": 687.5,
+        "pages": 2,
+        "dpr": 2,
+        "visibility": "visible",
+        "focus": true,
+        "effects": "reduced"
+      },
+      "durationMs": 10217,
+      "frames": 458,
+      "meanIntervalMs": 22.306624454148483,
+      "p95IntervalMs": 34.100000000000364,
+      "maxIntervalMs": 66.5,
+      "over50ms": 6,
+      "longTaskCount": 0,
+      "longTaskMs": 0,
+      "taskDurationMs": 4050.4109999999996,
+      "mountedPages": [
+        2
+      ],
+      "canvasPixels": 2903040,
+      "maxScrollTop": 12000,
+      "over51ms": 3
+    },
+    {
+      "label": "document-1",
+      "mode": "pdf",
+      "variant": "baseline",
+      "trial": 2,
+      "geometry": {
+        "x": 740,
+        "y": 436.25,
+        "height": 381070,
+        "viewport": 687.5,
+        "pages": 522,
+        "dpr": 2,
+        "visibility": "visible",
+        "focus": true,
+        "effects": "reduced"
+      },
+      "durationMs": 10210.600000000093,
+      "frames": 435,
+      "meanIntervalMs": 23.48643678160919,
+      "p95IntervalMs": 50,
+      "maxIntervalMs": 67.39999999999964,
+      "over50ms": 21,
+      "longTaskCount": 1,
+      "longTaskMs": 50,
+      "taskDurationMs": 4922.400000000001,
+      "mountedPages": [
+        522
+      ],
+      "canvasPixels": 2903040,
+      "maxScrollTop": 12000,
+      "over51ms": 3
+    },
+    {
+      "label": "document-1",
+      "mode": "pdf",
+      "variant": "baseline",
+      "trial": 3,
+      "geometry": {
+        "x": 740,
+        "y": 436.25,
+        "height": 381070,
+        "viewport": 687.5,
+        "pages": 522,
+        "dpr": 2,
+        "visibility": "visible",
+        "focus": true,
+        "effects": "reduced"
+      },
+      "durationMs": 10210.100000000093,
+      "frames": 444,
+      "meanIntervalMs": 23.010135135135123,
+      "p95IntervalMs": 50,
+      "maxIntervalMs": 67.59999999999991,
+      "over50ms": 18,
+      "longTaskCount": 1,
+      "longTaskMs": 50,
+      "taskDurationMs": 4916.336,
+      "mountedPages": [
+        522
+      ],
+      "canvasPixels": 2903040,
+      "maxScrollTop": 12000,
+      "over51ms": 3
+    },
+    {
+      "label": "document-1",
+      "mode": "pdf",
+      "variant": "optimized",
+      "trial": 3,
+      "geometry": {
+        "x": 740,
+        "y": 436.25,
+        "height": 381070,
+        "viewport": 687.5,
+        "pages": 2,
+        "dpr": 2,
+        "visibility": "visible",
+        "focus": true,
+        "effects": "reduced"
+      },
+      "durationMs": 10206.5,
+      "frames": 459,
+      "meanIntervalMs": 22.260130718954244,
+      "p95IntervalMs": 34,
+      "maxIntervalMs": 67.5,
+      "over50ms": 6,
+      "longTaskCount": 0,
+      "longTaskMs": 0,
+      "taskDurationMs": 4033.5029999999997,
+      "mountedPages": [
+        2
+      ],
+      "canvasPixels": 2903040,
+      "maxScrollTop": 12000,
+      "over51ms": 2
+    },
+    {
+      "label": "document-2",
+      "mode": "bilingualPDF",
+      "variant": "baseline",
+      "trial": 1,
+      "geometry": {
+        "x": 499.75,
+        "y": 436.25,
+        "height": 187403,
+        "viewport": 687.5,
+        "pages": 288,
+        "dpr": 2,
+        "visibility": "visible",
+        "focus": true,
+        "effects": "reduced"
+      },
+      "durationMs": 10177.100000000093,
+      "frames": 331,
+      "meanIntervalMs": 30.764586102719033,
+      "p95IntervalMs": 66.80000000000018,
+      "maxIntervalMs": 100.5,
+      "over50ms": 63,
+      "longTaskCount": 33,
+      "longTaskMs": 1878,
+      "taskDurationMs": 6426.5289999999995,
+      "mountedPages": [
+        288,
+        10
+      ],
+      "canvasPixels": 6963516,
+      "maxScrollTop": 12000,
+      "over51ms": 42
+    },
+    {
+      "label": "document-2",
+      "mode": "bilingualPDF",
+      "variant": "optimized",
+      "trial": 1,
+      "geometry": {
+        "x": 499.75,
+        "y": 436.25,
+        "height": 187403,
+        "viewport": 687.5,
+        "pages": 3,
+        "dpr": 2,
+        "visibility": "visible",
+        "focus": true,
+        "effects": "reduced"
+      },
+      "durationMs": 10210.299999999814,
+      "frames": 322,
+      "meanIntervalMs": 31.728229813664612,
+      "p95IntervalMs": 66.69999999999982,
+      "maxIntervalMs": 100,
+      "over50ms": 64,
+      "longTaskCount": 19,
+      "longTaskMs": 1036,
+      "taskDurationMs": 6348.775,
+      "mountedPages": [
+        3,
+        3
+      ],
+      "canvasPixels": 6963516,
+      "maxScrollTop": 12000,
+      "over51ms": 45
+    },
+    {
+      "label": "document-2",
+      "mode": "bilingualPDF",
+      "variant": "optimized",
+      "trial": 2,
+      "geometry": {
+        "x": 499.75,
+        "y": 436.25,
+        "height": 187403,
+        "viewport": 687.5,
+        "pages": 3,
+        "dpr": 2,
+        "visibility": "visible",
+        "focus": true,
+        "effects": "reduced"
+      },
+      "durationMs": 10210.900000000373,
+      "frames": 333,
+      "meanIntervalMs": 30.679855855855866,
+      "p95IntervalMs": 66.89999999999964,
+      "maxIntervalMs": 116.30000000000018,
+      "over50ms": 56,
+      "longTaskCount": 23,
+      "longTaskMs": 1316,
+      "taskDurationMs": 6089.5960000000005,
+      "mountedPages": [
+        3,
+        3
+      ],
+      "canvasPixels": 6963516,
+      "maxScrollTop": 12000,
+      "over51ms": 42
+    },
+    {
+      "label": "document-2",
+      "mode": "bilingualPDF",
+      "variant": "baseline",
+      "trial": 2,
+      "geometry": {
+        "x": 499.75,
+        "y": 436.25,
+        "height": 187403,
+        "viewport": 687.5,
+        "pages": 288,
+        "dpr": 2,
+        "visibility": "visible",
+        "focus": true,
+        "effects": "reduced"
+      },
+      "durationMs": 10228.5,
+      "frames": 341,
+      "meanIntervalMs": 30.00937829912024,
+      "p95IntervalMs": 67,
+      "maxIntervalMs": 133.39999999999964,
+      "over50ms": 57,
+      "longTaskCount": 34,
+      "longTaskMs": 1998,
+      "taskDurationMs": 6190.92,
+      "mountedPages": [
+        288,
+        10
+      ],
+      "canvasPixels": 6963516,
+      "maxScrollTop": 12000,
+      "over51ms": 43
+    },
+    {
+      "label": "document-2",
+      "mode": "bilingualPDF",
+      "variant": "baseline",
+      "trial": 3,
+      "geometry": {
+        "x": 499.75,
+        "y": 436.25,
+        "height": 187403,
+        "viewport": 687.5,
+        "pages": 288,
+        "dpr": 2,
+        "visibility": "visible",
+        "focus": true,
+        "effects": "reduced"
+      },
+      "durationMs": 10200,
+      "frames": 332,
+      "meanIntervalMs": 30.722891566265066,
+      "p95IntervalMs": 66.90000000000055,
+      "maxIntervalMs": 100.90000000000009,
+      "over50ms": 61,
+      "longTaskCount": 31,
+      "longTaskMs": 1828,
+      "taskDurationMs": 6425.523,
+      "mountedPages": [
+        288,
+        10
+      ],
+      "canvasPixels": 6963516,
+      "maxScrollTop": 12000,
+      "over51ms": 42
+    },
+    {
+      "label": "document-2",
+      "mode": "bilingualPDF",
+      "variant": "optimized",
+      "trial": 3,
+      "geometry": {
+        "x": 499.75,
+        "y": 436.25,
+        "height": 187403,
+        "viewport": 687.5,
+        "pages": 3,
+        "dpr": 2,
+        "visibility": "visible",
+        "focus": true,
+        "effects": "reduced"
+      },
+      "durationMs": 10191.799999999814,
+      "frames": 332,
+      "meanIntervalMs": 30.722590361445775,
+      "p95IntervalMs": 66.70000000000027,
+      "maxIntervalMs": 99.79999999999995,
+      "over50ms": 61,
+      "longTaskCount": 18,
+      "longTaskMs": 1023,
+      "taskDurationMs": 6144.571999999999,
+      "mountedPages": [
+        3,
+        3
+      ],
+      "canvasPixels": 6963516,
+      "maxScrollTop": 12000,
+      "over51ms": 40
+    }
+  ]
+}

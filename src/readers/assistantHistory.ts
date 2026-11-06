@@ -92,6 +92,21 @@ export interface HistoryRange {
   range: Range
 }
 
+// Highlight rules live as long as their document. Replacing a ::highlight stylesheet invalidates
+// styles throughout the document, even if it has no ranges; dense PDF text makes that very costly.
+const historyStyles = new WeakMap<Document, Map<string, HTMLStyleElement>>()
+
+function ensureHistoryStyle(document: Document, name: string): void {
+  let styles = historyStyles.get(document)
+  if (!styles) { styles = new Map(); historyStyles.set(document, styles) }
+  if (styles.get(name)?.isConnected) return
+  const style = document.createElement('style')
+  style.setAttribute('data-rp-reader', 'true')
+  style.textContent = `::highlight(${name}) { background-color: rgba(0, 122, 255, 0.08); text-decoration: underline rgba(0, 122, 255, 0.58) 1px; }`
+  document.head.appendChild(style)
+  styles.set(name, style)
+}
+
 /** All code runs in the host renderer, including when root belongs to the sandboxed HTML frame. */
 export function bindAssistantHistory(root: Element, entries: HistoryRange[], options: {
   name: string
@@ -102,10 +117,11 @@ export function bindAssistantHistory(root: Element, entries: HistoryRange[], opt
   const document = root.ownerDocument
   const view = document.defaultView as (Window & { CSS?: { highlights?: Map<string, unknown> }; Highlight?: new (...ranges: Range[]) => unknown }) | null
   const registry = view?.CSS?.highlights
-  const style = document.createElement('style')
-  style.setAttribute('data-rp-reader', 'true')
-  style.textContent = `::highlight(${options.name}) { background-color: rgba(0, 122, 255, 0.08); text-decoration: underline rgba(0, 122, 255, 0.58) 1px; }`
-  document.head.appendChild(style)
+  if (!entries.length) {
+    if (registry?.has(options.name)) registry.delete(options.name)
+    return () => {}
+  }
+  ensureHistoryStyle(document, options.name)
   if (registry && view?.Highlight) registry.set(options.name, new view.Highlight(...entries.map((entry) => entry.range)))
 
   const entryAt = (event: MouseEvent): HistoryRange | undefined => {
@@ -153,6 +169,5 @@ export function bindAssistantHistory(root: Element, entries: HistoryRange[], opt
     root.removeEventListener('keydown', cancel, true)
     root.removeEventListener('click', click as EventListener, true)
     registry?.delete(options.name)
-    style.remove()
   }
 }

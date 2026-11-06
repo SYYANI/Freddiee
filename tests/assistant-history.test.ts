@@ -70,6 +70,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount())
   container.remove()
+  document.querySelectorAll('style[data-rp-reader]').forEach((style) => style.remove())
   vi.unstubAllGlobals(); vi.restoreAllMocks()
 })
 function mouse(target: Element, type: string, x = 20, y = 30) {
@@ -195,9 +196,30 @@ describe('history ranges and gestures', () => {
     expect(grace.current).toBe(0)
     cleanup()
     expect(highlights.has('rp-test-history')).toBe(false)
-    expect(document.querySelector('style[data-rp-reader]')).toBeNull()
+    // The reusable rule has no ranges after cleanup and no longer paints decorations.
+    expect(document.querySelectorAll('style[data-rp-reader]')).toHaveLength(1)
     clickHistory(container)
     expect(activate).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not mutate styles or register gestures for empty history and reuses rules when ranges change', () => {
+    container.innerHTML = '<p>Saved passage.</p>'
+    const options = { name: 'rp-stable-history', selectionGraceUntil: { current: 0 }, activate: vi.fn() }
+    const append = vi.spyOn(document.head, 'appendChild')
+    const listen = vi.spyOn(container, 'addEventListener')
+    bindAssistantHistory(container, [], options)()
+    bindAssistantHistory(container, [], options)()
+    expect(append).not.toHaveBeenCalled()
+    expect(listen).not.toHaveBeenCalled()
+    const saved = anchor(), range = historyQuoteRange(container, saved.selection.quote)!
+    const first = bindAssistantHistory(container, [{ anchor: saved, range }], options)
+    const style = document.querySelector('style[data-rp-reader]')!
+    first()
+    const second = bindAssistantHistory(container, [{ anchor: saved, range: range.cloneRange() }], options)
+    expect(append).toHaveBeenCalledOnce()
+    expect(document.querySelector('style[data-rp-reader]')).toBe(style)
+    second()
+    expect(highlights.has(options.name)).toBe(false)
   })
 })
 
@@ -248,7 +270,7 @@ describe('HTML history integration', () => {
     await act(async () => { clickHistory(doc.querySelector('em')!) })
     expect(activated).toHaveBeenCalledTimes(1)
     await act(async () => root.render(createElement(HtmlView, { ...props, assistantHistory: [] })))
-    expect(highlights.get('rp-assistant-history')?.size).toBe(0)
+    expect(highlights.get('rp-assistant-history')?.size ?? 0).toBe(0)
   })
 
   it('anchors nested translated selections to their source and marks live replacement translations', async () => {
@@ -301,11 +323,11 @@ describe('HTML history integration', () => {
     const { props, doc } = await renderHtml('<p>Saved passage.</p>', { assistantHistory: [saved], regionEditing: true })
     expect(highlights.get('rp-assistant-history')?.size).toBe(1)
     await act(async () => { clickHistory(doc.querySelector('p')!) })
-    expect(highlights.get('rp-assistant-history')?.size).toBe(0)
+    expect(highlights.get('rp-assistant-history')?.size ?? 0).toBe(0)
     await act(async () => root.render(createElement(HtmlView, { ...props, regionCommand: { action: 'undo', token: 1 } })))
     expect(highlights.get('rp-assistant-history')?.size).toBe(1)
     await act(async () => root.render(createElement(HtmlView, { ...props, regionCommand: { action: 'redo', token: 2 } })))
-    expect(highlights.get('rp-assistant-history')?.size).toBe(0)
+    expect(highlights.get('rp-assistant-history')?.size ?? 0).toBe(0)
     await act(async () => root.render(createElement(HtmlView, { ...props, regionCommand: { action: 'restoreAll', token: 3 } })))
     expect(highlights.get('rp-assistant-history')?.size).toBe(1)
   })

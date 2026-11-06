@@ -11,15 +11,23 @@ vi.mock('../src/readers/pdfjs', () => ({
   openDocument: () => ({ promise: Promise.resolve({ numPages: 6, getPage: async (page: number) => ({
     getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale }),
     render: () => ({ promise: Promise.resolve(), cancel: () => {} }),
-    getTextContent: async () => ({ text: `Saved passage on page ${page}.` }), getAnnotations: async () => []
+    getTextContent: async () => ({ items: [{ str: `Saved passage on page ${page}.` }], styles: {} }), getAnnotations: async () => []
   }) }), release: () => {} }),
   pageTexts: async () => [],
   pdfjs: { TextLayer: class {
-    constructor(private options: { container: HTMLElement; textContentSource: { text: string } }) {}
+    constructor(private options: { container: HTMLElement; textContentSource: { items: Array<{ str: string }> } | ReadableStream<{ items: Array<{ str: string }> }> }) {}
     async render() {
-      const span = document.createElement('span')
-      span.textContent = this.options.textContentSource.text
-      this.options.container.append(span)
+      const source = this.options.textContentSource
+      const reader = 'getReader' in source ? source.getReader() : undefined
+      do {
+        const value = reader ? (await reader.read()).value : source as { items: Array<{ str: string }> }
+        if (!value) break
+        for (const item of value.items) {
+          const span = document.createElement('span')
+          span.textContent = item.str
+          this.options.container.append(span)
+        }
+      } while (reader)
     }
     cancel() {}
   } }
@@ -117,7 +125,7 @@ describe('PDF assistant history', () => {
     await click(text)
     expect(activate).toHaveBeenCalledTimes(1)
     await act(async () => root.render(createElement(PdfView, { ...props, assistantHistory: [] })))
-    expect(highlights.get('rp-assistant-history-pdf')?.size).toBe(0)
+    expect(highlights.get('rp-assistant-history-pdf')?.size ?? 0).toBe(0)
   })
 
   it('restores independent histories from both panes of a bilingual PDF', async () => {
@@ -143,7 +151,7 @@ describe('PDF assistant history', () => {
       onPageChange: vi.fn(), appearance: 'default', assistantHistory: [anchor('late-page', 'pdf', 5)] }
     await act(async () => root.render(createElement(PdfView, props)))
     await tick()
-    expect(highlights.get('rp-assistant-history-pdf')?.size).toBe(0)
+    expect(highlights.get('rp-assistant-history-pdf')?.size ?? 0).toBe(0)
     await act(async () => root.render(createElement(PdfView, { ...props, pageIndex: 5 })))
     // A browser emits scroll after scrollTop changes; jsdom does not.
     await act(async () => { container.querySelector('.pdf-scroller')!.dispatchEvent(new Event('scroll')) })
