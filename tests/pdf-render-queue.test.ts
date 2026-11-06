@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { PdfRenderQueue } from '../src/readers/pdfRenderQueue'
+import { PdfExclusive, PdfRenderQueue } from '../src/readers/pdfRenderQueue'
 
 function deferred() {
   let resolve!: () => void
@@ -62,5 +62,39 @@ describe('PDF render queue', () => {
     await vi.runAllTimersAsync()
     await rejected
     expect(last).toHaveBeenCalledOnce()
+  })
+
+  it('runs up to its concurrency, still in priority order', async () => {
+    const queue = new PdfRenderQueue(2)
+    const first = deferred(), second = deferred()
+    const order: string[] = []
+    queue.enqueue(async () => { order.push('prefetch') }, 1)
+    queue.enqueue(async () => { order.push('original'); await first.promise }, 0)
+    queue.enqueue(async () => { order.push('translated'); await second.promise }, 0)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(order).toEqual(['original', 'translated'])
+    second.resolve()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(order).toEqual(['original', 'translated', 'prefetch'])
+    first.resolve()
+    await vi.runAllTimersAsync()
+  })
+})
+
+describe('exclusive PDF drawing', () => {
+  it('runs tasks one at a time in call order and continues after a failure', async () => {
+    const exclusive = new PdfExclusive()
+    const gate = deferred()
+    const order: string[] = []
+    const one = exclusive.run(async () => { order.push('one start'); await gate.promise; order.push('one end') })
+    const two = exclusive.run(async () => { order.push('two'); throw new Error('bad page') })
+    const three = exclusive.run(async () => { order.push('three'); return 3 })
+    await vi.advanceTimersByTimeAsync(1)
+    expect(order).toEqual(['one start'])
+    gate.resolve()
+    await one
+    await expect(two).rejects.toThrow('bad page')
+    await expect(three).resolves.toBe(3)
+    expect(order).toEqual(['one start', 'one end', 'two', 'three'])
   })
 })

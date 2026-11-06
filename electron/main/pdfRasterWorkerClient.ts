@@ -6,7 +6,8 @@ import { pdfjsResourceBase } from './pdfjsResources'
 export interface PdfRasterResources { pdfjsModuleURL: string; canvasModuleURL: string; standardFontDataURL: string; cMapURL: string; wasmURL: string }
 export interface PdfRasterParameters { pageIndex: number; scale: number; ratio: number; paperTone: boolean }
 export type PdfRasterMessage = { type: 'cancel'; id: number } | ({ type: 'render'; id: number; key: string; pdf?: Uint8Array } & PdfRasterParameters)
-export type PdfRasterReply = { id: number; documents: string[] } & ({ type: 'result'; png: Uint8Array } | { type: 'error'; message: string })
+export type PdfRasterReply = { id: number; documents: string[] } & ({ type: 'result'; image: Uint8Array } | { type: 'error'; message: string })
+export type PdfRasterWorker = Pick<PdfRasterWorkerClient, 'render' | 'close'> & Partial<Pick<PdfRasterWorkerClient, 'warm' | 'holds'>>
 
 /** One persistent, credential-free worker; only its current request and two parsed PDFs are kept. */
 export class PdfRasterWorkerClient {
@@ -15,7 +16,7 @@ export class PdfRasterWorkerClient {
   private nextID = 0
   private stopped = false
   private busy = false
-  private active?: { id: number; finish: (error?: unknown, png?: Uint8Array) => void }
+  private active?: { id: number; finish: (error?: unknown, image?: Uint8Array) => void }
 
   constructor(private readonly workerPath = join(__dirname, 'pdfRasterWorker.cjs')) {}
 
@@ -42,10 +43,20 @@ export class PdfRasterWorkerClient {
     worker.on('message', (reply: PdfRasterReply) => {
       if (this.worker !== worker || reply.id !== this.active?.id) return
       this.documents = new Set(reply.documents)
-      if (reply.type === 'result') this.active.finish(undefined, reply.png)
+      if (reply.type === 'result') this.active.finish(undefined, reply.image)
       else this.active.finish(new Error(reply.message))
     })
     return worker
+  }
+
+  /** Starts the worker and its PDF.js/canvas imports ahead of the first page. */
+  warm(): void {
+    if (!this.stopped) this.start()
+  }
+
+  /** Whether the worker still holds this document parsed, so a request for it skips reading and parsing. */
+  holds(key: string): boolean {
+    return this.worker !== undefined && this.documents.has(key)
   }
 
   async render(key: string, read: () => Promise<Uint8Array>, parameters: PdfRasterParameters, signal: AbortSignal): Promise<Uint8Array> {
@@ -60,12 +71,12 @@ export class PdfRasterWorkerClient {
       const id = ++this.nextID
       return await new Promise<Uint8Array>((resolve, reject) => {
         const abort = (): void => worker.postMessage({ type: 'cancel', id } satisfies PdfRasterMessage)
-        this.active = { id, finish: (error, png) => {
+        this.active = { id, finish: (error, image) => {
           this.active = undefined
           signal.removeEventListener('abort', abort)
           if (signal.aborted) reject(signal.reason)
           else if (error !== undefined) reject(error)
-          else resolve(png!)
+          else resolve(image!)
         } }
         signal.addEventListener('abort', abort, { once: true })
         try { worker.postMessage({ type: 'render', id, key, pdf, ...parameters } satisfies PdfRasterMessage, pdf ? [pdf.buffer as ArrayBuffer] : []) }

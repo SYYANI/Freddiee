@@ -168,6 +168,8 @@ app.whenReady().then(async () => {
   hasNativeLibrary = await nativeLibraryExists()
   createMenu()
   createMainWindow()
+  // The reader usually reopens a PDF; load the raster worker's PDF.js while the window loads.
+  pdfRaster.warm()
   if (process.env.FREDDIE_IMPORT_NATIVE === '1' && hasNativeLibrary) void runNativeImport(false)
   sync.start(() => BrowserWindow.getFocusedWindow() !== null)
   app.on('browser-window-focus', () => sync.foregrounded())
@@ -395,10 +397,10 @@ function registerProtocol(): void {
         store.paper(paperId)
         if (kind === 'raster' && rest.length === 2) {
           const parameters = parseRasterParameters(url, rest[1])
-          const png = await pdfRaster.render(paperId, rest[0], parameters, request.signal)
-          // Worker replies are structured clones, so the PNG owns a plain ArrayBuffer; Response copies it once.
-          return new Response(png as Uint8Array<ArrayBuffer>, { headers: {
-            'content-type': 'image/png', 'cache-control': 'no-store', 'access-control-allow-origin': '*'
+          const image = await pdfRaster.render(paperId, rest[0], parameters, request.signal)
+          // Worker replies are transferred, so the image owns a plain ArrayBuffer; Response copies it once.
+          return new Response(image as Uint8Array<ArrayBuffer>, { headers: {
+            'content-type': 'application/octet-stream', 'cache-control': 'no-store', 'access-control-allow-origin': '*'
           } })
         }
         if (kind === 'a') path = store.attachmentPath(paperId, rest[0])

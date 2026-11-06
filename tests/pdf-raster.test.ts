@@ -4,11 +4,12 @@ import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { build } from 'esbuild'
 import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib'
-import { loadImage, createCanvas } from '@napi-rs/canvas'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { FreddieStore } from '../electron/main/store'
 import { PdfRasterService, parseRasterParameters } from '../electron/main/pdfRaster'
-import { PdfRasterWorkerClient, type PdfRasterParameters } from '../electron/main/pdfRasterWorkerClient'
+import { PdfRasterWorkerClient, type PdfRasterParameters, type PdfRasterWorker } from '../electron/main/pdfRasterWorkerClient'
+import { rasterHeaderBytes } from '../electron/main/pdfRasterFormat'
+import { warmupPdf } from '../electron/main/pdfRasterWarmup'
 
 let root: string, workerPath: string, pdfBytes: Uint8Array
 const clients: PdfRasterWorkerClient[] = []
@@ -28,6 +29,15 @@ beforeAll(async () => {
 afterEach(async () => { await Promise.all(clients.splice(0).map((client) => client.close())); vi.restoreAllMocks() })
 afterAll(async () => { await rm(root, { recursive: true, force: true }) })
 
+/** Reads the raw raster format: little-endian width and height, then straight RGBA rows. */
+function decode(image: Uint8Array) {
+  const view = new DataView(image.buffer, image.byteOffset, image.byteLength)
+  const width = view.getUint32(0, true), height = view.getUint32(4, true)
+  expect(image.byteLength).toBe(rasterHeaderBytes + width * height * 4)
+  const pixel = (x: number, y: number) => [...image.subarray(rasterHeaderBytes + (y * width + x) * 4, rasterHeaderBytes + (y * width + x) * 4 + 4)]
+  return { width, height, pixel }
+}
+
 function client(path = workerPath): PdfRasterWorkerClient { const value = new PdfRasterWorkerClient(path); clients.push(value); return value }
 
 async function storeFixture() {
@@ -46,13 +56,10 @@ describe('PDF raster worker', () => {
   it('renders pixels with matching scale, rotation and Paper Tone without changing PDF bytes', async () => {
     const raster = client(), read = vi.fn(async () => pdfBytes.slice()), signal = new AbortController().signal
     for (const [pageIndex, paperTone] of [[0, false], [1, true]] as const) {
-      const png = await raster.render('document', read, { ...parameters, pageIndex, paperTone }, signal)
-      const image = await loadImage(png)
+      const image = decode(await raster.render('document', read, { ...parameters, pageIndex, paperTone }, signal))
       expect([image.width, image.height]).toEqual(pageIndex === 0 ? [400, 600] : [600, 400])
-      const canvas = createCanvas(image.width, image.height), context = canvas.getContext('2d')
-      context.drawImage(image, 0, 0)
-      expect([...context.getImageData(0, 0, 1, 1).data]).toEqual(paperTone ? [245, 237, 219, 255] : [255, 255, 255, 255])
-      if (pageIndex === 0) expect([...context.getImageData(50, 500, 1, 1).data]).toEqual([255, 0, 0, 255])
+      expect(image.pixel(0, 0)).toEqual(paperTone ? [245, 237, 219, 255] : [255, 255, 255, 255])
+      if (pageIndex === 0) expect(image.pixel(50, 500)).toEqual([255, 0, 0, 255])
     }
     expect(read).toHaveBeenCalledOnce()
     expect(pdfBytes.slice(0, 4)).toEqual(new Uint8Array([37, 80, 68, 70]))
@@ -72,8 +79,8 @@ describe('PDF raster worker', () => {
     await new Promise<void>((done) => setTimeout(done, 0))
     controller.abort()
     await rejected
-    const png = await raster.render('cancel-render', read, parameters, new AbortController().signal)
-    expect((await loadImage(png)).width).toBe(400)
+    const image = await raster.render('cancel-render', read, parameters, new AbortController().signal)
+    expect(decode(image).width).toBe(400)
     expect(read).toHaveBeenCalledOnce()
   }, 15000)
 
@@ -96,6 +103,22 @@ describe('PDF raster worker', () => {
   })
 })
 
+describe('PDF raster worker warm-up page', () => {
+  it('is a well-formed PDF that PDF.js reads without repairing it', async () => {
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    const log = vi.spyOn(console, 'log')
+    const task = pdfjs.getDocument({ data: warmupPdf(), verbosity: pdfjs.VerbosityLevel.WARNINGS, useSystemFonts: false,
+      standardFontDataUrl: resolve('node_modules/pdfjs-dist/standard_fonts') + '/' })
+    try {
+      const document = await task.promise
+      expect(document.numPages).toBe(1)
+      const text = await (await document.getPage(1)).getTextContent()
+      expect(text.items.map((item) => ('str' in item ? item.str : '')).join(' ')).toContain('Aa 1')
+      expect(log.mock.calls.flat().join('\n')).not.toMatch(/Warning/)
+    } finally { await task.destroy() }
+  })
+})
+
 describe('registered PDF raster resource', () => {
   it('rejects invalid dimensions, page indices and appearance values', () => {
     const url = new URL('freddie://paper/id/raster/attachment/0?scale=1&ratio=2&tone=paper')
@@ -107,10 +130,10 @@ describe('registered PDF raster resource', () => {
     for (const page of ['-1', '1.5', '../0', '10000000', 'NaN']) expect(() => parseRasterParameters(url, page)).toThrow('Invalid')
   })
 
-  it('bounds PNG cache bytes, refreshes LRU order, and invalidates atomic file replacements', async () => {
+  it('bounds bitmap cache bytes, refreshes LRU order, and invalidates atomic file replacements', async () => {
     const fixture = await storeFixture()
     const render = vi.fn<PdfRasterWorkerClient['render']>(async () => new Uint8Array([1, 2, 3, 4]))
-    const service = new PdfRasterService(fixture.store, { render, close: async () => {} }, 8)
+    const service = new PdfRasterService(fixture.store, () => ({ render, close: async () => {} }), 8)
     const run = (pageIndex: number) => service.render(fixture.paperId, fixture.attachmentId, { ...parameters, pageIndex }, new AbortController().signal)
     await run(0); await run(1); await run(0)
     expect(render).toHaveBeenCalledTimes(2)
@@ -127,7 +150,7 @@ describe('registered PDF raster resource', () => {
     const fixture = await storeFixture()
     let finish!: (png: Uint8Array) => void
     const render = vi.fn<PdfRasterWorkerClient['render']>(() => new Promise((resolve) => { finish = resolve }))
-    const service = new PdfRasterService(fixture.store, { render, close: async () => {} })
+    const service = new PdfRasterService(fixture.store, () => ({ render, close: async () => {} }), undefined, 1)
     const first = service.render(fixture.paperId, fixture.attachmentId, parameters, new AbortController().signal)
     await vi.waitFor(() => expect(render).toHaveBeenCalledOnce())
     const controller = new AbortController()
@@ -141,6 +164,43 @@ describe('registered PDF raster resource', () => {
     await expect(service.render('../escape', fixture.attachmentId, parameters, new AbortController().signal)).rejects.toThrow()
     await truncate(fixture.path, 256 * 1024 * 1024 + 1)
     await expect(service.render(fixture.paperId, fixture.attachmentId, parameters, new AbortController().signal)).rejects.toThrow('limit')
+    await service.close()
+  })
+
+  it('draws on two workers in parallel and sends a document to the worker that already parsed it', async () => {
+    const fixture = await storeFixture()
+    const second = randomUUID(), date = new Date().toISOString()
+    await fixture.store.addAttachment({ id: second, paperId: fixture.paperId, kind: 'translatedPDF', filename: 'translated.pdf', source: 'localImport', createdAt: date })
+    await writeFile(fixture.store.attachmentPath(fixture.paperId, second), pdfBytes)
+    const workers: Array<{ name: string; held: Set<string>; finish: Array<() => void> }> = []
+    const calls: string[] = []
+    const create = (): PdfRasterWorker => {
+      const state = { name: `w${workers.length}`, held: new Set<string>(), finish: [] as Array<() => void> }
+      workers.push(state)
+      return {
+        holds: (key) => state.held.has(key),
+        render: (key, _read, parameters) => new Promise((resolve) => {
+          calls.push(`${state.name}:${JSON.parse(key)[1] === second ? 'translated' : 'original'}:${parameters.pageIndex}`)
+          state.finish.push(() => { state.held.add(key); resolve(new Uint8Array([parameters.pageIndex])) })
+        }),
+        close: async () => {}
+      }
+    }
+    const service = new PdfRasterService(fixture.store, create)
+    service.warm()
+    const run = (attachment: string, pageIndex: number) => service.render(fixture.paperId, attachment, { ...parameters, pageIndex }, new AbortController().signal)
+    const original = run(fixture.attachmentId, 0), translated = run(second, 0)
+    await vi.waitFor(() => expect(calls).toEqual(['w0:original:0', 'w1:translated:0']))
+    // A third request waits for a worker instead of starting another.
+    const next = run(second, 1)
+    await new Promise<void>((done) => setTimeout(done, 10))
+    expect(workers).toHaveLength(2)
+    workers[1].finish.shift()!()
+    await translated
+    await vi.waitFor(() => expect(calls).toHaveLength(3))
+    expect(calls[2]).toBe('w1:translated:1')
+    workers[0].finish.shift()!(); workers[1].finish.shift()!()
+    await Promise.all([original, next])
     await service.close()
   })
 })

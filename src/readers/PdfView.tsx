@@ -8,9 +8,9 @@ import { buildMatcher, type FindRequest, type FindStatus } from './find'
 import { SidenoteRail } from './SidenoteRail'
 import { clampScale, fittedScale, pageSideMargin, resolvedScale, scalingAfterDividerGrab, wheelZoomFactor, type PdfScaling } from './pdfScaling'
 import { bindAssistantHistory, historyQuoteRange, type HistoryRange } from './assistantHistory'
-import { pdfRenderQueue, pdfTextQueue, type QueuedPdfRender } from './pdfRenderQueue'
+import { pdfBrowserRaster, pdfRenderQueue, pdfTextQueue, type QueuedPdfRender } from './pdfRenderQueue'
 import { chunkTextContent } from './pdfTextContent'
-import { rasterPdfPage } from './pdfRaster'
+import { rasterPdfPage, releasePageCanvas } from './pdfRaster'
 import textLayerCSS from './pdfTextLayer.css?inline'
 import { pdfContains, pdfEventTarget, pdfSelection } from './pdfSelection'
 import { renderDensePdfText } from './pdfDenseText'
@@ -868,11 +868,7 @@ const paperToneColor = 'rgb(245, 237, 219)'
  */
 const maxPagePixels = 2 ** 24
 
-/** Drops a page bitmap's backing store now rather than whenever the canvas is collected. */
-function releaseCanvas(canvas: HTMLCanvasElement): void {
-  canvas.width = 0
-  canvas.height = 0
-}
+const releaseCanvas = releasePageCanvas
 
 const PdfPage = memo(function PdfPage({ document, paperId, attachmentId, revision, textRoot, interactive, index, size, scale, top, left, priority, missing, paperTone, annotations, tool, onRendered, onCommitInk, onErase, onPlaceNote, onLink }: {
   document: PDFDocumentProxy
@@ -930,17 +926,26 @@ const PdfPage = memo(function PdfPage({ document, paperId, attachmentId, revisio
         const nativeRaster = Boolean(canvas)
         canvas ??= window.document.createElement('canvas')
         if (!nativeRaster) {
-          canvas.width = Math.floor(viewport.width * ratio)
-          canvas.height = Math.floor(viewport.height * ratio)
-          renderTask = page.render({ canvas, viewport, transform: ratio !== 1 ? [ratio, 0, 0, ratio, 0, 0] : undefined })
-          // PDF.js already splits the operator list into chunks. Yield an input turn before its
-          // next animation frame, rather than letting several pages consume the same frame.
-          renderTask.onContinue = (resume: () => void) => {
-            continuationTimer = setTimeout(() => { if (!cancelled) resume() }, 0)
-          }
-          try {
-            await renderTask.promise
-          } catch {
+          const target = canvas
+          // The bitmap queue runs two pages at once for the workers; drawing here stays one page at a time.
+          const drawn = await pdfBrowserRaster.run(async () => {
+            if (cancelled) return false
+            target.width = Math.floor(viewport.width * ratio)
+            target.height = Math.floor(viewport.height * ratio)
+            renderTask = page.render({ canvas: target, viewport, transform: ratio !== 1 ? [ratio, 0, 0, ratio, 0, 0] : undefined })
+            // PDF.js already splits the operator list into chunks. Yield an input turn before its
+            // next animation frame, rather than letting several pages consume the same frame.
+            renderTask.onContinue = (resume: () => void) => {
+              continuationTimer = setTimeout(() => { if (!cancelled) resume() }, 0)
+            }
+            try {
+              await renderTask.promise
+              return true
+            } catch {
+              return false
+            }
+          })
+          if (!drawn) {
             releaseCanvas(canvas)
             return
           }
