@@ -20,6 +20,7 @@ import {
   type BabelDocSemanticSectionPathEntry, type SemanticParagraphAddress, type SemanticParagraphContext
 } from './semanticHints'
 import { foundationTrim, normalizeWhitespace } from './unicode'
+import { LayoutHelper } from './layoutHelper'
 
 export interface ILTranslationContext {
   documentTitle?: string | null
@@ -143,6 +144,10 @@ export interface ILTranslatorConfiguration {
   documentTitle?: string | null
   glossary?: string | null
   semanticContexts: Map<string, SemanticParagraphContext>
+  /** Whether text drawn inside a figure (tick labels, legends, panel titles)
+   * is translated; when false it keeps its source glyphs and position.
+   * Absent means true, as in Swift's `ILTranslatorConfiguration`. */
+  translatesFigureText?: boolean
 }
 
 export const defaultILTranslatorConfiguration: ILTranslatorConfiguration = {
@@ -184,6 +189,7 @@ export const ILTranslator = {
           structurallyPreservedAddresses.add(addressKey)
           continue
         }
+        if (configuration.translatesFigureText === false && isFigureText(paragraph, page)) continue
         const baseInput = makeInput(paragraph, translator, codeFontIDs)
         const semanticContext = configuration.semanticContexts.get(addressKey)
         const semanticInput = baseInput ? semanticInputFor(baseInput, semanticContext ?? null, translator) : null
@@ -238,7 +244,9 @@ export const ILTranslator = {
         for (const result of unitResults) {
           results.push(result)
           const candidate = candidates[result.offset]
-          if (result.translated !== null && result.input) {
+          // A reply that repeats the source (numbers, names, axis titles) keeps
+          // the source glyphs instead of re-typesetting the same text.
+          if (result.translated !== null && result.input && !isUnchanged(result.translated, result.input)) {
             const paragraph = document.page?.[candidate.pageIndex]?.pdf_paragraph?.[candidate.paragraphIndex]
             if (paragraph) {
               paragraph.unicode = result.translated
@@ -691,7 +699,7 @@ export function makeInput(
     || isSourceCodeLayout(paragraph.layout_label)
     || compositions.length === 0
     || pythonBool(paragraph.vertical)
-    || isPureNumeric(paragraph.unicode)
+    || hasNothingToTranslate(paragraph.unicode)
     || isPlaceholderOnly(paragraph)
   ) {
     return null
@@ -948,12 +956,30 @@ function unicodeComposition(text: string, style: ILPdfStyle | null): ILPdfParagr
   }
 }
 
-const pureNumericPattern = /^-?\d+(\.\d+)?$/
+const alphabeticScalar = /\p{Alphabetic}/u
 
-function isPureNumeric(unicode: string | undefined): boolean {
+/** Text without a single letter (numbers, tick labels such as "10 20 2",
+ * punctuation, symbols) has nothing to translate; sending it re-typesets the
+ * same characters in the target font and loses their layout. */
+export function hasNothingToTranslate(unicode: string | undefined): boolean {
   const text = unicode !== undefined ? foundationTrim(unicode) : ''
   if (text.length === 0) return false
-  return pureNumericPattern.test(text)
+  return !alphabeticScalar.test(text)
+}
+
+/** A reply equal to its input up to whitespace. */
+export function isUnchanged(translated: string, input: TranslateInput): boolean {
+  const collapsed = (text: string): string => text.split(/\s+/u).filter((part) => part.length > 0).join(' ')
+  return collapsed(translated) === collapsed(input.text)
+}
+
+/** Text the layout model did not place in any text block (a fallback line)
+ * that lies mostly inside a detected figure: tick labels, legends, panel
+ * titles and other text a vector figure draws. */
+export function isFigureText(paragraph: ILPdfParagraph, page: ILPage): boolean {
+  if (paragraph.layout_label !== 'fallback_line' || paragraph.box === undefined) return false
+  return (page.page_layout ?? []).some((layout) =>
+    layout.class_name === 'figure' && LayoutHelper.coverage(paragraph.box, layout.box) >= 0.5)
 }
 
 function isPlaceholderOnly(paragraph: ILPdfParagraph): boolean {

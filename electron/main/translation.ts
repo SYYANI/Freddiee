@@ -591,7 +591,8 @@ export class TranslationService {
           documentTitle: paper.title,
           glossary,
           semanticHints,
-          renderingMode: settings.babelDocRenderingMode
+          renderingMode: settings.babelDocRenderingMode,
+          translatesFigureText: settings.babelDocTranslatesFigureText
         },
         maximumConcurrentTranslations: Math.max(1, Math.min(16, Math.ceil(settings.babelDocQPS))),
         structuredDocument

@@ -147,6 +147,9 @@ function GeneralTab(): JSX.Element {
         <FormRow label={t('Use arXiv LaTeX structure for PDF translation')} help={t('When enabled, Freddie uses available arXiv source to improve BabelDOC structure and translation context. No TeX installation is required, and failures fall back to PDF-only analysis.')}>
           <Switch label={t('Use arXiv LaTeX structure for PDF translation')} checked={settings.babelDocSemanticHintsEnabled} onChange={(value) => save({ babelDocSemanticHintsEnabled: value })} />
         </FormRow>
+        <FormRow label={t('Translate text inside figures')} help={t('When off, PDF translation leaves chart labels, legends and tick values in figures exactly as they are. When on, figure titles and legends are translated too.')}>
+          <Switch label={t('Translate text inside figures')} checked={settings.babelDocTranslatesFigureText} onChange={(value) => save({ babelDocTranslatesFigureText: value })} />
+        </FormRow>
         <FormRow stacked label={<InfoLabel title={t('Optional glossary')} message={t('One term per line, for example “large language model = 大语言模型”.')} />}>
           <textarea aria-label={t('Optional glossary')} className="field-well template-editor small" value={glossary} onChange={(event) => updateGlossary(event.target.value)} spellCheck={false} />
         </FormRow>

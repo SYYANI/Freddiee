@@ -150,6 +150,8 @@ export interface AppSettings {
   babelDocQPS: number
   babelDocThinkingMode: LLMThinkingMode
   babelDocSemanticHintsEnabled: boolean
+  /** Also translates text inside figures (tick labels, legends, panel titles); off keeps it as it is. */
+  babelDocTranslatesFigureText: boolean
   translationGlossary: string
   htmlFontSize: number
   readerAppearance: ReaderAppearance

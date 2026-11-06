@@ -22,7 +22,7 @@
   },
   "shim": {
     "source": "../reWriteBabelDoc/Sources/BabelDocMuPDFShim/BabelDocMuPDFShim.c",
-    "sha256": "655ac6e48d79d855c6ec2f91813f2643d69fcf7718e2231fa67a617119857e19"
+    "sha256": "e6313ad40a21712db3d4f73460ca291d5449d92ce31c623b7d3deb7b44c503d8"
   },
   "adapter": {
     "file": "BabelDocKit/native/babeldoc_wasm.c",
@@ -71,8 +71,8 @@
   },
   "outputs": {
     "babeldoc.wasm": {
-      "size": 38900898,
-      "sha256": "cdb2ff32727de432a481c3941a649e42585b62a4513bdf6920227a5a5df07cdb"
+      "size": 38908779,
+      "sha256": "d94b3598ce289d104578ce451e4421e8e036f30360de73de72b490082bdc11d5"
     },
     "babeldoc.cjs": {
       "size": 68841,

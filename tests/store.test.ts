@@ -93,6 +93,17 @@ describe('FreddieStore', () => {
 })
 
 describe('migrateDatabase', () => {
+  it('keeps figure text untranslated when migrating schema 7', () => {
+    const { database } = migrateDatabase({ schemaVersion: 7, settings: { htmlFontSize: 19, babelDocSemanticHintsEnabled: false } })
+    expect(database.schemaVersion).toBe(schemaVersion)
+    expect(database.settings).toMatchObject({
+      htmlFontSize: 19,
+      babelDocSemanticHintsEnabled: false,
+      babelDocTranslatesFigureText: false
+    })
+    expect(migrateDatabase({ schemaVersion: 8, settings: { babelDocTranslatesFigureText: true } }).database.settings.babelDocTranslatesFigureText).toBe(true)
+  })
+
   it('adds the disabled arXiv LaTeX route when migrating schema 6', () => {
     const { database } = migrateDatabase({ schemaVersion: 6, settings: { htmlFontSize: 19, latexTranslationEnabled: true } })
     expect(database.schemaVersion).toBe(schemaVersion)

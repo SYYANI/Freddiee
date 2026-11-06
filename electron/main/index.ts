@@ -1006,6 +1006,7 @@ function sanitizeSettings(patch: Partial<AppSettings>): Partial<AppSettings> {
   assign('babelDocQPS', (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0.1 && value <= 20)
   assign('babelDocThinkingMode', (value) => value === 'enabled' || value === 'disabled')
   assign('babelDocSemanticHintsEnabled', isBoolean)
+  assign('babelDocTranslatesFigureText', isBoolean)
   assign('translationGlossary', isString)
   assign('htmlFontSize', integerIn(13, 28))
   assign('readerAppearance', (value) => value === 'default' || value === 'paper')

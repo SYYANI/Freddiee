@@ -80,6 +80,9 @@ export interface BabelDocPipelineConfiguration {
   glossary?: string | null
   semanticHints?: BabelDocSemanticDocument | null
   renderingMode: NativePDFRenderingMode
+  /** Translate text inside detected figures (tick labels, legends, panel
+   * titles). Absent or false keeps figure text as it is. */
+  translatesFigureText?: boolean
   maximumUnmatchedGlyphFraction?: number
   enricherConfiguration?: SemanticHintEnricherConfiguration
 }
@@ -207,7 +210,8 @@ export function createPipeline(
       minimumTextLength: 5,
       documentTitle: configuration.documentTitle ?? null,
       glossary: configuration.glossary ?? null,
-      semanticContexts
+      semanticContexts,
+      translatesFigureText: configuration.translatesFigureText ?? false
     }
     const translationReport = await ILTranslator.processAsync(
       workingDocument, translator, translationConfiguration,

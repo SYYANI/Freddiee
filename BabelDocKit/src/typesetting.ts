@@ -173,8 +173,12 @@ function advanceForCharacter(font: TargetFont, unicode: string, size: number): n
 }
 
 const unitImplementation = {
+  /** Source content can stay where it is: source characters and formulas,
+   * and source characters `makeUnits` only remapped to a target font so a
+   * rebuilt stream can draw them (`remapUnsafeSourceGlyphs` does that
+   * remapping in place for passed-through paragraphs). */
   canPassthrough(unit: Unit): boolean {
-    return unit.unicode === undefined
+    return unit.unicode === undefined || remappedSourceCharacter(unit) !== undefined
   },
   isSourceBacked(unit: Unit): boolean {
     return unit.sourceCharacter !== undefined || unit.sourceAnchorBox !== undefined
@@ -727,9 +731,15 @@ function clamp(value: number, lower: number, upper: number): number {
   return Math.min(Math.max(value, lower), upper)
 }
 
+function remappedSourceCharacter(unit: Unit): ILPdfCharacter | undefined {
+  if (unit.sourceCharacter !== undefined || unit.formula !== undefined || unit.sourceAnchorBox === undefined) return undefined
+  return unit.origin?.kind === 'character' ? unit.origin.character : undefined
+}
+
 function passthrough(unit: Unit): ILPdfParagraphComposition[] {
   if (unit.formula) return [{ pdf_formula: unit.formula }]
-  if (unit.sourceCharacter) return [{ pdf_character: unit.sourceCharacter }]
+  const character = unit.sourceCharacter ?? remappedSourceCharacter(unit)
+  if (character) return [{ pdf_character: character }]
   return []
 }
 

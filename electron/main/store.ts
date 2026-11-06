@@ -18,7 +18,7 @@ import type {
 import { defaultDigestTemplate } from '../../shared/digest'
 import { atomicWriteFile } from './files'
 
-export const schemaVersion = 7
+export const schemaVersion = 8
 
 type StoredProvider = Omit<ProviderProfile, 'apiKeyConfigured' | 'isBuiltIn'>
 
@@ -89,6 +89,7 @@ export const defaultSettings = (): AppSettings => ({
   babelDocQPS: 3,
   babelDocThinkingMode: 'disabled',
   babelDocSemanticHintsEnabled: true,
+  babelDocTranslatesFigureText: false,
   translationGlossary: '',
   htmlFontSize: 17,
   readerAppearance: 'default',
@@ -591,7 +592,8 @@ interface MigrationResult {
 export function migrateDatabase(value: Record<string, unknown>): MigrationResult {
   const version = typeof value.schemaVersion === 'number' ? value.schemaVersion : 1
   if (version > schemaVersion) throw new Error(`library.json was written by a newer Freddie (schema ${version}).`)
-  if (version === 7) return { database: normalizeV7(value as Partial<Database>), legacyWritings: [] }
+  if (version === 8) return { database: normalizeV8(value as Partial<Database>), legacyWritings: [] }
+  if (version === 7) return migrateV7(value as Partial<Database>)
   if (version === 6) return migrateV6(value as Partial<Database>)
   if (version === 5) return migrateV5(value as Partial<Database>)
   if (version === 4) return migrateV4(value as Partial<Database>)
@@ -603,7 +605,7 @@ export function migrateDatabase(value: Record<string, unknown>): MigrationResult
 // its defaults again.
 const removedSettingKeys = ['babelDocCommand', 'babelDocArguments', 'useArxivLatexStructure']
 
-function normalizeV7(value: Partial<Database>): Database {
+function normalizeV8(value: Partial<Database>): Database {
   const base = emptyDatabase()
   const settings: Record<string, unknown> = { ...base.settings, ...value.settings }
   for (const key of removedSettingKeys) delete settings[key]
@@ -625,10 +627,22 @@ function normalizeV7(value: Partial<Database>): Database {
   }
 }
 
+/** Schema 8 keeps text inside figures untranslated unless the user opts in, as native Freddie does. */
+function migrateV7(value: Partial<Database>): MigrationResult {
+  return {
+    database: normalizeV8({
+      ...value,
+      schemaVersion,
+      settings: { ...defaultSettings(), ...value.settings, babelDocTranslatesFigureText: false }
+    }),
+    legacyWritings: []
+  }
+}
+
 /** Schema 7 restores the opt-in arXiv LaTeX translation route used by native Freddie. */
 function migrateV6(value: Partial<Database>): MigrationResult {
   return {
-    database: normalizeV7({
+    database: normalizeV8({
       ...value,
       schemaVersion,
       settings: { ...defaultSettings(), ...value.settings, latexTranslationEnabled: false }
@@ -640,7 +654,7 @@ function migrateV6(value: Partial<Database>): MigrationResult {
 /** Schema 6 adds the in-process BabelDOC route and its bounded settings. */
 function migrateV5(value: Partial<Database>): MigrationResult {
   return {
-    database: normalizeV7({
+    database: normalizeV8({
       ...value,
       schemaVersion,
       settings: { ...defaultSettings(), ...value.settings, latexTranslationEnabled: false }
@@ -652,7 +666,7 @@ function migrateV5(value: Partial<Database>): MigrationResult {
 /** Schema 5 makes the contextual PDF hand tool opt-in, preserving the former arrow behavior. */
 function migrateV4(value: Partial<Database>): MigrationResult {
   return {
-    database: normalizeV7({
+    database: normalizeV8({
       ...value,
       schemaVersion,
       settings: { ...defaultSettings(), ...value.settings, pdfHandToolEnabled: false, latexTranslationEnabled: false }
