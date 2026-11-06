@@ -31,6 +31,7 @@ import { digestFileName, makeDigestContent, makeDigestMarkdown } from '../../sha
 import { parseCitation } from '../../shared/writing'
 import { AnnotationStore } from './annotations'
 import { DocumentOutlineService } from './documentOutline'
+import { PdfRasterService, parseRasterParameters } from './pdfRaster'
 import { outlineSources, type DocumentOutlineSource } from '../../shared/outline'
 import { AssistantService } from './assistant'
 import { safeFileName, atomicWriteFile } from './files'
@@ -92,6 +93,7 @@ const dirtyWritings = new Map<number, Set<string>>()
 const syncActivity = new SyncActivity()
 const syncActivitySenders = new Set<number>()
 let outlines: DocumentOutlineService
+let pdfRaster: PdfRasterService
 let translator: Translator = createTranslator('en')
 let htmlTranslatedPaperIds: string[] = []
 let hasNativeLibrary = false
@@ -113,6 +115,8 @@ app.whenReady().then(async () => {
   annotations = new AnnotationStore(store)
   updateTranslator()
   outlines = new DocumentOutlineService(store, secrets, () => translator)
+  pdfRaster = new PdfRasterService(store)
+  app.on('will-quit', () => { void pdfRaster.close() })
   synchronizeAppearance()
 
   importer = new PaperImporter(store, (progress) => broadcast('import:progress', progress), () => translator)
@@ -389,6 +393,13 @@ function registerProtocol(): void {
       if (url.hostname === 'paper' && parts.length >= 3) {
         const [paperId, kind, ...rest] = parts
         store.paper(paperId)
+        if (kind === 'raster' && rest.length === 2) {
+          const parameters = parseRasterParameters(url, rest[1])
+          const png = await pdfRaster.render(paperId, rest[0], parameters, request.signal)
+          return new Response(Uint8Array.from(png).buffer, { headers: {
+            'content-type': 'image/png', 'cache-control': 'no-store', 'access-control-allow-origin': '*'
+          } })
+        }
         if (kind === 'a') path = store.attachmentPath(paperId, rest[0])
         // Localized page resources live below Resources/ next to paper.html, as in native Freddie.
         else if (kind === 'Resources' && rest.length) path = store.resolvePaperPath(paperId, [kind, ...rest].join('/'))

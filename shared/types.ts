@@ -593,6 +593,7 @@ export interface FreddieAPI {
     popupMenu(items: MenuItemSpec[], position?: { x: number; y: number }): Promise<string | null>
     messageBox(spec: MessageBoxSpec): Promise<number>
     assetURL(paperId: string, attachmentId: string): string
+    pdfPageURL(paperId: string, attachmentId: string, pageIndex: number, scale: number, ratio: number, paperTone: boolean, revision: string): string
     paperBaseURL(paperId: string): string
     onMenuAction(listener: (action: MenuAction) => void): () => void
     onOpenCitation(listener: (request: NoteNavigationRequest) => void): () => void

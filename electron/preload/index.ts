@@ -147,6 +147,8 @@ const api: FreddieAPI = {
     popupMenu: (items, position) => invoke('shell:popup-menu', items, position),
     messageBox: (spec) => invoke('shell:message-box', spec),
     assetURL: (paperId, attachmentId) => `freddie://paper/${encodeURIComponent(paperId)}/a/${encodeURIComponent(attachmentId)}`,
+    pdfPageURL: (paperId, attachmentId, pageIndex, scale, ratio, paperTone, revision) =>
+      `freddie://paper/${encodeURIComponent(paperId)}/raster/${encodeURIComponent(attachmentId)}/${pageIndex}?scale=${scale}&ratio=${ratio}&tone=${paperTone ? 'paper' : 'default'}&v=${encodeURIComponent(revision)}`,
     paperBaseURL: (paperId) => `freddie://paper/${encodeURIComponent(paperId)}/`,
     onMenuAction: (listener) => subscribe('menu:action', listener),
     onOpenCitation: (listener) => subscribe('shell:open-citation', listener),

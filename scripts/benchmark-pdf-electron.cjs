@@ -37,7 +37,8 @@ async function waitReady(window, dual) {
           const top = parseFloat(page.style.top), height = parseFloat(page.style.height);
           return center >= top && center < top + height;
         });
-        return page?.querySelector('.pdf-page-canvas canvas')?.width > 0 && page.querySelector('.textLayer')?.textContent.length > 0;
+        const layer = reader.querySelector('.pdf-canvas-area')?.shadowRoot?.querySelector('[data-page-index="' + page?.dataset.pageIndex + '"] .textLayer') ?? page?.querySelector('.textLayer');
+        return page?.querySelector('.pdf-page-canvas canvas')?.width > 0 && layer?.textContent.length > 0 && layer.getAttribute('aria-busy') !== 'true';
       });
     })()`)
     if (ready) { await delay(800); return }
@@ -46,12 +47,60 @@ async function waitReady(window, dual) {
   throw new Error('PDF reader did not become ready')
 }
 
+async function selectionSmoke(window) {
+  const checks = await evaluate(window, `(() => {
+    return [...document.querySelectorAll('.pdf-scroller')].map(reader => {
+      const root = reader.querySelector('.pdf-canvas-area').shadowRoot;
+      if (!root) throw new Error('Missing PDF text root');
+      const box = reader.getBoundingClientRect();
+      const nodes = [...root.querySelectorAll('.textLayer span, .textLayer tspan')].filter(node => {
+        const rect = node.getBoundingClientRect();
+        return node.textContent.trim().length >= 2 && rect.width > 2 && rect.height > 2 &&
+          rect.top >= box.top && rect.bottom < box.bottom && rect.left >= box.left && rect.right <= box.right;
+      });
+      const node = nodes[0];
+      if (!node) throw new Error('No visible selectable PDF text');
+      const range = document.createRange();
+      range.setStart(node.firstChild, 0); range.setEnd(node.firstChild, Math.min(2, node.textContent.length));
+      const selection = root.getSelection();
+      selection.removeAllRanges(); selection.addRange(range);
+      const charRect = range.getBoundingClientRect();
+      const single = selection.toString(), actual = selection.getRangeAt(0);
+      if (!single || actual.startContainer !== node.firstChild || !(charRect.width > 0 && charRect.height > 0))
+        throw new Error('Native PDF character selection failed');
+      const next = nodes.find(other => other.closest('svg') !== node.closest('svg'));
+      let crossFragment = false;
+      if (next) {
+        const across = document.createRange();
+        across.setStart(node.firstChild, 0); across.setEnd(next.firstChild, Math.min(2, next.textContent.length));
+        selection.removeAllRanges(); selection.addRange(across);
+        crossFragment = !selection.isCollapsed && !!selection.toString() && selection.getRangeAt(0).endContainer === next.firstChild;
+        if (!crossFragment) throw new Error('Cross-fragment PDF selection failed');
+      }
+      selection.removeAllRanges(); selection.addRange(range);
+      node.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, composed:true}));
+      return {dense: !!node.closest('svg'), characters: single.length, characterRect: {width: charRect.width, height: charRect.height}, crossFragment};
+    });
+  })()`)
+  await delay(100)
+  const reported = await evaluate(window, `!!document.querySelector('.selection-assistant')`)
+  if (!reported) throw new Error('PDF selection did not reach reader controls')
+  await evaluate(window, `document.querySelectorAll('.pdf-canvas-area').forEach(host => host.shadowRoot?.getSelection()?.removeAllRanges())`)
+  return { checks, reported }
+}
+
 async function run(window) {
   window.setSize(1220, 780)
   window.show(); window.focus()
   window.webContents.debugger.attach('1.3')
   const cdp = (method, params = {}) => window.webContents.debugger.sendCommand(method, params)
   await cdp('Performance.enable')
+  await cdp('Runtime.enable')
+  window.webContents.debugger.on('message', (_event, method, params) => {
+    if (method === 'Runtime.consoleAPICalled' && ['error', 'warning'].includes(params.type)) {
+      console.log('Renderer:', params.args.map((arg) => arg.value ?? arg.description ?? '').join(' '))
+    }
+  })
   const system = {
     platform: os.platform(), release: os.release(), arch: os.arch(),
     cpu: os.cpus()[0]?.model, memoryGB: os.totalmem() / 2 ** 30,
@@ -83,7 +132,7 @@ async function run(window) {
         const distance = Math.min(config.distance || 12000, geometry.height - geometry.startTop - geometry.viewport - 50)
         if (distance < 1000) throw new Error('Selected PDF is too short for scroll measurement')
         await evaluate(window, `(() => {
-          const bench = window.__pdfBench = { intervals: [], longTasks: [], positions: [], running: true, start: performance.now() };
+          const bench = window.__pdfBench = { intervals: [], longTasks: [], positions: [], timeline: [], running: true, start: performance.now() };
           bench.paint = {samples: 0, missingBitmap: 0};
           bench.paintTimer = setInterval(() => {
             for (const reader of document.querySelectorAll('.pdf-scroller')) {
@@ -105,6 +154,7 @@ async function run(window) {
             if (previous !== undefined) bench.intervals.push(time - previous);
             previous = time;
             bench.positions.push(document.querySelector('.pdf-scroller').scrollTop);
+            bench.timeline.push([time-bench.start, ...[...document.querySelectorAll('.pdf-scroller')].map(reader => reader.scrollTop)]);
             requestAnimationFrame(frame);
           };
           requestAnimationFrame(frame);
@@ -140,7 +190,8 @@ async function run(window) {
           const bench = window.__pdfBench; bench.running = false; bench.observer.disconnect(); clearInterval(bench.paintTimer);
           return {intervals: bench.intervals, longTasks: bench.longTasks, duration: performance.now()-bench.start,
             maxScrollTop: Math.max(...bench.positions), mountedPages: [...document.querySelectorAll('.pdf-scroller')].map(r => r.querySelectorAll('.pdf-page').length),
-            canvasPixels: [...document.querySelectorAll('.pdf-page-canvas canvas')].reduce((n,c) => n+c.width*c.height,0), paint: bench.paint};
+            canvasPixels: [...document.querySelectorAll('.pdf-page-canvas canvas')].reduce((n,c) => n+c.width*c.height,0), paint: bench.paint,
+            timeline: bench.timeline, finalScrollTop: document.querySelector('.pdf-scroller').scrollTop, focus: document.hasFocus()};
         })()`)
         if (sample.maxScrollTop - geometry.startTop < distance * 0.5) throw new Error(`Scroll gesture did not move the reader: ${sample.maxScrollTop}`)
         const metric = (list, name) => list.metrics.find((m) => m.name === name)?.value || 0
@@ -161,6 +212,10 @@ async function run(window) {
           await waitReady(window, scenario.mode === 'bilingualPDF')
           const screenshot = await window.webContents.capturePage()
           await fs.writeFile(path.join(config.work, `${scenario.label}-${variant}.png`), screenshot.toPNG())
+          if (variant === 'optimized') {
+            const selection = await selectionSmoke(window)
+            await fs.writeFile(path.join(config.work, `${scenario.label}-selection.json`), JSON.stringify(selection, null, 2))
+          }
         }
       }
     }

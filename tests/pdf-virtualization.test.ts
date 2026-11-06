@@ -68,6 +68,7 @@ const tick = async (milliseconds = 50) => {
   await act(async () => { await vi.advanceTimersByTimeAsync(milliseconds) })
   await act(async () => { await vi.advanceTimersByTimeAsync(5) })
 }
+const textRoot = () => container.querySelector('.pdf-canvas-area')!.shadowRoot!
 
 describe('PDF viewport lifecycle', () => {
   it('mounts only nearby pages in a 2000-page document and releases old bitmaps on a jump', async () => {
@@ -82,7 +83,7 @@ describe('PDF viewport lifecycle', () => {
     expect(canvas.width).toBe(0)
     expect(canvas.height).toBe(0)
     expect(container.querySelectorAll('.pdf-page').length).toBeLessThanOrEqual(4)
-    expect(container.querySelector('[data-page-index="1000"] .textLayer')?.textContent).toBe('Page 1001')
+    expect(textRoot().querySelector('[data-page-index="1000"] .textLayer')?.textContent).toBe('Page 1001')
     expect(container.querySelector('[data-page-index="0"]')).toBeNull()
     expect((container.querySelector('.pdf-canvas-area') as HTMLElement).style.height).toBe('1620010px')
   })
@@ -104,8 +105,9 @@ describe('PDF viewport lifecycle', () => {
     expect(props.onOutlineLocation).toHaveBeenCalledOnce()
     expect(props.onPageChange).toHaveBeenCalledExactlyOnceWith(1000)
     expect(props.onUserScroll).toHaveBeenCalledOnce()
-    await tick()
-    expect(container.querySelector('[data-page-index="1000"] .textLayer')?.textContent).toBe('Page 1001')
+    expect(fixture.textLayer).not.toHaveBeenCalledWith(1001)
+    await tick(200)
+    expect(textRoot().querySelector('[data-page-index="1000"] .textLayer')?.textContent).toBe('Page 1001')
     expect(container.querySelectorAll('.pdf-page').length).toBeLessThanOrEqual(4)
   })
 
@@ -121,7 +123,7 @@ describe('PDF viewport lifecycle', () => {
     await tick()
     expect(fixture.textLayer).not.toHaveBeenCalledWith(1)
     expect(fixture.render.mock.calls[2][0]).toBe(1001)
-    expect(container.querySelector('[data-page-index="1000"] .textLayer')?.textContent).toBe('Page 1001')
+    expect(textRoot().querySelector('[data-page-index="1000"] .textLayer')?.textContent).toBe('Page 1001')
   })
 
   it('cancels in-flight rasterization and releases its canvas before rendering the destination', async () => {
@@ -135,7 +137,7 @@ describe('PDF viewport lifecycle', () => {
     expect(fixture.cancel).toHaveBeenCalledWith(1)
     expect(canvas.width).toBe(0)
     expect(fixture.textLayer).not.toHaveBeenCalledWith(1)
-    expect(container.querySelector('[data-page-index="1000"] .textLayer')?.textContent).toBe('Page 1001')
+    expect(textRoot().querySelector('[data-page-index="1000"] .textLayer')?.textContent).toBe('Page 1001')
   })
 
   it('keeps annotations when their page unmounts and mounts again', async () => {

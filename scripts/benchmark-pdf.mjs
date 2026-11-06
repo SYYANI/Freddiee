@@ -14,6 +14,14 @@ process.chdir(root)
 const work = process.env.FREDDIE_BENCH_DIR || await mkdtemp(join(tmpdir(), 'freddie-pdf-bench-'))
 await mkdir(work, { recursive: true })
 const sourceRoot = process.env.FREDDIE_BENCH_LIBRARY || join(homedir(), 'Library/Application Support/Freddie')
+const baselineRef = process.env.FREDDIE_BENCH_BASELINE_REF || '0341991ef4240908109790b14231402beea1d19d'
+const sourceFiles = ['src/readers/PdfView.tsx', 'src/readers/DualPdfView.tsx', 'src/readers/pdfDenseText.ts',
+  'src/readers/pdfRaster.ts', 'src/readers/pdfSelection.ts', 'src/readers/pdfTextLayer.css', 'src/readers/assistantHistory.ts',
+  'electron/main/pdfRaster.ts', 'electron/main/pdfRasterWorker.ts', 'electron/main/pdfRasterWorkerClient.ts',
+  'electron/main/index.ts', 'electron/preload/index.ts', 'shared/types.ts', 'electron.vite.config.ts']
+const sourceHashes = Object.fromEntries(await Promise.all(sourceFiles.map(async (file) => [file, createHash('sha256').update(await readFile(join(root, file))).digest('hex')])))
+await writeFile(join(work, 'optimized-sources.json'), JSON.stringify(sourceHashes, null, 2))
+await cp(join(root, 'scripts/benchmark-pdf-electron.cjs'), join(work, 'benchmark-pdf-electron.cjs'))
 const source = JSON.parse(await readFile(join(sourceRoot, 'library.json'), 'utf8'))
 const candidates = process.env.FREDDIE_BENCH_PAPERS?.split(',') || [
   // Local test selection can be overridden without changing the benchmark.
@@ -39,15 +47,16 @@ await writeFile(join(dataRoot, 'library.json'), JSON.stringify({
 }))
 const baseline = process.env.FREDDIE_BENCH_BASELINE_FILE
   ? await readFile(process.env.FREDDIE_BENCH_BASELINE_FILE, 'utf8')
-  : execFileSync('git', ['show', '0341991ef4240908109790b14231402beea1d19d:src/readers/PdfView.tsx'], { encoding: 'utf8' })
+  : execFileSync('git', ['show', `${baselineRef}:src/readers/PdfView.tsx`], { encoding: 'utf8' })
 await writeFile(join(work, 'baseline-PdfView.tsx'), baseline)
 const baselineCSS = process.env.FREDDIE_BENCH_BASELINE_CSS
   ? await readFile(process.env.FREDDIE_BENCH_BASELINE_CSS, 'utf8')
-  : execFileSync('git', ['show', '0341991ef4240908109790b14231402beea1d19d:src/styles/readers.css'], { encoding: 'utf8' })
+  : execFileSync('git', ['show', `${baselineRef}:src/styles/readers.css`], { encoding: 'utf8' })
 await writeFile(join(work, 'baseline-readers.css'), baselineCSS)
-await writeFile(join(work, 'baseline-base.css'), execFileSync('git', ['show', '0341991ef4240908109790b14231402beea1d19d:src/styles/base.css'], { encoding: 'utf8' }))
-await writeFile(join(work, 'baseline-assistantHistory.ts'), execFileSync('git', ['show', '0341991ef4240908109790b14231402beea1d19d:src/readers/assistantHistory.ts'], { encoding: 'utf8' }))
-await writeFile(join(work, 'baseline-pdfjs.ts'), execFileSync('git', ['show', '0341991ef4240908109790b14231402beea1d19d:src/readers/pdfjs.ts'], { encoding: 'utf8' }))
+await writeFile(join(work, 'baseline-base.css'), execFileSync('git', ['show', `${baselineRef}:src/styles/base.css`], { encoding: 'utf8' }))
+await writeFile(join(work, 'baseline-assistantHistory.ts'), execFileSync('git', ['show', `${baselineRef}:src/readers/assistantHistory.ts`], { encoding: 'utf8' }))
+await writeFile(join(work, 'baseline-pdfjs.ts'), execFileSync('git', ['show', `${baselineRef}:src/readers/pdfjs.ts`], { encoding: 'utf8' }))
+await writeFile(join(work, 'baseline-DualPdfView.tsx'), execFileSync('git', ['show', `${baselineRef}:src/readers/DualPdfView.tsx`], { encoding: 'utf8' }))
 const rendererHashes = {}
 for (const variant of ['baseline', 'optimized']) {
   console.log(`Building ${variant} production renderer`)
@@ -63,6 +72,7 @@ for (const variant of ['baseline', 'optimized']) {
       if (id === ${JSON.stringify(join(root, 'src/styles/base.css'))}) return readFileSync(${JSON.stringify(join(work, 'baseline-base.css'))}, 'utf8');
       if (id === ${JSON.stringify(join(root, 'src/readers/assistantHistory.ts'))}) return readFileSync(${JSON.stringify(join(work, 'baseline-assistantHistory.ts'))}, 'utf8');
       if (id === ${JSON.stringify(join(root, 'src/readers/pdfjs.ts'))}) return readFileSync(${JSON.stringify(join(work, 'baseline-pdfjs.ts'))}, 'utf8');
+      if (id === ${JSON.stringify(join(root, 'src/readers/DualPdfView.tsx'))}) return readFileSync(${JSON.stringify(join(work, 'baseline-DualPdfView.tsx'))}, 'utf8');
     }});` : ''}
     export default {...config, renderer};
   `)
@@ -73,9 +83,12 @@ for (const variant of ['baseline', 'optimized']) {
   for (const script of scripts.sort()) hash.update(await readFile(join(work, variant, 'assets', script)))
   rendererHashes[variant] = hash.digest('hex')
 }
-if (rendererHashes.baseline === rendererHashes.optimized) throw new Error('Renderers are identical; refusing an invalid comparison')
+if (!process.env.FREDDIE_BENCH_VARIANT && rendererHashes.baseline === rendererHashes.optimized) throw new Error('Renderers are identical; refusing an invalid comparison')
+for (const [file, hash] of Object.entries(sourceHashes)) {
+  if (createHash('sha256').update(await readFile(join(root, file))).digest('hex') !== hash) throw new Error(`Source changed during benchmark build: ${file}`)
+}
 const config = {
-  root, work, dataRoot, scenarios, rendererHashes, profile: process.env.FREDDIE_BENCH_PROFILE === '1',
+  root, work, dataRoot, scenarios, rendererHashes, sourceHashes, baselineRef, profile: process.env.FREDDIE_BENCH_PROFILE === '1',
   startPage: Number(process.env.FREDDIE_BENCH_START_PAGE || 0),
   trace: process.env.FREDDIE_BENCH_TRACE === '1', onlyVariant: process.env.FREDDIE_BENCH_VARIANT,
   distance: Number(process.env.FREDDIE_BENCH_DISTANCE || 12000),
@@ -89,5 +102,5 @@ console.log(`Benchmark artifacts: ${work}`)
 const environment = { ...process.env, FREDDIE_BENCH_CONFIG: configPath, FREDDIE_DATA_DIR: dataRoot }
 delete environment.ELECTRON_RUN_AS_NODE
 delete environment.FREDDIE_IMPORT_NATIVE
-const child = spawn(electron, [join(root, 'scripts/benchmark-pdf-electron.cjs')], { cwd: root, env: environment, stdio: 'inherit' })
+const child = spawn(electron, [join(work, 'benchmark-pdf-electron.cjs')], { cwd: root, env: environment, stdio: 'inherit' })
 child.on('exit', (code) => { process.exitCode = code ?? 1 })

@@ -14,7 +14,8 @@ export default defineConfig({
         input: {
           index: resolve('electron/main/index.ts'),
           babeldocWorker: resolve('electron/main/babeldocWorker.ts'),
-          documentOutlineWorker: resolve('electron/main/documentOutlineWorker.ts')
+          documentOutlineWorker: resolve('electron/main/documentOutlineWorker.ts'),
+          pdfRasterWorker: resolve('electron/main/pdfRasterWorker.ts')
         },
         output: { format: 'cjs', entryFileNames: '[name].cjs' }
       }

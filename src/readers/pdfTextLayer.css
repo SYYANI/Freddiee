@@ -1,0 +1,30 @@
+/* One shared shadow tree per reader keeps cross-page selection while isolating dense text
+   from application selectors and highlight/style invalidation outside the document. */
+:host { display: block; }
+.pdf-text-page { position: absolute; z-index: 2; pointer-events: none; }
+.textLayer {
+  position: absolute; text-align: initial; inset: 0; overflow: clip; opacity: 1; line-height: 1;
+  -webkit-text-size-adjust: none; text-size-adjust: none; forced-color-adjust: none;
+  transform-origin: 0 0; caret-color: CanvasText; pointer-events: auto;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+.textLayer :is(span, br) {
+  color: transparent; position: absolute; white-space: pre; cursor: text;
+  transform-origin: 0% 0%; user-select: text; -webkit-user-select: text;
+}
+.textLayer > :not(.markedContent), .textLayer .markedContent span:not(.markedContent) {
+  z-index: 1; --font-height: 0;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1; --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+.textLayer .markedContent { display: contents; }
+.textLayer span[role="img"] { user-select: none; cursor: default; }
+.textLayer ::selection { background: rgba(0, 122, 255, 0.28); color: transparent; }
+.textLayer br::selection { background: transparent; }
+::highlight(rp-note-target) { background-color: rgba(0, 122, 255, 0.25); }
+.pdf-dense-text { position: absolute; inset: 0; overflow: clip; pointer-events: none; }
+.pdf-dense-text text { fill: transparent; white-space: pre; user-select: text; -webkit-user-select: text; pointer-events: all; cursor: text; }
+.pdf-text-loading { position: absolute; inset: 0; z-index: 1; pointer-events: auto; }

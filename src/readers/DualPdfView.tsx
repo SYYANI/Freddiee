@@ -62,6 +62,20 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
     active: () => (lastActive.current === 'translated' ? translatedRef.current : originalRef.current)
   }))
 
+  // Each shadow tree reports selection changes independently. An inactive pane clearing its
+  // selection must not dismiss the active selection or overwrite that pane's undo state.
+  const reportSelection = useCallback((side: DualSide, selection: NoteSelectionContext | null) => {
+    if (selection) { lastActive.current = side; setActiveSide(side) }
+    if (lastActive.current === side) props.onSelection?.(selection)
+  }, [props.onSelection])
+  const reportAnnotationState = useCallback((side: DualSide, state: AnnotationState) => {
+    if (lastActive.current === side) props.onAnnotationState?.(state)
+  }, [props.onAnnotationState])
+  const originalSelection = useCallback((selection: NoteSelectionContext | null) => reportSelection('original', selection), [reportSelection])
+  const translatedSelection = useCallback((selection: NoteSelectionContext | null) => reportSelection('translated', selection), [reportSelection])
+  const originalAnnotationState = useCallback((state: AnnotationState) => reportAnnotationState('original', state), [reportAnnotationState])
+  const translatedAnnotationState = useCallback((state: AnnotationState) => reportAnnotationState('translated', state), [reportAnnotationState])
+
   const follow = useCallback((side: DualSide) => {
     if (following.current) return
     leader.current = side
@@ -121,12 +135,12 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
           find={props.findTarget === 'original' ? props.find : null}
           onFindStatus={props.findTarget === 'original' ? props.onFindStatus : undefined}
           navigation={navigationFor('original')}
-          onSelection={props.onSelection}
+          onSelection={originalSelection}
           assistantHistory={props.assistantHistory}
           onAssistantHistoryActivated={props.onAssistantHistoryActivated}
           heldSelection={props.heldSelection}
           tool={props.tool}
-          onAnnotationState={props.onAnnotationState}
+          onAnnotationState={originalAnnotationState}
           onRequestTextNote={(page, point) => props.onRequestTextNote?.('original', page, point)}
           onOutlineLocation={props.onOutlineLocation}
           onUserScroll={() => follow('original')}
@@ -152,12 +166,12 @@ export const DualPdfView = forwardRef<{ active(): PdfViewHandle | null }, {
           find={props.findTarget === 'translated' ? props.find : null}
           onFindStatus={props.findTarget === 'translated' ? props.onFindStatus : undefined}
           navigation={navigationFor('translated')}
-          onSelection={props.onSelection}
+          onSelection={translatedSelection}
           assistantHistory={props.assistantHistory}
           onAssistantHistoryActivated={props.onAssistantHistoryActivated}
           heldSelection={props.heldSelection}
           tool={props.tool}
-          onAnnotationState={props.onAnnotationState}
+          onAnnotationState={translatedAnnotationState}
           onRequestTextNote={(page, point) => props.onRequestTextNote?.('translated', page, point)}
           onUserScroll={() => follow('translated')}
           onLinkActivated={props.onLinkActivated}

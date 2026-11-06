@@ -39,7 +39,16 @@ const anchor = (id: string, attachmentId = 'pdf', pageIndex = 0): AssistantHisto
   selectionIdentity: id, selection: { attachmentId, pageIndex, quote: `Saved passage on page ${pageIndex + 1}.` }
 })
 beforeEach(() => {
-  window.getSelection()?.removeAllRanges()
+  let selected: Range | undefined
+  vi.spyOn(window, 'getSelection').mockImplementation(() => ({
+    get rangeCount() { return selected ? 1 : 0 },
+    get isCollapsed() { return !selected || selected.collapsed },
+    get anchorNode() { return selected?.startContainer ?? null },
+    addRange(range: Range) { selected = range },
+    getRangeAt() { return selected! },
+    removeAllRanges() { selected = undefined },
+    toString() { return selected?.toString() ?? '' }
+  }) as unknown as Selection)
   vi.useFakeTimers()
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   highlights = new Map()
@@ -62,10 +71,14 @@ afterEach(async () => {
   container.remove()
   vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks()
 })
-const tick = async () => { await act(async () => { await vi.advanceTimersByTimeAsync(50) }) }
+const tick = async () => {
+  await act(async () => { await vi.advanceTimersByTimeAsync(200) })
+  await act(async () => { await vi.advanceTimersByTimeAsync(5) })
+}
+const textRoot = (scope: ParentNode = container) => scope.querySelector('.pdf-canvas-area')!.shadowRoot!
 const click = async (target: Element) => {
   await act(async () => {
-    for (const type of ['pointerdown', 'mouseup', 'click']) target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, button: 0, detail: 1, clientX: 20, clientY: 30 }))
+    for (const type of ['pointerdown', 'mouseup', 'click']) target.dispatchEvent(new MouseEvent(type, { bubbles: true, composed: true, cancelable: true, button: 0, detail: 1, clientX: 20, clientY: 30 }))
     await vi.advanceTimersByTimeAsync(1)
   })
 }
@@ -76,19 +89,19 @@ describe('PDF assistant history', () => {
     await act(async () => root.render(createElement(PdfView, { paperId: 'paper', attachmentId: 'pdf', url: 'pdf', pageIndex: 0,
       onPageChange: vi.fn(), appearance: 'default', onSelection: select, onAssistantHistoryActivated: activate, assistantHistory: [anchor('saved')] })))
     await tick()
-    const target = container.querySelector('.textLayer span')!
+    const target = textRoot().querySelector('.textLayer span')!
     // Ignore selectionchange queued when the preceding fixture was removed.
     select.mockClear()
     await click(target)
     expect(activate).toHaveBeenCalledTimes(1)
     expect(select).not.toHaveBeenCalled()
     await act(async () => {
-      target.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 0, detail, clientX: 20, clientY: 30 }))
+      target.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true, button: 0, detail, clientX: 20, clientY: 30 }))
       const range = document.createRange()
       range.setStart(target.firstChild!, 0); range.setEnd(target.firstChild!, detail === 2 ? 5 : target.textContent!.length)
       window.getSelection()!.addRange(range)
-      target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
-      target.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, detail, clientX: 20, clientY: 30 }))
+      target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, composed: true }))
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, button: 0, detail, clientX: 20, clientY: 30 }))
       await vi.advanceTimersByTimeAsync(1)
     })
     expect(select.mock.lastCall?.[0]).toMatchObject({ attachmentId: 'pdf', pageIndex: 0, quote: detail === 2 ? 'Saved' : target.textContent })
@@ -103,7 +116,7 @@ describe('PDF assistant history', () => {
       onPageChange: vi.fn(), appearance: 'default', onAssistantHistoryActivated: activate, assistantHistory: [saved] })))
     await tick()
     expect(highlights.get('rp-assistant-history-pdf')?.size).toBe(1)
-    await click(container.querySelector('.textLayer span')!)
+    await click(textRoot().querySelector('.textLayer span')!)
     expect(activate.mock.lastCall?.[0]).toEqual(saved)
   })
 
@@ -116,7 +129,7 @@ describe('PDF assistant history', () => {
     await act(async () => root.render(createElement(PdfView, props)))
     await tick()
     expect(highlights.get('rp-assistant-history-pdf')?.size).toBe(1)
-    const text = container.querySelector('.textLayer span')!
+    const text = textRoot().querySelector('.textLayer span')!
     await click(text)
     expect(activate.mock.lastCall?.[0]).toEqual(saved)
     expect(activate.mock.lastCall?.[1]).toMatchObject(saved.selection)
@@ -141,8 +154,8 @@ describe('PDF assistant history', () => {
     expect(highlights.get('rp-assistant-history-original')?.size).toBe(1)
     expect(highlights.get('rp-assistant-history-translated')?.size).toBe(1)
     const panes = container.querySelectorAll('.dual-pane')
-    await click(panes[0].querySelector('.textLayer span')!)
-    await click(panes[1].querySelector('.textLayer span')!)
+    await click(textRoot(panes[0]).querySelector('.textLayer span')!)
+    await click(textRoot(panes[1]).querySelector('.textLayer span')!)
     expect(activate.mock.calls.map(([item]) => item.selectionIdentity)).toEqual(['original-history', 'translated-history'])
   })
 

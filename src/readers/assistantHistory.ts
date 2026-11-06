@@ -94,22 +94,23 @@ export interface HistoryRange {
 
 // Highlight rules live as long as their document. Replacing a ::highlight stylesheet invalidates
 // styles throughout the document, even if it has no ranges; dense PDF text makes that very costly.
-const historyStyles = new WeakMap<Document, Map<string, HTMLStyleElement>>()
+const historyStyles = new WeakMap<Document | ShadowRoot, Map<string, HTMLStyleElement>>()
 
-function ensureHistoryStyle(document: Document, name: string): void {
-  let styles = historyStyles.get(document)
-  if (!styles) { styles = new Map(); historyStyles.set(document, styles) }
+function ensureHistoryStyle(document: Document, name: string, root: Document | ShadowRoot = document): void {
+  let styles = historyStyles.get(root)
+  if (!styles) { styles = new Map(); historyStyles.set(root, styles) }
   if (styles.get(name)?.isConnected) return
   const style = document.createElement('style')
   style.setAttribute('data-rp-reader', 'true')
   style.textContent = `::highlight(${name}) { background-color: rgba(0, 122, 255, 0.08); text-decoration: underline rgba(0, 122, 255, 0.58) 1px; }`
-  document.head.appendChild(style)
+  ;(root.nodeType === 9 ? document.head : root).appendChild(style)
   styles.set(name, style)
 }
 
 /** All code runs in the host renderer, including when root belongs to the sandboxed HTML frame. */
 export function bindAssistantHistory(root: Element, entries: HistoryRange[], options: {
   name: string
+  styleRoot?: ShadowRoot
   selectionGraceUntil: { current: number }
   enabled?: () => boolean
   activate: (anchor: AssistantHistoryAnchor, range: Range) => void
@@ -121,7 +122,7 @@ export function bindAssistantHistory(root: Element, entries: HistoryRange[], opt
     if (registry?.has(options.name)) registry.delete(options.name)
     return () => {}
   }
-  ensureHistoryStyle(document, options.name)
+  ensureHistoryStyle(document, options.name, options.styleRoot)
   if (registry && view?.Highlight) registry.set(options.name, new view.Highlight(...entries.map((entry) => entry.range)))
 
   const entryAt = (event: MouseEvent): HistoryRange | undefined => {
