@@ -61,7 +61,7 @@ async function render(message: Extract<PdfRasterMessage, { type: 'render' }>): P
       context.fillStyle = 'rgb(245, 237, 219)'
       context.fillRect(0, 0, canvas.width, canvas.height)
     }
-    const png = Uint8Array.from(await canvas.encode('png'))
+    const png = new Uint8Array(await canvas.encode('png'))
     port.postMessage({ type: 'result', id: message.id, png, documents: [...documents.keys()] } satisfies PdfRasterReply, [png.buffer])
   } catch (error) {
     port.postMessage({ type: 'error', id: message.id, message: error instanceof Error ? error.message : String(error), documents: [...documents.keys()] } satisfies PdfRasterReply)

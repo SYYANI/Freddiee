@@ -396,7 +396,8 @@ function registerProtocol(): void {
         if (kind === 'raster' && rest.length === 2) {
           const parameters = parseRasterParameters(url, rest[1])
           const png = await pdfRaster.render(paperId, rest[0], parameters, request.signal)
-          return new Response(Uint8Array.from(png).buffer, { headers: {
+          // Worker replies are structured clones, so the PNG owns a plain ArrayBuffer; Response copies it once.
+          return new Response(png as Uint8Array<ArrayBuffer>, { headers: {
             'content-type': 'image/png', 'cache-control': 'no-store', 'access-control-allow-origin': '*'
           } })
         }

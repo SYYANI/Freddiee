@@ -9,6 +9,12 @@ export function parseRasterParameters(url: URL, page: string): PdfRasterParamete
   return { pageIndex: Number(page), scale, ratio, paperTone: url.searchParams.get('tone') === 'paper' }
 }
 
+/** The bytes are transferred to the worker; avoid copying a file of up to 256 MiB first. */
+async function readWhole(path: string): Promise<Uint8Array> {
+  const data = await readFile(path)
+  return data.byteOffset === 0 && data.byteLength === data.buffer.byteLength ? new Uint8Array(data.buffer) : new Uint8Array(data)
+}
+
 interface Pending { run: () => Promise<void>; reject: (error: Error) => void }
 
 /** Registered PDFs only; derived PNGs are memory-only, bounded by bytes and entry count. */
@@ -40,7 +46,7 @@ export class PdfRasterService {
         try {
           signal.throwIfAborted()
           const reused = this.cache.get(key)
-          const png = reused ?? await this.worker.render(documentKey, async () => new Uint8Array(await readFile(path)), parameters, signal)
+          const png = reused ?? await this.worker.render(documentKey, () => readWhole(path), parameters, signal)
           signal.throwIfAborted()
           if (this.closed) throw new Error('PDF raster service is closed')
           if (!reused && png.byteLength <= this.budget) {

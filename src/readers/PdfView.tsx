@@ -962,7 +962,8 @@ const PdfPage = memo(function PdfPage({ document, paperId, attachmentId, revisio
         const previous = Array.from(host.children) as HTMLCanvasElement[]
         host.replaceChildren(canvas)
         previous.forEach(releaseCanvas)
-        setRasterized({ document, page, scale })
+        // Re-tinting reuses the same page and scale; keep the state so links are not rebuilt.
+        setRasterized((current) => (current?.document === document && current.page === page && current.scale === scale ? current : { document, page, scale }))
       }, priorityRef.current)
       queuedRender.current = queued
       void queued.promise.catch((reason: unknown) => {
